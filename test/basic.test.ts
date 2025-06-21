@@ -4,11 +4,11 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { Workspace } from '../src/core/workspace.js';
-import { NoteManager } from '../src/core/notes.js';
-import { NoteTypeManager } from '../src/core/note-types.js';
-import { SearchManager } from '../src/core/search.js';
-import { ConfigManager } from '../src/utils/config.js';
+import { Workspace } from '../src/core/workspace.ts';
+import { NoteManager } from '../src/core/notes.ts';
+import { NoteTypeManager } from '../src/core/note-types.ts';
+import { SearchManager } from '../src/core/search.ts';
+import { ConfigManager } from '../src/utils/config.ts';
 
 describe('Project Structure', () => {
   test('should import core classes without errors', () => {

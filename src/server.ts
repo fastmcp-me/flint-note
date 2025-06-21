@@ -14,38 +14,73 @@ import {
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
+  CallToolRequest,
+  ListToolsRequest,
+  ListResourcesRequest,
+  ReadResourceRequest
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { Workspace } from './core/workspace.js';
-import { NoteManager } from './core/notes.js';
-import { NoteTypeManager } from './core/note-types.js';
-import { SearchManager } from './core/search.js';
+import { Workspace } from './core/workspace.ts';
+import { NoteManager } from './core/notes.ts';
+import { NoteTypeManager } from './core/note-types.ts';
+import { SearchManager } from './core/search.ts';
+
+interface CreateNoteTypeArgs {
+  type_name: string;
+  description: string;
+  template?: string;
+}
+
+interface CreateNoteArgs {
+  type: string;
+  title: string;
+  content: string;
+}
+
+interface GetNoteArgs {
+  identifier: string;
+}
+
+interface UpdateNoteArgs {
+  identifier: string;
+  content: string;
+}
+
+interface SearchNotesArgs {
+  query: string;
+  type_filter?: string;
+  limit?: number;
+}
+
+interface ListNoteTypesArgs {
+  // Empty interface for consistency
+}
 
 class JadeNoteServer {
+  private server: Server;
+  private workspace: Workspace | null = null;
+  private noteManager: NoteManager | null = null;
+  private noteTypeManager: NoteTypeManager | null = null;
+  private searchManager: SearchManager | null = null;
+
   constructor() {
     this.server = new Server(
       {
         name: 'jade-note',
-        version: '0.1.0',
+        version: '0.1.0'
       },
       {
         capabilities: {
           tools: {},
-          resources: {},
-        },
+          resources: {}
+        }
       }
     );
-
-    // Initialize core managers
-    this.workspace = null;
-    this.noteManager = null;
-    this.noteTypeManager = null;
-    this.searchManager = null;
 
     this.setupHandlers();
   }
 
-  async initialize(workspacePath = process.cwd()) {
+  async initialize(workspacePath: string = process.cwd()): Promise<void> {
     try {
       this.workspace = new Workspace(workspacePath);
       await this.workspace.initialize();
@@ -56,12 +91,13 @@ class JadeNoteServer {
 
       console.error('jade-note server initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize jade-note server:', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to initialize jade-note server:', errorMessage);
       process.exit(1);
     }
   }
 
-  setupHandlers() {
+  private setupHandlers(): void {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
@@ -74,19 +110,19 @@ class JadeNoteServer {
               properties: {
                 type_name: {
                   type: 'string',
-                  description: 'Name of the note type (filesystem-safe)',
+                  description: 'Name of the note type (filesystem-safe)'
                 },
                 description: {
                   type: 'string',
-                  description: 'Description of the note type purpose and usage',
+                  description: 'Description of the note type purpose and usage'
                 },
                 template: {
                   type: 'string',
-                  description: 'Optional template content for new notes of this type',
-                },
+                  description: 'Optional template content for new notes of this type'
+                }
               },
-              required: ['type_name', 'description'],
-            },
+              required: ['type_name', 'description']
+            }
           },
           {
             name: 'create_note',
@@ -96,19 +132,19 @@ class JadeNoteServer {
               properties: {
                 type: {
                   type: 'string',
-                  description: 'Note type (must exist)',
+                  description: 'Note type (must exist)'
                 },
                 title: {
                   type: 'string',
-                  description: 'Title of the note',
+                  description: 'Title of the note'
                 },
                 content: {
                   type: 'string',
-                  description: 'Content of the note in markdown format',
-                },
+                  description: 'Content of the note in markdown format'
+                }
               },
-              required: ['type', 'title', 'content'],
-            },
+              required: ['type', 'title', 'content']
+            }
           },
           {
             name: 'get_note',
@@ -118,11 +154,11 @@ class JadeNoteServer {
               properties: {
                 identifier: {
                   type: 'string',
-                  description: 'Note identifier in format "type/filename" or full path',
-                },
+                  description: 'Note identifier in format "type/filename" or full path'
+                }
               },
-              required: ['identifier'],
-            },
+              required: ['identifier']
+            }
           },
           {
             name: 'update_note',
@@ -132,15 +168,15 @@ class JadeNoteServer {
               properties: {
                 identifier: {
                   type: 'string',
-                  description: 'Note identifier in format "type/filename" or full path',
+                  description: 'Note identifier in format "type/filename" or full path'
                 },
                 content: {
                   type: 'string',
-                  description: 'New content for the note',
-                },
+                  description: 'New content for the note'
+                }
               },
-              required: ['identifier', 'content'],
-            },
+              required: ['identifier', 'content']
+            }
           },
           {
             name: 'search_notes',
@@ -150,63 +186,64 @@ class JadeNoteServer {
               properties: {
                 query: {
                   type: 'string',
-                  description: 'Search query',
+                  description: 'Search query'
                 },
                 type_filter: {
                   type: 'string',
-                  description: 'Optional filter by note type',
+                  description: 'Optional filter by note type'
                 },
                 limit: {
                   type: 'number',
                   description: 'Maximum number of results to return',
-                  default: 10,
-                },
+                  default: 10
+                }
               },
-              required: ['query'],
-            },
+              required: ['query']
+            }
           },
           {
             name: 'list_note_types',
             description: 'List all available note types',
             inputSchema: {
               type: 'object',
-              properties: {},
-            },
-          },
-        ],
+              properties: {}
+            }
+          }
+        ]
       };
     });
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest) => {
       const { name, arguments: args } = request.params;
 
       try {
         switch (name) {
           case 'create_note_type':
-            return await this.handleCreateNoteType(args);
+            return await this.handleCreateNoteType(args as any);
           case 'create_note':
-            return await this.handleCreateNote(args);
+            return await this.handleCreateNote(args as any);
           case 'get_note':
-            return await this.handleGetNote(args);
+            return await this.handleGetNote(args as any);
           case 'update_note':
-            return await this.handleUpdateNote(args);
+            return await this.handleUpdateNote(args as any);
           case 'search_notes':
-            return await this.handleSearchNotes(args);
+            return await this.handleSearchNotes(args as any);
           case 'list_note_types':
-            return await this.handleListNoteTypes(args);
+            return await this.handleListNoteTypes(args as any);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return {
           content: [
             {
               type: 'text',
-              text: `Error: ${error.message}`,
-            },
+              text: `Error: ${errorMessage}`
+            }
           ],
-          isError: true,
+          isError: true
         };
       }
     });
@@ -219,26 +256,26 @@ class JadeNoteServer {
             uri: 'jade-note://types',
             mimeType: 'application/json',
             name: 'Available note types',
-            description: 'List of all available note types with their descriptions',
+            description: 'List of all available note types with their descriptions'
           },
           {
             uri: 'jade-note://recent',
             mimeType: 'application/json',
             name: 'Recently modified notes',
-            description: 'List of recently modified notes',
+            description: 'List of recently modified notes'
           },
           {
             uri: 'jade-note://stats',
             mimeType: 'application/json',
             name: 'Workspace statistics',
-            description: 'Statistics about the current workspace',
-          },
-        ],
+            description: 'Statistics about the current workspace'
+          }
+        ]
       };
     });
 
     // Handle resource requests
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request: ReadResourceRequest) => {
       const { uri } = request.params;
 
       try {
@@ -253,137 +290,154 @@ class JadeNoteServer {
             throw new Error(`Unknown resource: ${uri}`);
         }
       } catch (error) {
-        throw new Error(`Failed to read resource ${uri}: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to read resource ${uri}: ${errorMessage}`);
       }
     });
   }
 
-  // Tool handlers (placeholder implementations)
-  async handleCreateNoteType(args) {
-    const result = await this.noteTypeManager.createNoteType(
-      args.type_name,
-      args.description,
-      args.template
-    );
+  // Tool handlers
+  private async handleCreateNoteType(args: CreateNoteTypeArgs) {
+    if (!this.noteTypeManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const result = await this.noteTypeManager.createNoteType(args.type_name, args.description, args.template);
     return {
       content: [
         {
           type: 'text',
-          text: `Created note type '${args.type_name}' successfully`,
-        },
-      ],
+          text: `Created note type '${args.type_name}' successfully`
+        }
+      ]
     };
   }
 
-  async handleCreateNote(args) {
-    const result = await this.noteManager.createNote(
-      args.type,
-      args.title,
-      args.content
-    );
+  private async handleCreateNote(args: CreateNoteArgs) {
+    if (!this.noteManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const result = await this.noteManager.createNote(args.type, args.title, args.content);
     return {
       content: [
         {
           type: 'text',
-          text: `Created note '${args.title}' in type '${args.type}'`,
-        },
-      ],
+          text: `Created note '${args.title}' in type '${args.type}'`
+        }
+      ]
     };
   }
 
-  async handleGetNote(args) {
+  private async handleGetNote(args: GetNoteArgs) {
+    if (!this.noteManager) {
+      throw new Error('Server not initialized');
+    }
+
     const note = await this.noteManager.getNote(args.identifier);
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(note, null, 2),
-        },
-      ],
+          text: JSON.stringify(note, null, 2)
+        }
+      ]
     };
   }
 
-  async handleUpdateNote(args) {
+  private async handleUpdateNote(args: UpdateNoteArgs) {
+    if (!this.noteManager) {
+      throw new Error('Server not initialized');
+    }
+
     await this.noteManager.updateNote(args.identifier, args.content);
     return {
       content: [
         {
           type: 'text',
-          text: `Updated note '${args.identifier}' successfully`,
-        },
-      ],
+          text: `Updated note '${args.identifier}' successfully`
+        }
+      ]
     };
   }
 
-  async handleSearchNotes(args) {
-    const results = await this.searchManager.searchNotes(
-      args.query,
-      args.type_filter,
-      args.limit
-    );
+  private async handleSearchNotes(args: SearchNotesArgs) {
+    if (!this.searchManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const results = await this.searchManager.searchNotes(args.query, args.type_filter, args.limit);
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(results, null, 2),
-        },
-      ],
+          text: JSON.stringify(results, null, 2)
+        }
+      ]
     };
   }
 
-  async handleListNoteTypes(args) {
+  private async handleListNoteTypes(args: ListNoteTypesArgs) {
+    if (!this.noteTypeManager) {
+      throw new Error('Server not initialized');
+    }
+
     const types = await this.noteTypeManager.listNoteTypes();
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(types, null, 2),
-        },
-      ],
+          text: JSON.stringify(types, null, 2)
+        }
+      ]
     };
   }
 
-  // Resource handlers (placeholder implementations)
-  async handleTypesResource() {
+  // Resource handlers
+  private async handleTypesResource() {
+    if (!this.noteTypeManager) {
+      throw new Error('Server not initialized');
+    }
+
     const types = await this.noteTypeManager.listNoteTypes();
     return {
       contents: [
         {
           uri: 'jade-note://types',
           mimeType: 'application/json',
-          text: JSON.stringify(types, null, 2),
-        },
-      ],
+          text: JSON.stringify(types, null, 2)
+        }
+      ]
     };
   }
 
-  async handleRecentResource() {
+  private async handleRecentResource() {
     // TODO: Implement recent notes functionality
     return {
       contents: [
         {
           uri: 'jade-note://recent',
           mimeType: 'application/json',
-          text: JSON.stringify([], null, 2),
-        },
-      ],
+          text: JSON.stringify([], null, 2)
+        }
+      ]
     };
   }
 
-  async handleStatsResource() {
+  private async handleStatsResource() {
     // TODO: Implement workspace statistics
     return {
       contents: [
         {
           uri: 'jade-note://stats',
           mimeType: 'application/json',
-          text: JSON.stringify({ note_count: 0, type_count: 0 }, null, 2),
-        },
-      ],
+          text: JSON.stringify({ note_count: 0, type_count: 0 }, null, 2)
+        }
+      ]
     };
   }
 
-  async run() {
+  async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error('jade-note MCP server running on stdio');
@@ -391,7 +445,7 @@ class JadeNoteServer {
 }
 
 // Main execution
-async function main() {
+async function main(): Promise<void> {
   const server = new JadeNoteServer();
   await server.initialize();
   await server.run();
@@ -410,7 +464,7 @@ process.on('SIGTERM', async () => {
 
 // Start the server
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
+  main().catch((error: Error) => {
     console.error('Fatal error:', error);
     process.exit(1);
   });

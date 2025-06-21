@@ -7,16 +7,63 @@
 
 import path from 'path';
 import fs from 'fs/promises';
+import { Workspace } from './workspace.ts';
+
+interface NoteTypeInfo {
+  name: string;
+  path: string;
+  hasTemplate: boolean;
+  created: string;
+}
+
+interface ParsedNoteTypeDescription {
+  purpose: string;
+  agentInstructions: string[];
+  template: string;
+  metadataSchema: string[];
+}
+
+interface NoteTypeDescription {
+  name: string;
+  path: string;
+  description: string;
+  template: string | null;
+  parsed: ParsedNoteTypeDescription;
+  hasTemplate: boolean;
+}
+
+interface NoteTypeListItem {
+  name: string;
+  path: string;
+  purpose: string;
+  hasDescription: boolean;
+  hasTemplate: boolean;
+  noteCount: number;
+  lastModified: string;
+}
+
+interface NoteTypeUpdateRequest {
+  description?: string;
+  template?: string | null;
+}
+
+interface DeleteResult {
+  name: string;
+  deleted: boolean;
+  timestamp: string;
+}
 
 export class NoteTypeManager {
-  constructor(workspace) {
+  private workspace: Workspace;
+
+  constructor(workspace: Workspace) {
     this.workspace = workspace;
   }
 
   /**
    * Create a new note type with description and optional template
    */
-  async createNoteType(name, description, template = null) {
+  async createNoteType(name: string, description: string, template: string | null = null): Promise<NoteTypeInfo> {
     try {
       // Validate note type name
       if (!this.workspace.isValidNoteTypeName(name)) {
@@ -44,14 +91,15 @@ export class NoteTypeManager {
         created: new Date().toISOString()
       };
     } catch (error) {
-      throw new Error(`Failed to create note type '${name}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to create note type '${name}': ${errorMessage}`);
     }
   }
 
   /**
    * Format note type description in the standard format
    */
-  formatNoteTypeDescription(name, description, template = null) {
+  formatNoteTypeDescription(name: string, description: string, template: string | null = null): string {
     const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
     let content = `# ${formattedName}\n\n`;
@@ -79,7 +127,7 @@ export class NoteTypeManager {
   /**
    * Get note type description and metadata
    */
-  async getNoteTypeDescription(typeName) {
+  async getNoteTypeDescription(typeName: string): Promise<NoteTypeDescription> {
     try {
       const typePath = this.workspace.getNoteTypePath(typeName);
       const descriptionPath = path.join(typePath, '.description.md');
@@ -96,7 +144,7 @@ export class NoteTypeManager {
       try {
         description = await fs.readFile(descriptionPath, 'utf-8');
       } catch (error) {
-        if (error.code === 'ENOENT') {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
           description = this.workspace.getDefaultNoteTypeDescription(typeName);
         } else {
           throw error;
@@ -105,7 +153,7 @@ export class NoteTypeManager {
 
       // Check for template file
       const templatePath = path.join(typePath, '.template.md');
-      let template = null;
+      let template: string | null = null;
       try {
         template = await fs.readFile(templatePath, 'utf-8');
       } catch (error) {
@@ -124,15 +172,16 @@ export class NoteTypeManager {
         hasTemplate: !!template
       };
     } catch (error) {
-      throw new Error(`Failed to get note type description for '${typeName}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to get note type description for '${typeName}': ${errorMessage}`);
     }
   }
 
   /**
    * Parse note type description to extract structured information
    */
-  parseNoteTypeDescription(content) {
-    const sections = {
+  parseNoteTypeDescription(content: string): ParsedNoteTypeDescription {
+    const sections: ParsedNoteTypeDescription = {
       purpose: '',
       agentInstructions: [],
       template: '',
@@ -140,8 +189,8 @@ export class NoteTypeManager {
     };
 
     const lines = content.split('\n');
-    let currentSection = null;
-    let sectionContent = [];
+    let currentSection: string | null = null;
+    let sectionContent: string[] = [];
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -186,7 +235,7 @@ export class NoteTypeManager {
   /**
    * Helper to add section content to parsed sections
    */
-  addSectionContent(sections, sectionName, content) {
+  addSectionContent(sections: ParsedNoteTypeDescription, sectionName: string, content: string[]): void {
     const text = content.join('\n').trim();
 
     switch (sectionName) {
@@ -212,18 +261,15 @@ export class NoteTypeManager {
   /**
    * List all available note types
    */
-  async listNoteTypes() {
+  async listNoteTypes(): Promise<NoteTypeListItem[]> {
     try {
       const workspaceRoot = this.workspace.rootPath;
       const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
-      const noteTypes = [];
+      const noteTypes: NoteTypeListItem[] = [];
 
       for (const entry of entries) {
-        if (entry.isDirectory() &&
-            !entry.name.startsWith('.') &&
-            entry.name !== 'node_modules') {
-
+        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
           const typePath = path.join(workspaceRoot, entry.name);
           const descriptionPath = path.join(typePath, '.description.md');
           const templatePath = path.join(typePath, '.template.md');
@@ -247,10 +293,7 @@ export class NoteTypeManager {
               }
 
               hasTemplate = typeEntries.includes('.template.md');
-              noteCount = typeEntries.filter(file =>
-                file.endsWith('.md') && !file.startsWith('.')
-              ).length;
-
+              noteCount = typeEntries.filter(file => file.endsWith('.md') && !file.startsWith('.')).length;
             } catch (error) {
               // Continue with default values if there's an error reading details
             }
@@ -273,14 +316,15 @@ export class NoteTypeManager {
 
       return noteTypes;
     } catch (error) {
-      throw new Error(`Failed to list note types: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to list note types: ${errorMessage}`);
     }
   }
 
   /**
    * Update an existing note type description
    */
-  async updateNoteType(typeName, updates) {
+  async updateNoteType(typeName: string, updates: NoteTypeUpdateRequest): Promise<NoteTypeDescription> {
     try {
       const noteType = await this.getNoteTypeDescription(typeName);
 
@@ -312,14 +356,15 @@ export class NoteTypeManager {
 
       return await this.getNoteTypeDescription(typeName);
     } catch (error) {
-      throw new Error(`Failed to update note type '${typeName}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to update note type '${typeName}': ${errorMessage}`);
     }
   }
 
   /**
    * Delete a note type (only if it has no notes)
    */
-  async deleteNoteType(typeName) {
+  async deleteNoteType(typeName: string): Promise<DeleteResult> {
     try {
       const typePath = this.workspace.getNoteTypePath(typeName);
 
@@ -347,14 +392,15 @@ export class NoteTypeManager {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      throw new Error(`Failed to delete note type '${typeName}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to delete note type '${typeName}': ${errorMessage}`);
     }
   }
 
   /**
    * Get the template for a note type
    */
-  async getNoteTypeTemplate(typeName) {
+  async getNoteTypeTemplate(typeName: string): Promise<string> {
     try {
       const noteType = await this.getNoteTypeDescription(typeName);
 
@@ -370,7 +416,8 @@ export class NoteTypeManager {
       // Return a basic template
       return `# ${typeName.charAt(0).toUpperCase() + typeName.slice(1)} Note\n\n## Content\n\n`;
     } catch (error) {
-      throw new Error(`Failed to get template for note type '${typeName}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to get template for note type '${typeName}': ${errorMessage}`);
     }
   }
 }

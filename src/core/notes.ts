@@ -8,16 +8,85 @@
 import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
+import { Workspace } from './workspace.ts';
+
+interface NoteMetadata {
+  title?: string;
+  type?: string;
+  created?: string;
+  updated?: string;
+  tags?: string[];
+  [key: string]: any;
+}
+
+interface ParsedNote {
+  metadata: NoteMetadata;
+  content: string;
+}
+
+interface NoteInfo {
+  id: string;
+  type: string;
+  title: string;
+  filename: string;
+  path: string;
+  created: string;
+}
+
+interface Note {
+  id: string;
+  type: string;
+  filename: string;
+  path: string;
+  title: string;
+  content: string;
+  metadata: NoteMetadata;
+  rawContent: string;
+  created: string;
+  modified: string;
+  size: number;
+}
+
+interface UpdateResult {
+  id: string;
+  updated: boolean;
+  timestamp: string;
+}
+
+interface DeleteResult {
+  id: string;
+  deleted: boolean;
+  timestamp: string;
+}
+
+interface NoteListItem {
+  id: string;
+  type: string;
+  filename: string;
+  title: string;
+  created: string;
+  modified: string;
+  size: number;
+  tags: string[];
+}
+
+interface ParsedIdentifier {
+  typeName: string;
+  filename: string;
+  notePath: string;
+}
 
 export class NoteManager {
-  constructor(workspace) {
+  private workspace: Workspace;
+
+  constructor(workspace: Workspace) {
     this.workspace = workspace;
   }
 
   /**
    * Create a new note of the specified type
    */
-  async createNote(typeName, title, content) {
+  async createNote(typeName: string, title: string, content: string): Promise<NoteInfo> {
     try {
       // Validate note type exists
       const typePath = this.workspace.getNoteTypePath(typeName);
@@ -36,7 +105,7 @@ export class NoteManager {
         await fs.access(notePath);
         throw new Error(`Note with title '${title}' already exists in type '${typeName}'`);
       } catch (error) {
-        if (error.code !== 'ENOENT') {
+        if (error instanceof Error && 'code' in error && error.code !== 'ENOENT') {
           throw error;
         }
       }
@@ -59,14 +128,15 @@ export class NoteManager {
         created: new Date().toISOString()
       };
     } catch (error) {
-      throw new Error(`Failed to create note '${title}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to create note '${title}': ${errorMessage}`);
     }
   }
 
   /**
    * Generate a filesystem-safe filename from a title
    */
-  generateFilename(title) {
+  generateFilename(title: string): string {
     // Remove or replace problematic characters
     let filename = title
       .toLowerCase()
@@ -91,14 +161,14 @@ export class NoteManager {
   /**
    * Generate a unique note ID
    */
-  generateNoteId(typeName, filename) {
+  generateNoteId(typeName: string, filename: string): string {
     return `${typeName}/${filename}`;
   }
 
   /**
    * Format note content with metadata frontmatter
    */
-  formatNoteContent(title, content, typeName) {
+  formatNoteContent(title: string, content: string, typeName: string): string {
     const timestamp = new Date().toISOString();
 
     let formattedContent = `---\n`;
@@ -117,7 +187,7 @@ export class NoteManager {
   /**
    * Get a specific note by identifier
    */
-  async getNote(identifier) {
+  async getNote(identifier: string): Promise<Note> {
     try {
       const { typeName, filename, notePath } = this.parseNoteIdentifier(identifier);
 
@@ -149,15 +219,17 @@ export class NoteManager {
         size: stats.size
       };
     } catch (error) {
-      throw new Error(`Failed to get note '${identifier}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to get note '${identifier}': ${errorMessage}`);
     }
   }
 
   /**
    * Parse note identifier to extract type, filename, and path
    */
-  parseNoteIdentifier(identifier) {
-    let typeName, filename;
+  parseNoteIdentifier(identifier: string): ParsedIdentifier {
+    let typeName: string;
+    let filename: string;
 
     if (identifier.includes('/')) {
       // Format: "type/filename"
@@ -166,7 +238,8 @@ export class NoteManager {
       filename = parts.slice(1).join('/');
     } else {
       // Just filename, assume default type
-      typeName = this.workspace.getConfig().default_note_type;
+      const config = this.workspace.getConfig();
+      typeName = config?.default_note_type || 'general';
       filename = identifier;
     }
 
@@ -183,7 +256,7 @@ export class NoteManager {
   /**
    * Parse note content to separate frontmatter and body
    */
-  parseNoteContent(content) {
+  parseNoteContent(content: string): ParsedNote {
     const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
     const match = content.match(frontmatterRegex);
 
@@ -210,8 +283,8 @@ export class NoteManager {
   /**
    * Parse YAML frontmatter
    */
-  parseFrontmatter(frontmatter) {
-    const metadata = {};
+  parseFrontmatter(frontmatter: string): NoteMetadata {
+    const metadata: NoteMetadata = {};
     const lines = frontmatter.split('\n');
 
     for (const line of lines) {
@@ -219,17 +292,19 @@ export class NoteManager {
       if (trimmedLine && trimmedLine.includes(':')) {
         const colonIndex = trimmedLine.indexOf(':');
         const key = trimmedLine.substring(0, colonIndex).trim();
-        let value = trimmedLine.substring(colonIndex + 1).trim();
+        let value: any = trimmedLine.substring(colonIndex + 1).trim();
 
         // Handle quoted strings
-        if ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))) {
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
           value = value.slice(1, -1);
         }
 
         // Handle arrays
         if (value.startsWith('[') && value.endsWith(']')) {
-          value = value.slice(1, -1).split(',').map(item => item.trim());
+          value = value
+            .slice(1, -1)
+            .split(',')
+            .map((item: string) => item.trim());
         }
 
         metadata[key] = value;
@@ -242,7 +317,7 @@ export class NoteManager {
   /**
    * Extract title from filename
    */
-  extractTitleFromFilename(filename) {
+  extractTitleFromFilename(filename: string): string {
     return filename
       .replace(/\.md$/, '')
       .replace(/-/g, ' ')
@@ -252,7 +327,7 @@ export class NoteManager {
   /**
    * Update an existing note
    */
-  async updateNote(identifier, newContent) {
+  async updateNote(identifier: string, newContent: string): Promise<UpdateResult> {
     try {
       const { typeName, filename, notePath } = this.parseNoteIdentifier(identifier);
 
@@ -287,14 +362,15 @@ export class NoteManager {
         timestamp: updatedMetadata.updated
       };
     } catch (error) {
-      throw new Error(`Failed to update note '${identifier}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to update note '${identifier}': ${errorMessage}`);
     }
   }
 
   /**
    * Format updated note content with preserved metadata
    */
-  formatUpdatedNoteContent(metadata, newContent) {
+  formatUpdatedNoteContent(metadata: NoteMetadata, newContent: string): string {
     let formattedContent = `---\n`;
 
     for (const [key, value] of Object.entries(metadata)) {
@@ -316,7 +392,7 @@ export class NoteManager {
   /**
    * Delete a note
    */
-  async deleteNote(identifier) {
+  async deleteNote(identifier: string): Promise<DeleteResult> {
     try {
       const { typeName, filename, notePath } = this.parseNoteIdentifier(identifier);
 
@@ -339,17 +415,18 @@ export class NoteManager {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      throw new Error(`Failed to delete note '${identifier}': ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to delete note '${identifier}': ${errorMessage}`);
     }
   }
 
   /**
    * List notes in a specific type
    */
-  async listNotes(typeName = null, limit = null) {
+  async listNotes(typeName?: string, limit?: number): Promise<NoteListItem[]> {
     try {
-      const notes = [];
-      let noteTypes = [];
+      const notes: NoteListItem[] = [];
+      let noteTypes: Array<{ name: string; path: string }> = [];
 
       if (typeName) {
         // List notes from specific type
@@ -366,9 +443,7 @@ export class NoteManager {
         const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
         for (const entry of entries) {
-          if (entry.isDirectory() &&
-              !entry.name.startsWith('.') &&
-              entry.name !== 'node_modules') {
+          if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
             noteTypes.push({
               name: entry.name,
               path: path.join(workspaceRoot, entry.name)
@@ -381,9 +456,7 @@ export class NoteManager {
       for (const noteType of noteTypes) {
         try {
           const typeEntries = await fs.readdir(noteType.path);
-          const noteFiles = typeEntries.filter(file =>
-            file.endsWith('.md') && !file.startsWith('.')
-          );
+          const noteFiles = typeEntries.filter(file => file.endsWith('.md') && !file.startsWith('.'));
 
           for (const filename of noteFiles) {
             const notePath = path.join(noteType.path, filename);
@@ -411,7 +484,7 @@ export class NoteManager {
       }
 
       // Sort by modification date (newest first)
-      notes.sort((a, b) => new Date(b.modified) - new Date(a.modified));
+      notes.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
 
       // Apply limit if specified
       if (limit && limit > 0) {
@@ -420,17 +493,18 @@ export class NoteManager {
 
       return notes;
     } catch (error) {
-      throw new Error(`Failed to list notes: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to list notes: ${errorMessage}`);
     }
   }
 
   /**
    * Update search index for a note
    */
-  async updateSearchIndex(notePath, content) {
+  async updateSearchIndex(notePath: string, content: string): Promise<void> {
     try {
       const indexPath = this.workspace.searchIndexPath;
-      let index = { version: '1.0.0', last_updated: new Date().toISOString(), notes: {} };
+      let index = { version: '1.0.0', last_updated: new Date().toISOString(), notes: {} as Record<string, any> };
 
       // Load existing index
       try {
@@ -463,14 +537,14 @@ export class NoteManager {
       await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
     } catch (error) {
       // Don't fail note operations if search index update fails
-      console.error('Failed to update search index:', error.message);
+      console.error('Failed to update search index:', error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
   /**
    * Remove note from search index
    */
-  async removeFromSearchIndex(notePath) {
+  async removeFromSearchIndex(notePath: string): Promise<void> {
     try {
       const indexPath = this.workspace.searchIndexPath;
 
@@ -486,7 +560,7 @@ export class NoteManager {
       await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
     } catch (error) {
       // Don't fail note operations if search index update fails
-      console.error('Failed to remove from search index:', error.message);
+      console.error('Failed to remove from search index:', error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }

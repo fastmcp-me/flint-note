@@ -7,22 +7,93 @@
 
 import path from 'path';
 import fs from 'fs/promises';
+import { Workspace } from './workspace.ts';
+
+interface SearchIndex {
+  version: string;
+  last_updated: string;
+  notes: Record<string, SearchIndexEntry>;
+}
+
+interface SearchIndexEntry {
+  content: string;
+  title: string;
+  type: string;
+  tags: string[];
+  updated: string;
+}
+
+interface SearchResult {
+  id: string;
+  title: string;
+  type: string;
+  tags: string[];
+  score: number;
+  snippet: string;
+  lastUpdated: string;
+}
+
+interface TagSearchResult {
+  id: string;
+  title: string;
+  type: string;
+  tags: string[];
+  lastUpdated: string;
+}
+
+interface TagInfo {
+  tag: string;
+  count: number;
+}
+
+interface SimilarNoteResult {
+  id: string;
+  title: string;
+  type: string;
+  tags: string[];
+  similarity: number;
+  lastUpdated: string;
+}
+
+interface ParsedNote {
+  metadata: NoteMetadata;
+  content: string;
+}
+
+interface NoteMetadata {
+  title?: string;
+  type?: string;
+  created?: string;
+  updated?: string;
+  tags?: string[];
+  [key: string]: any;
+}
+
+interface RebuildResult {
+  indexedNotes: number;
+  timestamp: string;
+}
 
 export class SearchManager {
-  constructor(workspace) {
+  private workspace: Workspace;
+
+  constructor(workspace: Workspace) {
     this.workspace = workspace;
   }
 
   /**
    * Search notes by content and/or type
    */
-  async searchNotes(query, typeFilter = null, limit = 10) {
+  async searchNotes(query: string, typeFilter: string | null = null, limit: number = 10): Promise<SearchResult[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
-      const results = [];
+      const results: SearchResult[] = [];
 
       // Prepare search terms
-      const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+      const searchTerms = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(term => term.length > 0);
 
       if (searchTerms.length === 0) {
         return [];
@@ -60,20 +131,21 @@ export class SearchManager {
       // Apply limit
       return results.slice(0, limit);
     } catch (error) {
-      throw new Error(`Search failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Search failed: ${errorMessage}`);
     }
   }
 
   /**
    * Load search index from file
    */
-  async loadSearchIndex() {
+  async loadSearchIndex(): Promise<SearchIndex> {
     try {
       const indexPath = this.workspace.searchIndexPath;
       const indexContent = await fs.readFile(indexPath, 'utf-8');
       return JSON.parse(indexContent);
     } catch (error) {
-      if (error.code === 'ENOENT') {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
         // Return empty index if file doesn't exist
         return {
           version: '1.0.0',
@@ -88,7 +160,7 @@ export class SearchManager {
   /**
    * Calculate relevance score for a note based on search terms
    */
-  calculateRelevanceScore(noteData, searchTerms) {
+  calculateRelevanceScore(noteData: SearchIndexEntry, searchTerms: string[]): number {
     let score = 0;
     const content = noteData.content.toLowerCase();
     const title = noteData.title.toLowerCase();
@@ -129,7 +201,7 @@ export class SearchManager {
   /**
    * Count occurrences of a term in text
    */
-  countOccurrences(text, term) {
+  countOccurrences(text: string, term: string): number {
     const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     const matches = text.match(regex);
     return matches ? matches.length : 0;
@@ -138,7 +210,7 @@ export class SearchManager {
   /**
    * Generate a snippet showing search term context
    */
-  generateSnippet(content, searchTerms, maxLength = 200) {
+  generateSnippet(content: string, searchTerms: string[], maxLength: number = 200): string {
     const lowerContent = content.toLowerCase();
     let bestSnippet = '';
     let maxTerms = 0;
@@ -184,7 +256,7 @@ export class SearchManager {
   /**
    * Convert file path to note identifier
    */
-  pathToIdentifier(notePath) {
+  pathToIdentifier(notePath: string): string {
     const relativePath = path.relative(this.workspace.rootPath, notePath);
     const parts = relativePath.split(path.sep);
 
@@ -200,10 +272,10 @@ export class SearchManager {
   /**
    * Search notes by tags
    */
-  async searchByTags(tags, matchAll = false) {
+  async searchByTags(tags: string[], matchAll: boolean = false): Promise<TagSearchResult[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
-      const results = [];
+      const results: TagSearchResult[] = [];
       const searchTags = tags.map(tag => tag.toLowerCase());
 
       for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
@@ -231,21 +303,22 @@ export class SearchManager {
       }
 
       // Sort by last updated (newest first)
-      results.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
+      results.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
 
       return results;
     } catch (error) {
-      throw new Error(`Tag search failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Tag search failed: ${errorMessage}`);
     }
   }
 
   /**
    * Get all unique tags from notes
    */
-  async getAllTags() {
+  async getAllTags(): Promise<TagInfo[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
-      const tagCounts = {};
+      const tagCounts: Record<string, number> = {};
 
       for (const noteData of Object.values(searchIndex.notes)) {
         for (const tag of noteData.tags) {
@@ -260,14 +333,15 @@ export class SearchManager {
 
       return tags;
     } catch (error) {
-      throw new Error(`Failed to get tags: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to get tags: ${errorMessage}`);
     }
   }
 
   /**
    * Search for similar notes based on content similarity
    */
-  async findSimilarNotes(noteIdentifier, limit = 5) {
+  async findSimilarNotes(noteIdentifier: string, limit: number = 5): Promise<SimilarNoteResult[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
       const targetPath = this.identifierToPath(noteIdentifier);
@@ -277,7 +351,7 @@ export class SearchManager {
         throw new Error(`Note '${noteIdentifier}' not found in search index`);
       }
 
-      const results = [];
+      const results: SimilarNoteResult[] = [];
       const targetWords = this.extractWords(targetNote.content);
 
       for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
@@ -289,7 +363,8 @@ export class SearchManager {
         const noteWords = this.extractWords(noteData.content);
         const similarity = this.calculateSimilarity(targetWords, noteWords);
 
-        if (similarity > 0.1) { // Minimum similarity threshold
+        if (similarity > 0.1) {
+          // Minimum similarity threshold
           const identifier = this.pathToIdentifier(notePath);
           results.push({
             id: identifier,
@@ -307,29 +382,33 @@ export class SearchManager {
 
       return results.slice(0, limit);
     } catch (error) {
-      throw new Error(`Similar notes search failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Similar notes search failed: ${errorMessage}`);
     }
   }
 
   /**
    * Extract words from content for similarity calculation
    */
-  extractWords(content) {
+  extractWords(content: string): Record<string, number> {
     return content
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
       .filter(word => word.length > 2)
-      .reduce((acc, word) => {
-        acc[word] = (acc[word] || 0) + 1;
-        return acc;
-      }, {});
+      .reduce(
+        (acc, word) => {
+          acc[word] = (acc[word] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
   }
 
   /**
    * Calculate similarity between two word frequency maps
    */
-  calculateSimilarity(words1, words2) {
+  calculateSimilarity(words1: Record<string, number>, words2: Record<string, number>): number {
     const allWords = new Set([...Object.keys(words1), ...Object.keys(words2)]);
     let dotProduct = 0;
     let norm1 = 0;
@@ -354,14 +433,15 @@ export class SearchManager {
   /**
    * Convert note identifier to file path
    */
-  identifierToPath(identifier) {
+  identifierToPath(identifier: string): string {
     if (identifier.includes('/')) {
       const parts = identifier.split('/');
       const type = parts[0];
       const filename = parts.slice(1).join('/');
       return path.join(this.workspace.rootPath, type, filename);
     } else {
-      const defaultType = this.workspace.getConfig().default_note_type;
+      const config = this.workspace.getConfig();
+      const defaultType = config?.default_note_type || 'general';
       const filename = identifier.endsWith('.md') ? identifier : `${identifier}.md`;
       return path.join(this.workspace.rootPath, defaultType, filename);
     }
@@ -370,9 +450,9 @@ export class SearchManager {
   /**
    * Rebuild the entire search index
    */
-  async rebuildSearchIndex() {
+  async rebuildSearchIndex(): Promise<RebuildResult> {
     try {
-      const index = {
+      const index: SearchIndex = {
         version: '1.0.0',
         last_updated: new Date().toISOString(),
         notes: {}
@@ -383,10 +463,7 @@ export class SearchManager {
       const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
       for (const entry of entries) {
-        if (entry.isDirectory() &&
-            !entry.name.startsWith('.') &&
-            entry.name !== 'node_modules') {
-
+        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
           const typePath = path.join(workspaceRoot, entry.name);
           const typeEntries = await fs.readdir(typePath);
 
@@ -423,14 +500,15 @@ export class SearchManager {
         timestamp: index.last_updated
       };
     } catch (error) {
-      throw new Error(`Failed to rebuild search index: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to rebuild search index: ${errorMessage}`);
     }
   }
 
   /**
    * Parse note content (simplified version)
    */
-  parseNoteContent(content) {
+  parseNoteContent(content: string): ParsedNote {
     const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
     const match = content.match(frontmatterRegex);
 
@@ -447,8 +525,8 @@ export class SearchManager {
   /**
    * Parse YAML frontmatter (simplified)
    */
-  parseFrontmatter(frontmatter) {
-    const metadata = {};
+  parseFrontmatter(frontmatter: string): NoteMetadata {
+    const metadata: NoteMetadata = {};
     const lines = frontmatter.split('\n');
 
     for (const line of lines) {
@@ -456,15 +534,17 @@ export class SearchManager {
       if (trimmedLine && trimmedLine.includes(':')) {
         const colonIndex = trimmedLine.indexOf(':');
         const key = trimmedLine.substring(0, colonIndex).trim();
-        let value = trimmedLine.substring(colonIndex + 1).trim();
+        let value: any = trimmedLine.substring(colonIndex + 1).trim();
 
-        if ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))) {
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
           value = value.slice(1, -1);
         }
 
         if (value.startsWith('[') && value.endsWith(']')) {
-          value = value.slice(1, -1).split(',').map(item => item.trim());
+          value = value
+            .slice(1, -1)
+            .split(',')
+            .map((item: string) => item.trim());
         }
 
         metadata[key] = value;
@@ -477,7 +557,7 @@ export class SearchManager {
   /**
    * Extract title from filename
    */
-  extractTitleFromFilename(filename) {
+  extractTitleFromFilename(filename: string): string {
     return filename
       .replace(/\.md$/, '')
       .replace(/-/g, ' ')
