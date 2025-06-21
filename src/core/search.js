@@ -1,0 +1,486 @@
+/**
+ * Search Manager
+ *
+ * Handles search operations across notes, including text search,
+ * filtering by type, and maintaining search indices.
+ */
+
+import path from 'path';
+import fs from 'fs/promises';
+
+export class SearchManager {
+  constructor(workspace) {
+    this.workspace = workspace;
+  }
+
+  /**
+   * Search notes by content and/or type
+   */
+  async searchNotes(query, typeFilter = null, limit = 10) {
+    try {
+      const searchIndex = await this.loadSearchIndex();
+      const results = [];
+
+      // Prepare search terms
+      const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+
+      if (searchTerms.length === 0) {
+        return [];
+      }
+
+      // Search through indexed notes
+      for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
+        // Apply type filter if specified
+        if (typeFilter && noteData.type !== typeFilter) {
+          continue;
+        }
+
+        // Calculate relevance score
+        const score = this.calculateRelevanceScore(noteData, searchTerms);
+
+        if (score > 0) {
+          // Parse note path to get identifier
+          const identifier = this.pathToIdentifier(notePath);
+
+          results.push({
+            id: identifier,
+            title: noteData.title,
+            type: noteData.type,
+            tags: noteData.tags,
+            score,
+            snippet: this.generateSnippet(noteData.content, searchTerms),
+            lastUpdated: noteData.updated
+          });
+        }
+      }
+
+      // Sort by relevance score (highest first)
+      results.sort((a, b) => b.score - a.score);
+
+      // Apply limit
+      return results.slice(0, limit);
+    } catch (error) {
+      throw new Error(`Search failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Load search index from file
+   */
+  async loadSearchIndex() {
+    try {
+      const indexPath = this.workspace.searchIndexPath;
+      const indexContent = await fs.readFile(indexPath, 'utf-8');
+      return JSON.parse(indexContent);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        // Return empty index if file doesn't exist
+        return {
+          version: '1.0.0',
+          last_updated: new Date().toISOString(),
+          notes: {}
+        };
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate relevance score for a note based on search terms
+   */
+  calculateRelevanceScore(noteData, searchTerms) {
+    let score = 0;
+    const content = noteData.content.toLowerCase();
+    const title = noteData.title.toLowerCase();
+    const tags = noteData.tags.map(tag => tag.toLowerCase());
+
+    for (const term of searchTerms) {
+      // Title matches are weighted more heavily
+      const titleMatches = this.countOccurrences(title, term);
+      score += titleMatches * 10;
+
+      // Tag matches are also weighted heavily
+      for (const tag of tags) {
+        if (tag.includes(term)) {
+          score += 8;
+        }
+      }
+
+      // Content matches
+      const contentMatches = this.countOccurrences(content, term);
+      score += contentMatches * 2;
+
+      // Exact word matches get bonus points
+      const titleWords = title.split(/\s+/);
+      const contentWords = content.split(/\s+/);
+
+      if (titleWords.includes(term)) {
+        score += 15;
+      }
+
+      if (contentWords.includes(term)) {
+        score += 3;
+      }
+    }
+
+    return score;
+  }
+
+  /**
+   * Count occurrences of a term in text
+   */
+  countOccurrences(text, term) {
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const matches = text.match(regex);
+    return matches ? matches.length : 0;
+  }
+
+  /**
+   * Generate a snippet showing search term context
+   */
+  generateSnippet(content, searchTerms, maxLength = 200) {
+    const lowerContent = content.toLowerCase();
+    let bestSnippet = '';
+    let maxTerms = 0;
+
+    // Find the position with the most search terms
+    for (let i = 0; i < content.length - maxLength; i += 50) {
+      const snippet = content.substring(i, i + maxLength);
+      const lowerSnippet = snippet.toLowerCase();
+
+      let termCount = 0;
+      for (const term of searchTerms) {
+        if (lowerSnippet.includes(term)) {
+          termCount++;
+        }
+      }
+
+      if (termCount > maxTerms) {
+        maxTerms = termCount;
+        bestSnippet = snippet;
+      }
+    }
+
+    // If no good snippet found, use the beginning
+    if (!bestSnippet) {
+      bestSnippet = content.substring(0, maxLength);
+    }
+
+    // Clean up the snippet
+    bestSnippet = bestSnippet.trim();
+    if (bestSnippet.length === maxLength) {
+      bestSnippet += '...';
+    }
+
+    // Highlight search terms
+    for (const term of searchTerms) {
+      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      bestSnippet = bestSnippet.replace(regex, '**$1**');
+    }
+
+    return bestSnippet;
+  }
+
+  /**
+   * Convert file path to note identifier
+   */
+  pathToIdentifier(notePath) {
+    const relativePath = path.relative(this.workspace.rootPath, notePath);
+    const parts = relativePath.split(path.sep);
+
+    if (parts.length >= 2) {
+      const type = parts[0];
+      const filename = parts[parts.length - 1];
+      return `${type}/${filename}`;
+    }
+
+    return relativePath;
+  }
+
+  /**
+   * Search notes by tags
+   */
+  async searchByTags(tags, matchAll = false) {
+    try {
+      const searchIndex = await this.loadSearchIndex();
+      const results = [];
+      const searchTags = tags.map(tag => tag.toLowerCase());
+
+      for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
+        const noteTags = noteData.tags.map(tag => tag.toLowerCase());
+
+        let matches = false;
+        if (matchAll) {
+          // All tags must be present
+          matches = searchTags.every(tag => noteTags.includes(tag));
+        } else {
+          // At least one tag must be present
+          matches = searchTags.some(tag => noteTags.includes(tag));
+        }
+
+        if (matches) {
+          const identifier = this.pathToIdentifier(notePath);
+          results.push({
+            id: identifier,
+            title: noteData.title,
+            type: noteData.type,
+            tags: noteData.tags,
+            lastUpdated: noteData.updated
+          });
+        }
+      }
+
+      // Sort by last updated (newest first)
+      results.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
+
+      return results;
+    } catch (error) {
+      throw new Error(`Tag search failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all unique tags from notes
+   */
+  async getAllTags() {
+    try {
+      const searchIndex = await this.loadSearchIndex();
+      const tagCounts = {};
+
+      for (const noteData of Object.values(searchIndex.notes)) {
+        for (const tag of noteData.tags) {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        }
+      }
+
+      // Convert to array and sort by frequency
+      const tags = Object.entries(tagCounts)
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count);
+
+      return tags;
+    } catch (error) {
+      throw new Error(`Failed to get tags: ${error.message}`);
+    }
+  }
+
+  /**
+   * Search for similar notes based on content similarity
+   */
+  async findSimilarNotes(noteIdentifier, limit = 5) {
+    try {
+      const searchIndex = await this.loadSearchIndex();
+      const targetPath = this.identifierToPath(noteIdentifier);
+      const targetNote = searchIndex.notes[targetPath];
+
+      if (!targetNote) {
+        throw new Error(`Note '${noteIdentifier}' not found in search index`);
+      }
+
+      const results = [];
+      const targetWords = this.extractWords(targetNote.content);
+
+      for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
+        // Skip the target note itself
+        if (notePath === targetPath) {
+          continue;
+        }
+
+        const noteWords = this.extractWords(noteData.content);
+        const similarity = this.calculateSimilarity(targetWords, noteWords);
+
+        if (similarity > 0.1) { // Minimum similarity threshold
+          const identifier = this.pathToIdentifier(notePath);
+          results.push({
+            id: identifier,
+            title: noteData.title,
+            type: noteData.type,
+            tags: noteData.tags,
+            similarity,
+            lastUpdated: noteData.updated
+          });
+        }
+      }
+
+      // Sort by similarity (highest first)
+      results.sort((a, b) => b.similarity - a.similarity);
+
+      return results.slice(0, limit);
+    } catch (error) {
+      throw new Error(`Similar notes search failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Extract words from content for similarity calculation
+   */
+  extractWords(content) {
+    return content
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2)
+      .reduce((acc, word) => {
+        acc[word] = (acc[word] || 0) + 1;
+        return acc;
+      }, {});
+  }
+
+  /**
+   * Calculate similarity between two word frequency maps
+   */
+  calculateSimilarity(words1, words2) {
+    const allWords = new Set([...Object.keys(words1), ...Object.keys(words2)]);
+    let dotProduct = 0;
+    let norm1 = 0;
+    let norm2 = 0;
+
+    for (const word of allWords) {
+      const freq1 = words1[word] || 0;
+      const freq2 = words2[word] || 0;
+
+      dotProduct += freq1 * freq2;
+      norm1 += freq1 * freq1;
+      norm2 += freq2 * freq2;
+    }
+
+    if (norm1 === 0 || norm2 === 0) {
+      return 0;
+    }
+
+    return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+  }
+
+  /**
+   * Convert note identifier to file path
+   */
+  identifierToPath(identifier) {
+    if (identifier.includes('/')) {
+      const parts = identifier.split('/');
+      const type = parts[0];
+      const filename = parts.slice(1).join('/');
+      return path.join(this.workspace.rootPath, type, filename);
+    } else {
+      const defaultType = this.workspace.getConfig().default_note_type;
+      const filename = identifier.endsWith('.md') ? identifier : `${identifier}.md`;
+      return path.join(this.workspace.rootPath, defaultType, filename);
+    }
+  }
+
+  /**
+   * Rebuild the entire search index
+   */
+  async rebuildSearchIndex() {
+    try {
+      const index = {
+        version: '1.0.0',
+        last_updated: new Date().toISOString(),
+        notes: {}
+      };
+
+      // Scan all note types
+      const workspaceRoot = this.workspace.rootPath;
+      const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
+
+      for (const entry of entries) {
+        if (entry.isDirectory() &&
+            !entry.name.startsWith('.') &&
+            entry.name !== 'node_modules') {
+
+          const typePath = path.join(workspaceRoot, entry.name);
+          const typeEntries = await fs.readdir(typePath);
+
+          for (const filename of typeEntries) {
+            if (filename.endsWith('.md') && !filename.startsWith('.')) {
+              const notePath = path.join(typePath, filename);
+
+              try {
+                const content = await fs.readFile(notePath, 'utf-8');
+                const parsed = this.parseNoteContent(content);
+
+                index.notes[notePath] = {
+                  content: content,
+                  title: parsed.metadata.title || this.extractTitleFromFilename(filename),
+                  type: parsed.metadata.type || entry.name,
+                  tags: parsed.metadata.tags || [],
+                  updated: new Date().toISOString()
+                };
+              } catch (error) {
+                // Skip files that can't be read
+                continue;
+              }
+            }
+          }
+        }
+      }
+
+      // Save the rebuilt index
+      const indexPath = this.workspace.searchIndexPath;
+      await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+
+      return {
+        indexedNotes: Object.keys(index.notes).length,
+        timestamp: index.last_updated
+      };
+    } catch (error) {
+      throw new Error(`Failed to rebuild search index: ${error.message}`);
+    }
+  }
+
+  /**
+   * Parse note content (simplified version)
+   */
+  parseNoteContent(content) {
+    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+    const match = content.match(frontmatterRegex);
+
+    if (match) {
+      const frontmatter = match[1];
+      const body = match[2];
+      const metadata = this.parseFrontmatter(frontmatter);
+      return { metadata, content: body.trim() };
+    } else {
+      return { metadata: {}, content: content.trim() };
+    }
+  }
+
+  /**
+   * Parse YAML frontmatter (simplified)
+   */
+  parseFrontmatter(frontmatter) {
+    const metadata = {};
+    const lines = frontmatter.split('\n');
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine && trimmedLine.includes(':')) {
+        const colonIndex = trimmedLine.indexOf(':');
+        const key = trimmedLine.substring(0, colonIndex).trim();
+        let value = trimmedLine.substring(colonIndex + 1).trim();
+
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+
+        if (value.startsWith('[') && value.endsWith(']')) {
+          value = value.slice(1, -1).split(',').map(item => item.trim());
+        }
+
+        metadata[key] = value;
+      }
+    }
+
+    return metadata;
+  }
+
+  /**
+   * Extract title from filename
+   */
+  extractTitleFromFilename(filename) {
+    return filename
+      .replace(/\.md$/, '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, letter => letter.toUpperCase());
+  }
+}
