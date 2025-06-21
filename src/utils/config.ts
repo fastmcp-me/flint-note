@@ -142,7 +142,11 @@ export class ConfigManager {
     }
 
     // Validate required fields
-    const requiredFields: (keyof WorkspaceConfig)[] = ['version', 'workspace_root', 'default_note_type'];
+    const requiredFields: (keyof WorkspaceConfig)[] = [
+      'version',
+      'workspace_root',
+      'default_note_type'
+    ];
     for (const field of requiredFields) {
       if (!this.config[field]) {
         throw new Error(`Missing required configuration field: ${field}`);
@@ -156,12 +160,18 @@ export class ConfigManager {
 
     // Validate MCP server configuration
     if (this.config.mcp_server) {
-      if (this.config.mcp_server.port && (this.config.mcp_server.port < 1 || this.config.mcp_server.port > 65535)) {
+      if (
+        this.config.mcp_server.port &&
+        (this.config.mcp_server.port < 1 || this.config.mcp_server.port > 65535)
+      ) {
         throw new Error('MCP server port must be between 1 and 65535');
       }
 
       const validLogLevels = ['debug', 'info', 'warn', 'error'];
-      if (this.config.mcp_server.log_level && !validLogLevels.includes(this.config.mcp_server.log_level)) {
+      if (
+        this.config.mcp_server.log_level &&
+        !validLogLevels.includes(this.config.mcp_server.log_level)
+      ) {
         throw new Error(`Invalid log level: ${this.config.mcp_server.log_level}`);
       }
     }
@@ -170,7 +180,8 @@ export class ConfigManager {
     if (this.config.security) {
       if (
         this.config.security.max_file_size &&
-        (this.config.security.max_file_size < 1024 || this.config.security.max_file_size > 104857600)
+        (this.config.security.max_file_size < 1024 ||
+          this.config.security.max_file_size > 104857600)
       ) {
         throw new Error('Max file size must be between 1KB and 100MB');
       }
@@ -340,7 +351,10 @@ export async function loadConfig(workspaceRoot: string): Promise<WorkspaceConfig
 /**
  * Helper function to save configuration
  */
-export async function saveConfig(workspaceRoot: string, config: WorkspaceConfig): Promise<void> {
+export async function saveConfig(
+  workspaceRoot: string,
+  config: WorkspaceConfig
+): Promise<void> {
   const configManager = new ConfigManager(workspaceRoot);
   configManager.config = config;
   configManager.validateConfig();

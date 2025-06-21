@@ -222,7 +222,11 @@ Expected frontmatter fields:
           last_updated: new Date().toISOString(),
           notes: {}
         };
-        await fs.writeFile(this.searchIndexPath, JSON.stringify(emptyIndex, null, 2), 'utf-8');
+        await fs.writeFile(
+          this.searchIndexPath,
+          JSON.stringify(emptyIndex, null, 2),
+          'utf-8'
+        );
       }
     }
   }
@@ -302,14 +306,19 @@ Expected frontmatter fields:
     try {
       const entries = await fs.readdir(this.rootPath, { withFileTypes: true });
       const noteTypes = entries.filter(
-        entry => entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules'
+        entry =>
+          entry.isDirectory() &&
+          !entry.name.startsWith('.') &&
+          entry.name !== 'node_modules'
       );
 
       let totalNotes = 0;
       for (const noteType of noteTypes) {
         const typePath = path.join(this.rootPath, noteType.name);
         const typeEntries = await fs.readdir(typePath);
-        const notes = typeEntries.filter(file => file.endsWith('.md') && !file.startsWith('.'));
+        const notes = typeEntries.filter(
+          file => file.endsWith('.md') && !file.startsWith('.')
+        );
         totalNotes += notes.length;
       }
 

@@ -63,7 +63,11 @@ export class NoteTypeManager {
   /**
    * Create a new note type with description and optional template
    */
-  async createNoteType(name: string, description: string, template: string | null = null): Promise<NoteTypeInfo> {
+  async createNoteType(
+    name: string,
+    description: string,
+    template: string | null = null
+  ): Promise<NoteTypeInfo> {
     try {
       // Validate note type name
       if (!this.workspace.isValidNoteTypeName(name)) {
@@ -75,7 +79,11 @@ export class NoteTypeManager {
 
       // Create the description file
       const descriptionPath = path.join(typePath, '.description.md');
-      const descriptionContent = this.formatNoteTypeDescription(name, description, template);
+      const descriptionContent = this.formatNoteTypeDescription(
+        name,
+        description,
+        template
+      );
       await fs.writeFile(descriptionPath, descriptionContent, 'utf-8');
 
       // Create template file if provided
@@ -99,7 +107,11 @@ export class NoteTypeManager {
   /**
    * Format note type description in the standard format
    */
-  formatNoteTypeDescription(name: string, description: string, template: string | null = null): string {
+  formatNoteTypeDescription(
+    name: string,
+    description: string,
+    template: string | null = null
+  ): string {
     const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
     let content = `# ${formattedName}\n\n`;
@@ -173,7 +185,9 @@ export class NoteTypeManager {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to get note type description for '${typeName}': ${errorMessage}`);
+      throw new Error(
+        `Failed to get note type description for '${typeName}': ${errorMessage}`
+      );
     }
   }
 
@@ -235,7 +249,11 @@ export class NoteTypeManager {
   /**
    * Helper to add section content to parsed sections
    */
-  addSectionContent(sections: ParsedNoteTypeDescription, sectionName: string, content: string[]): void {
+  addSectionContent(
+    sections: ParsedNoteTypeDescription,
+    sectionName: string,
+    content: string[]
+  ): void {
     const text = content.join('\n').trim();
 
     switch (sectionName) {
@@ -269,13 +287,19 @@ export class NoteTypeManager {
       const noteTypes: NoteTypeListItem[] = [];
 
       for (const entry of entries) {
-        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+        if (
+          entry.isDirectory() &&
+          !entry.name.startsWith('.') &&
+          entry.name !== 'node_modules'
+        ) {
           const typePath = path.join(workspaceRoot, entry.name);
           const descriptionPath = path.join(typePath, '.description.md');
 
           // Check if this is a valid note type (has notes or description)
           const typeEntries = await fs.readdir(typePath);
-          const hasNotes = typeEntries.some(file => file.endsWith('.md') && !file.startsWith('.'));
+          const hasNotes = typeEntries.some(
+            file => file.endsWith('.md') && !file.startsWith('.')
+          );
           const hasDescription = typeEntries.includes('.description.md');
 
           if (hasNotes || hasDescription) {
@@ -292,7 +316,9 @@ export class NoteTypeManager {
               }
 
               hasTemplate = typeEntries.includes('.template.md');
-              noteCount = typeEntries.filter(file => file.endsWith('.md') && !file.startsWith('.')).length;
+              noteCount = typeEntries.filter(
+                file => file.endsWith('.md') && !file.startsWith('.')
+              ).length;
             } catch {
               // Continue with default values if there's an error reading details
             }
@@ -323,7 +349,10 @@ export class NoteTypeManager {
   /**
    * Update an existing note type description
    */
-  async updateNoteType(typeName: string, updates: NoteTypeUpdateRequest): Promise<NoteTypeDescription> {
+  async updateNoteType(
+    typeName: string,
+    updates: NoteTypeUpdateRequest
+  ): Promise<NoteTypeDescription> {
     try {
       const noteType = await this.getNoteTypeDescription(typeName);
 
@@ -379,7 +408,9 @@ export class NoteTypeManager {
       const notes = entries.filter(file => file.endsWith('.md') && !file.startsWith('.'));
 
       if (notes.length > 0) {
-        throw new Error(`Cannot delete note type '${typeName}': contains ${notes.length} notes`);
+        throw new Error(
+          `Cannot delete note type '${typeName}': contains ${notes.length} notes`
+        );
       }
 
       // Remove the directory and all its contents
@@ -416,7 +447,9 @@ export class NoteTypeManager {
       return `# ${typeName.charAt(0).toUpperCase() + typeName.slice(1)} Note\n\n## Content\n\n`;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to get template for note type '${typeName}': ${errorMessage}`);
+      throw new Error(
+        `Failed to get template for note type '${typeName}': ${errorMessage}`
+      );
     }
   }
 }

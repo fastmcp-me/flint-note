@@ -102,7 +102,9 @@ export class NoteManager {
       // Check if note already exists
       try {
         await fs.access(notePath);
-        throw new Error(`Note with title '${title}' already exists in type '${typeName}'`);
+        throw new Error(
+          `Note with title '${title}' already exists in type '${typeName}'`
+        );
       } catch (error) {
         if (error instanceof Error && 'code' in error && error.code !== 'ENOENT') {
           throw error;
@@ -294,7 +296,10 @@ export class NoteManager {
         let value: any = trimmedLine.substring(colonIndex + 1).trim();
 
         // Handle quoted strings
-        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
           value = value.slice(1, -1);
         }
 
@@ -328,7 +333,11 @@ export class NoteManager {
    */
   async updateNote(identifier: string, newContent: string): Promise<UpdateResult> {
     try {
-      const { typeName: _typeName, filename: _filename, notePath } = this.parseNoteIdentifier(identifier);
+      const {
+        typeName: _typeName,
+        filename: _filename,
+        notePath
+      } = this.parseNoteIdentifier(identifier);
 
       // Check if note exists
       try {
@@ -393,7 +402,11 @@ export class NoteManager {
    */
   async deleteNote(identifier: string): Promise<DeleteResult> {
     try {
-      const { typeName: _typeName, filename: _filename, notePath } = this.parseNoteIdentifier(identifier);
+      const {
+        typeName: _typeName,
+        filename: _filename,
+        notePath
+      } = this.parseNoteIdentifier(identifier);
 
       // Check if note exists
       try {
@@ -442,7 +455,11 @@ export class NoteManager {
         const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
         for (const entry of entries) {
-          if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+          if (
+            entry.isDirectory() &&
+            !entry.name.startsWith('.') &&
+            entry.name !== 'node_modules'
+          ) {
             noteTypes.push({
               name: entry.name,
               path: path.join(workspaceRoot, entry.name)
@@ -455,7 +472,9 @@ export class NoteManager {
       for (const noteType of noteTypes) {
         try {
           const typeEntries = await fs.readdir(noteType.path);
-          const noteFiles = typeEntries.filter(file => file.endsWith('.md') && !file.startsWith('.'));
+          const noteFiles = typeEntries.filter(
+            file => file.endsWith('.md') && !file.startsWith('.')
+          );
 
           for (const filename of noteFiles) {
             const notePath = path.join(noteType.path, filename);
@@ -483,7 +502,9 @@ export class NoteManager {
       }
 
       // Sort by modification date (newest first)
-      notes.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+      notes.sort(
+        (a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime()
+      );
 
       // Apply limit if specified
       if (limit && limit > 0) {
@@ -503,7 +524,11 @@ export class NoteManager {
   async updateSearchIndex(notePath: string, content: string): Promise<void> {
     try {
       const indexPath = this.#workspace.searchIndexPath;
-      let index = { version: '1.0.0', last_updated: new Date().toISOString(), notes: {} as Record<string, any> };
+      let index = {
+        version: '1.0.0',
+        last_updated: new Date().toISOString(),
+        notes: {} as Record<string, any>
+      };
 
       // Load existing index
       try {
@@ -536,7 +561,10 @@ export class NoteManager {
       await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
     } catch (error) {
       // Don't fail note operations if search index update fails
-      console.error('Failed to update search index:', error instanceof Error ? error.message : 'Unknown error');
+      console.error(
+        'Failed to update search index:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
@@ -559,7 +587,10 @@ export class NoteManager {
       await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
     } catch (error) {
       // Don't fail note operations if search index update fails
-      console.error('Failed to remove from search index:', error instanceof Error ? error.message : 'Unknown error');
+      console.error(
+        'Failed to remove from search index:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 }

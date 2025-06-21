@@ -84,7 +84,11 @@ export class SearchManager {
   /**
    * Search notes by content and/or type
    */
-  async searchNotes(query: string, typeFilter: string | null = null, limit: number = 10): Promise<SearchResult[]> {
+  async searchNotes(
+    query: string,
+    typeFilter: string | null = null,
+    limit: number = 10
+  ): Promise<SearchResult[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
       const results: SearchResult[] = [];
@@ -210,7 +214,11 @@ export class SearchManager {
   /**
    * Generate a snippet showing search term context
    */
-  generateSnippet(content: string, searchTerms: string[], maxLength: number = 200): string {
+  generateSnippet(
+    content: string,
+    searchTerms: string[],
+    maxLength: number = 200
+  ): string {
     let bestSnippet = '';
     let maxTerms = 0;
 
@@ -271,7 +279,10 @@ export class SearchManager {
   /**
    * Search notes by tags
    */
-  async searchByTags(tags: string[], matchAll: boolean = false): Promise<TagSearchResult[]> {
+  async searchByTags(
+    tags: string[],
+    matchAll: boolean = false
+  ): Promise<TagSearchResult[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
       const results: TagSearchResult[] = [];
@@ -302,7 +313,9 @@ export class SearchManager {
       }
 
       // Sort by last updated (newest first)
-      results.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+      results.sort(
+        (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+      );
 
       return results;
     } catch (error) {
@@ -340,7 +353,10 @@ export class SearchManager {
   /**
    * Search for similar notes based on content similarity
    */
-  async findSimilarNotes(noteIdentifier: string, limit: number = 5): Promise<SimilarNoteResult[]> {
+  async findSimilarNotes(
+    noteIdentifier: string,
+    limit: number = 5
+  ): Promise<SimilarNoteResult[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
       const targetPath = this.identifierToPath(noteIdentifier);
@@ -407,7 +423,10 @@ export class SearchManager {
   /**
    * Calculate similarity between two word frequency maps
    */
-  calculateSimilarity(words1: Record<string, number>, words2: Record<string, number>): number {
+  calculateSimilarity(
+    words1: Record<string, number>,
+    words2: Record<string, number>
+  ): number {
     const allWords = new Set([...Object.keys(words1), ...Object.keys(words2)]);
     let dotProduct = 0;
     let norm1 = 0;
@@ -462,7 +481,11 @@ export class SearchManager {
       const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
       for (const entry of entries) {
-        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+        if (
+          entry.isDirectory() &&
+          !entry.name.startsWith('.') &&
+          entry.name !== 'node_modules'
+        ) {
           const typePath = path.join(workspaceRoot, entry.name);
           const typeEntries = await fs.readdir(typePath);
 
@@ -535,7 +558,10 @@ export class SearchManager {
         const key = trimmedLine.substring(0, colonIndex).trim();
         let value: any = trimmedLine.substring(colonIndex + 1).trim();
 
-        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
           value = value.slice(1, -1);
         }
 
