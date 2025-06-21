@@ -261,7 +261,8 @@ export class ConfigManager {
       current = current[key];
     }
 
-    current[keys[keys.length - 1]] = value;
+    const lastKey = keys[keys.length - 1];
+    current[lastKey] = value;
   }
 
   /**

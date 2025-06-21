@@ -40,7 +40,7 @@ describe('Note Creation', () => {
     // Clean up test workspace
     try {
       await fs.rm(testWorkspaceRoot, { recursive: true, force: true });
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   });
@@ -79,7 +79,7 @@ describe('Note Creation', () => {
       const title = 'Test Note';
       const content = 'This is test content.';
 
-      const result = await noteManager.createNote('general', title, content);
+      await noteManager.createNote('general', title, content);
 
       // Read the created file
       const filePath = path.join(testWorkspaceRoot, 'general', 'test-note.md');
@@ -322,8 +322,12 @@ const code = 'block';
       assert.ok(Object.keys(index.notes).length > 0);
 
       // Find our note in the index
-      const noteEntries = Object.values(index.notes) as any[];
-      const ourNote = noteEntries.find((entry: any) => entry.title === title);
+      const noteEntries = Object.values(index.notes) as Array<{
+        title: string;
+        content: string;
+        type: string;
+      }>;
+      const ourNote = noteEntries.find(entry => entry.title === title);
 
       assert.ok(ourNote);
       assert.ok(ourNote.content.includes('This note should be indexed'));

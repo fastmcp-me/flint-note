@@ -66,7 +66,7 @@ interface NoteMetadata {
   created?: string;
   updated?: string;
   tags?: string[];
-  [key: string]: any;
+  [key: string]: string | string[] | undefined;
 }
 
 interface RebuildResult {
@@ -556,7 +556,7 @@ export class SearchManager {
       if (trimmedLine && trimmedLine.includes(':')) {
         const colonIndex = trimmedLine.indexOf(':');
         const key = trimmedLine.substring(0, colonIndex).trim();
-        let value: any = trimmedLine.substring(colonIndex + 1).trim();
+        let value: string | string[] = trimmedLine.substring(colonIndex + 1).trim();
 
         if (
           (value.startsWith('"') && value.endsWith('"')) ||

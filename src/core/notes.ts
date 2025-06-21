@@ -15,7 +15,7 @@ interface NoteMetadata {
   created?: string;
   updated?: string;
   tags?: string[];
-  [key: string]: any;
+  [key: string]: string | string[] | undefined;
 }
 
 interface ParsedNote {
@@ -298,7 +298,7 @@ export class NoteManager {
       if (trimmedLine && trimmedLine.includes(':')) {
         const colonIndex = trimmedLine.indexOf(':');
         const key = trimmedLine.substring(0, colonIndex).trim();
-        let value: any = trimmedLine.substring(colonIndex + 1).trim();
+        let value: string | string[] = trimmedLine.substring(colonIndex + 1).trim();
 
         // Handle quoted strings
         if (
@@ -532,7 +532,16 @@ export class NoteManager {
       let index = {
         version: '1.0.0',
         last_updated: new Date().toISOString(),
-        notes: {} as Record<string, any>
+        notes: {} as Record<
+          string,
+          {
+            content: string;
+            title: string;
+            type: string;
+            tags: string[];
+            updated: string;
+          }
+        >
       };
 
       // Load existing index

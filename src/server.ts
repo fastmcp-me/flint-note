@@ -217,17 +217,19 @@ class JadeNoteServer {
       try {
         switch (name) {
           case 'create_note_type':
-            return await this.#handleCreateNoteType(args as any);
+            return await this.#handleCreateNoteType(
+              args as unknown as CreateNoteTypeArgs
+            );
           case 'create_note':
-            return await this.#handleCreateNote(args as any);
+            return await this.#handleCreateNote(args as unknown as CreateNoteArgs);
           case 'get_note':
-            return await this.#handleGetNote(args as any);
+            return await this.#handleGetNote(args as unknown as GetNoteArgs);
           case 'update_note':
-            return await this.#handleUpdateNote(args as any);
+            return await this.#handleUpdateNote(args as unknown as UpdateNoteArgs);
           case 'search_notes':
-            return await this.#handleSearchNotes(args as any);
+            return await this.#handleSearchNotes(args as unknown as SearchNotesArgs);
           case 'list_note_types':
-            return await this.#handleListNoteTypes(args as any);
+            return await this.#handleListNoteTypes(args as unknown as ListNoteTypesArgs);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -299,7 +301,11 @@ class JadeNoteServer {
       throw new Error('Server not initialized');
     }
 
-    await this.#noteTypeManager.createNoteType(args.type_name, args.description, args.template);
+    await this.#noteTypeManager.createNoteType(
+      args.type_name,
+      args.description,
+      args.template
+    );
     return {
       content: [
         {
@@ -363,7 +369,11 @@ class JadeNoteServer {
       throw new Error('Server not initialized');
     }
 
-    const results = await this.#searchManager.searchNotes(args.query, args.type_filter, args.limit);
+    const results = await this.#searchManager.searchNotes(
+      args.query,
+      args.type_filter,
+      args.limit
+    );
     return {
       content: [
         {
