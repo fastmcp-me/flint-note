@@ -18,7 +18,10 @@ export default [
         process: 'readonly',
         Buffer: 'readonly',
         __dirname: 'readonly',
-        __filename: 'readonly'
+        __filename: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        NodeJS: 'readonly'
       }
     },
     plugins: {

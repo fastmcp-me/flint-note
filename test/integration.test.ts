@@ -16,24 +16,24 @@ interface MCPRequest {
   jsonrpc: '2.0';
   id: number | string;
   method: string;
-  params?: any;
+  params?: unknown;
 }
 
 interface MCPResponse {
   jsonrpc: '2.0';
   id: number | string;
-  result?: any;
+  result?: unknown;
   error?: {
     code: number;
     message: string;
-    data?: any;
+    data?: unknown;
   };
 }
 
 interface MCPNotification {
   jsonrpc: '2.0';
   method: string;
-  params?: any;
+  params?: unknown;
 }
 
 class MCPClient {
@@ -96,7 +96,8 @@ class MCPClient {
     // Notifications would be handled here if needed
   }
 
-  async sendRequest(method: string, params?: any): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async sendRequest(method: string, params?: unknown): Promise<any> {
     const id = this.#requestId++;
     const request: MCPRequest = {
       jsonrpc: '2.0',
@@ -205,7 +206,10 @@ describe('MCP Server Integration Tests', () => {
 
     // Wait for server to start
     await new Promise<void>((resolve, reject) => {
-      let initTimeout: NodeJS.Timeout;
+      const initTimeout: NodeJS.Timeout = setTimeout(() => {
+        serverProcess.stderr?.off('data', checkInit);
+        reject(new Error('Server initialization timeout'));
+      }, 10000);
 
       const checkInit = (data: Buffer) => {
         if (data.toString().includes('initialized successfully')) {
@@ -216,11 +220,6 @@ describe('MCP Server Integration Tests', () => {
       };
 
       serverProcess.stderr?.on('data', checkInit);
-
-      initTimeout = setTimeout(() => {
-        serverProcess.stderr?.off('data', checkInit);
-        reject(new Error('Server initialization timeout'));
-      }, 10000);
 
       serverProcess.on('error', error => {
         clearTimeout(initTimeout);
@@ -242,7 +241,7 @@ describe('MCP Server Integration Tests', () => {
     // Clean up test workspace
     try {
       await fs.rm(testWorkspaceRoot, { recursive: true, force: true });
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   });
@@ -256,7 +255,7 @@ describe('MCP Server Integration Tests', () => {
       assert.ok(Array.isArray(response.result.tools));
 
       // Check for expected tools
-      const toolNames = response.result.tools.map((tool: any) => tool.name);
+      const toolNames = response.result.tools.map((tool: { name: string }) => tool.name);
       assert.ok(toolNames.includes('create_note_type'));
       assert.ok(toolNames.includes('create_note'));
       assert.ok(toolNames.includes('get_note'));
@@ -273,7 +272,9 @@ describe('MCP Server Integration Tests', () => {
       assert.ok(Array.isArray(response.result.resources));
 
       // Check for expected resources
-      const resourceUris = response.result.resources.map((resource: any) => resource.uri);
+      const resourceUris = response.result.resources.map(
+        (resource: { uri: string }) => resource.uri
+      );
       assert.ok(resourceUris.includes('jade-note://types'));
       assert.ok(resourceUris.includes('jade-note://recent'));
       assert.ok(resourceUris.includes('jade-note://stats'));
@@ -431,7 +432,7 @@ describe('MCP Server Integration Tests', () => {
       assert.ok(searchResults.length > 0);
 
       const jsNote = searchResults.find(
-        (note: any) =>
+        (note: { title: string; content: string }) =>
           note.title.includes('JavaScript') || note.content.includes('JavaScript')
       );
       assert.ok(jsNote);
@@ -492,7 +493,7 @@ describe('MCP Server Integration Tests', () => {
       const types = JSON.parse(response.result.contents[0].text);
       assert.ok(Array.isArray(types));
 
-      const typeNames = types.map((type: any) => type.name);
+      const typeNames = types.map((type: { name: string }) => type.name);
       assert.ok(typeNames.includes('general'));
       assert.ok(typeNames.includes('project-notes'));
     });

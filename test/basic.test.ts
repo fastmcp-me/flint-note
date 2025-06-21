@@ -27,13 +27,22 @@ describe('Project Structure', () => {
     assert.ok(noteManager instanceof NoteManager, 'Should create NoteManager instance');
 
     const noteTypeManager = new NoteTypeManager(workspace);
-    assert.ok(noteTypeManager instanceof NoteTypeManager, 'Should create NoteTypeManager instance');
+    assert.ok(
+      noteTypeManager instanceof NoteTypeManager,
+      'Should create NoteTypeManager instance'
+    );
 
     const searchManager = new SearchManager(workspace);
-    assert.ok(searchManager instanceof SearchManager, 'Should create SearchManager instance');
+    assert.ok(
+      searchManager instanceof SearchManager,
+      'Should create SearchManager instance'
+    );
 
     const configManager = new ConfigManager('/tmp/test-workspace');
-    assert.ok(configManager instanceof ConfigManager, 'Should create ConfigManager instance');
+    assert.ok(
+      configManager instanceof ConfigManager,
+      'Should create ConfigManager instance'
+    );
   });
 });
 
@@ -54,13 +63,25 @@ describe('Configuration', () => {
     const configManager = new ConfigManager('/tmp/test-workspace');
 
     assert.ok(configManager.isValidNoteTypeName('general'), 'Should accept valid name');
-    assert.ok(configManager.isValidNoteTypeName('my-notes'), 'Should accept hyphenated name');
-    assert.ok(configManager.isValidNoteTypeName('my_notes'), 'Should accept underscored name');
+    assert.ok(
+      configManager.isValidNoteTypeName('my-notes'),
+      'Should accept hyphenated name'
+    );
+    assert.ok(
+      configManager.isValidNoteTypeName('my_notes'),
+      'Should accept underscored name'
+    );
 
     assert.ok(!configManager.isValidNoteTypeName(''), 'Should reject empty name');
-    assert.ok(!configManager.isValidNoteTypeName('.hidden'), 'Should reject name starting with dot');
+    assert.ok(
+      !configManager.isValidNoteTypeName('.hidden'),
+      'Should reject name starting with dot'
+    );
     assert.ok(!configManager.isValidNoteTypeName('CON'), 'Should reject reserved name');
-    assert.ok(!configManager.isValidNoteTypeName('my notes'), 'Should reject name with spaces');
+    assert.ok(
+      !configManager.isValidNoteTypeName('my notes'),
+      'Should reject name with spaces'
+    );
   });
 });
 
@@ -79,7 +100,13 @@ describe('Workspace', () => {
   test('should validate paths are in workspace', () => {
     const workspace = new Workspace('/tmp/test-workspace');
 
-    assert.ok(workspace.isPathInWorkspace('/tmp/test-workspace/general/note.md'), 'Should accept path in workspace');
-    assert.ok(!workspace.isPathInWorkspace('/etc/passwd'), 'Should reject path outside workspace');
+    assert.ok(
+      workspace.isPathInWorkspace('/tmp/test-workspace/general/note.md'),
+      'Should accept path in workspace'
+    );
+    assert.ok(
+      !workspace.isPathInWorkspace('/etc/passwd'),
+      'Should reject path outside workspace'
+    );
   });
 });

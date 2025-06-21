@@ -223,12 +223,14 @@ export class ConfigManager {
   /**
    * Get configuration value by key path
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get<T = any>(keyPath: string, defaultValue?: T): T | undefined {
     if (!this.config) {
       return defaultValue;
     }
 
     const keys = keyPath.split('.');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let value: any = this.config;
 
     for (const key of keys) {
@@ -245,12 +247,14 @@ export class ConfigManager {
   /**
    * Set configuration value by key path
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   set(keyPath: string, value: any): void {
     if (!this.config) {
       this.config = this.getDefaultConfig();
     }
 
     const keys = keyPath.split('.');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: any = this.config;
 
     for (let i = 0; i < keys.length - 1; i++) {
@@ -280,13 +284,16 @@ export class ConfigManager {
   /**
    * Deep merge two objects
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
     const result = { ...target };
 
     for (const key in source) {
       if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         result[key] = this.deepMerge(result[key] || {}, source[key] as any) as any;
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         result[key] = source[key] as any;
       }
     }

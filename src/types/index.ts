@@ -5,10 +5,10 @@
  */
 
 // Re-export types that might be used elsewhere
-export type { } from '../core/workspace.js';
-export type { } from '../core/notes.js';
-export type { } from '../core/note-types.js';
-export type { } from '../core/search.js';
+export type {} from '../core/workspace.js';
+export type {} from '../core/notes.js';
+export type {} from '../core/note-types.js';
+export type {} from '../core/search.js';
 
 // Common utility types
 export type Timestamp = string;
