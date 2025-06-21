@@ -310,7 +310,15 @@ class JadeNoteServer {
       content: [
         {
           type: 'text',
-          text: `Created note type '${args.type_name}' successfully`
+          text: JSON.stringify(
+            {
+              success: true,
+              message: `Created note type '${args.type_name}' successfully`,
+              type_name: args.type_name
+            },
+            null,
+            2
+          )
         }
       ]
     };
@@ -321,12 +329,16 @@ class JadeNoteServer {
       throw new Error('Server not initialized');
     }
 
-    await this.#noteManager.createNote(args.type, args.title, args.content);
+    const noteInfo = await this.#noteManager.createNote(
+      args.type,
+      args.title,
+      args.content
+    );
     return {
       content: [
         {
           type: 'text',
-          text: `Created note '${args.title}' in type '${args.type}'`
+          text: JSON.stringify(noteInfo, null, 2)
         }
       ]
     };
@@ -353,12 +365,12 @@ class JadeNoteServer {
       throw new Error('Server not initialized');
     }
 
-    await this.#noteManager.updateNote(args.identifier, args.content);
+    const result = await this.#noteManager.updateNote(args.identifier, args.content);
     return {
       content: [
         {
           type: 'text',
-          text: `Updated note '${args.identifier}' successfully`
+          text: JSON.stringify(result, null, 2)
         }
       ]
     };
@@ -419,26 +431,34 @@ class JadeNoteServer {
   };
 
   #handleRecentResource = async () => {
-    // TODO: Implement recent notes functionality
+    if (!this.#noteManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const recentNotes = await this.#noteManager.listNotes(undefined, 20);
     return {
       contents: [
         {
           uri: 'jade-note://recent',
           mimeType: 'application/json',
-          text: JSON.stringify([], null, 2)
+          text: JSON.stringify(recentNotes, null, 2)
         }
       ]
     };
   };
 
   #handleStatsResource = async () => {
-    // TODO: Implement workspace statistics
+    if (!this.#workspace) {
+      throw new Error('Server not initialized');
+    }
+
+    const stats = await this.#workspace.getStats();
     return {
       contents: [
         {
           uri: 'jade-note://stats',
           mimeType: 'application/json',
-          text: JSON.stringify({ note_count: 0, type_count: 0 }, null, 2)
+          text: JSON.stringify(stats, null, 2)
         }
       ]
     };
@@ -454,7 +474,8 @@ class JadeNoteServer {
 // Main execution
 async function main(): Promise<void> {
   const server = new JadeNoteServer();
-  await server.initialize();
+  const workspacePath = process.env.JADE_NOTE_WORKSPACE || process.cwd();
+  await server.initialize(workspacePath);
   await server.run();
 }
 
