@@ -13,11 +13,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  CallToolRequest,
-  ListToolsRequest,
-  ListResourcesRequest,
-  ReadResourceRequest
+  ReadResourceRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { Workspace } from './core/workspace.ts';
@@ -214,7 +210,7 @@ class JadeNoteServer {
     });
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
 
       try {
@@ -275,7 +271,7 @@ class JadeNoteServer {
     });
 
     // Handle resource requests
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request: ReadResourceRequest) => {
+    this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
       const { uri } = request.params;
 
       try {
