@@ -7,7 +7,6 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import crypto from 'crypto';
 import { Workspace } from './workspace.ts';
 
 interface NoteMetadata {
@@ -77,10 +76,10 @@ interface ParsedIdentifier {
 }
 
 export class NoteManager {
-  private workspace: Workspace;
+  #workspace: Workspace;
 
   constructor(workspace: Workspace) {
-    this.workspace = workspace;
+    this.#workspace = workspace;
   }
 
   /**
@@ -89,10 +88,10 @@ export class NoteManager {
   async createNote(typeName: string, title: string, content: string): Promise<NoteInfo> {
     try {
       // Validate note type exists
-      const typePath = this.workspace.getNoteTypePath(typeName);
+      const typePath = this.#workspace.getNoteTypePath(typeName);
       try {
         await fs.access(typePath);
-      } catch (error) {
+      } catch {
         throw new Error(`Note type '${typeName}' does not exist`);
       }
 
@@ -171,13 +170,13 @@ export class NoteManager {
   formatNoteContent(title: string, content: string, typeName: string): string {
     const timestamp = new Date().toISOString();
 
-    let formattedContent = `---\n`;
+    let formattedContent = '---\n';
     formattedContent += `title: "${title}"\n`;
     formattedContent += `type: ${typeName}\n`;
     formattedContent += `created: ${timestamp}\n`;
     formattedContent += `updated: ${timestamp}\n`;
-    formattedContent += `tags: []\n`;
-    formattedContent += `---\n\n`;
+    formattedContent += 'tags: []\n';
+    formattedContent += '---\n\n';
     formattedContent += `# ${title}\n\n`;
     formattedContent += content;
 
@@ -194,7 +193,7 @@ export class NoteManager {
       // Check if note exists
       try {
         await fs.access(notePath);
-      } catch (error) {
+      } catch {
         throw new Error(`Note '${identifier}' does not exist`);
       }
 
@@ -238,7 +237,7 @@ export class NoteManager {
       filename = parts.slice(1).join('/');
     } else {
       // Just filename, assume default type
-      const config = this.workspace.getConfig();
+      const config = this.#workspace.getConfig();
       typeName = config?.default_note_type || 'general';
       filename = identifier;
     }
@@ -248,7 +247,7 @@ export class NoteManager {
       filename += '.md';
     }
 
-    const notePath = this.workspace.getNotePath(typeName, filename);
+    const notePath = this.#workspace.getNotePath(typeName, filename);
 
     return { typeName, filename, notePath };
   }
@@ -295,7 +294,7 @@ export class NoteManager {
         let value: any = trimmedLine.substring(colonIndex + 1).trim();
 
         // Handle quoted strings
-        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
           value = value.slice(1, -1);
         }
 
@@ -329,12 +328,12 @@ export class NoteManager {
    */
   async updateNote(identifier: string, newContent: string): Promise<UpdateResult> {
     try {
-      const { typeName, filename, notePath } = this.parseNoteIdentifier(identifier);
+      const { typeName: _typeName, filename: _filename, notePath } = this.parseNoteIdentifier(identifier);
 
       // Check if note exists
       try {
         await fs.access(notePath);
-      } catch (error) {
+      } catch {
         throw new Error(`Note '${identifier}' does not exist`);
       }
 
@@ -371,7 +370,7 @@ export class NoteManager {
    * Format updated note content with preserved metadata
    */
   formatUpdatedNoteContent(metadata: NoteMetadata, newContent: string): string {
-    let formattedContent = `---\n`;
+    let formattedContent = '---\n';
 
     for (const [key, value] of Object.entries(metadata)) {
       if (Array.isArray(value)) {
@@ -383,7 +382,7 @@ export class NoteManager {
       }
     }
 
-    formattedContent += `---\n\n`;
+    formattedContent += '---\n\n';
     formattedContent += newContent;
 
     return formattedContent;
@@ -394,12 +393,12 @@ export class NoteManager {
    */
   async deleteNote(identifier: string): Promise<DeleteResult> {
     try {
-      const { typeName, filename, notePath } = this.parseNoteIdentifier(identifier);
+      const { typeName: _typeName, filename: _filename, notePath } = this.parseNoteIdentifier(identifier);
 
       // Check if note exists
       try {
         await fs.access(notePath);
-      } catch (error) {
+      } catch {
         throw new Error(`Note '${identifier}' does not exist`);
       }
 
@@ -430,16 +429,16 @@ export class NoteManager {
 
       if (typeName) {
         // List notes from specific type
-        const typePath = this.workspace.getNoteTypePath(typeName);
+        const typePath = this.#workspace.getNoteTypePath(typeName);
         try {
           await fs.access(typePath);
           noteTypes = [{ name: typeName, path: typePath }];
-        } catch (error) {
+        } catch {
           throw new Error(`Note type '${typeName}' does not exist`);
         }
       } else {
         // List notes from all types
-        const workspaceRoot = this.workspace.rootPath;
+        const workspaceRoot = this.#workspace.rootPath;
         const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
         for (const entry of entries) {
@@ -477,7 +476,7 @@ export class NoteManager {
               tags: parsed.metadata.tags || []
             });
           }
-        } catch (error) {
+        } catch {
           // Continue with other types if one fails
           continue;
         }
@@ -503,14 +502,14 @@ export class NoteManager {
    */
   async updateSearchIndex(notePath: string, content: string): Promise<void> {
     try {
-      const indexPath = this.workspace.searchIndexPath;
+      const indexPath = this.#workspace.searchIndexPath;
       let index = { version: '1.0.0', last_updated: new Date().toISOString(), notes: {} as Record<string, any> };
 
       // Load existing index
       try {
         const indexContent = await fs.readFile(indexPath, 'utf-8');
         index = JSON.parse(indexContent);
-      } catch (error) {
+      } catch {
         // Use default index if file doesn't exist
       }
 
@@ -546,7 +545,7 @@ export class NoteManager {
    */
   async removeFromSearchIndex(notePath: string): Promise<void> {
     try {
-      const indexPath = this.workspace.searchIndexPath;
+      const indexPath = this.#workspace.searchIndexPath;
 
       // Load existing index
       const indexContent = await fs.readFile(indexPath, 'utf-8');

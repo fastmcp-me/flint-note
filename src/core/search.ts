@@ -75,10 +75,10 @@ interface RebuildResult {
 }
 
 export class SearchManager {
-  private workspace: Workspace;
+  #workspace: Workspace;
 
   constructor(workspace: Workspace) {
-    this.workspace = workspace;
+    this.#workspace = workspace;
   }
 
   /**
@@ -141,7 +141,7 @@ export class SearchManager {
    */
   async loadSearchIndex(): Promise<SearchIndex> {
     try {
-      const indexPath = this.workspace.searchIndexPath;
+      const indexPath = this.#workspace.searchIndexPath;
       const indexContent = await fs.readFile(indexPath, 'utf-8');
       return JSON.parse(indexContent);
     } catch (error) {
@@ -211,7 +211,6 @@ export class SearchManager {
    * Generate a snippet showing search term context
    */
   generateSnippet(content: string, searchTerms: string[], maxLength: number = 200): string {
-    const lowerContent = content.toLowerCase();
     let bestSnippet = '';
     let maxTerms = 0;
 
@@ -257,7 +256,7 @@ export class SearchManager {
    * Convert file path to note identifier
    */
   pathToIdentifier(notePath: string): string {
-    const relativePath = path.relative(this.workspace.rootPath, notePath);
+    const relativePath = path.relative(this.#workspace.rootPath, notePath);
     const parts = relativePath.split(path.sep);
 
     if (parts.length >= 2) {
@@ -438,12 +437,12 @@ export class SearchManager {
       const parts = identifier.split('/');
       const type = parts[0];
       const filename = parts.slice(1).join('/');
-      return path.join(this.workspace.rootPath, type, filename);
+      return path.join(this.#workspace.rootPath, type, filename);
     } else {
-      const config = this.workspace.getConfig();
+      const config = this.#workspace.getConfig();
       const defaultType = config?.default_note_type || 'general';
       const filename = identifier.endsWith('.md') ? identifier : `${identifier}.md`;
-      return path.join(this.workspace.rootPath, defaultType, filename);
+      return path.join(this.#workspace.rootPath, defaultType, filename);
     }
   }
 
@@ -459,7 +458,7 @@ export class SearchManager {
       };
 
       // Scan all note types
-      const workspaceRoot = this.workspace.rootPath;
+      const workspaceRoot = this.#workspace.rootPath;
       const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
       for (const entry of entries) {
@@ -482,7 +481,7 @@ export class SearchManager {
                   tags: parsed.metadata.tags || [],
                   updated: new Date().toISOString()
                 };
-              } catch (error) {
+              } catch (_error) {
                 // Skip files that can't be read
                 continue;
               }
@@ -492,7 +491,7 @@ export class SearchManager {
       }
 
       // Save the rebuilt index
-      const indexPath = this.workspace.searchIndexPath;
+      const indexPath = this.#workspace.searchIndexPath;
       await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
 
       return {
@@ -536,7 +535,7 @@ export class SearchManager {
         const key = trimmedLine.substring(0, colonIndex).trim();
         let value: any = trimmedLine.substring(colonIndex + 1).trim();
 
-        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
           value = value.slice(1, -1);
         }
 

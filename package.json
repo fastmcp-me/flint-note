@@ -8,7 +8,7 @@
     "start": "node src/server.ts",
     "dev": "node --watch src/server.ts",
     "test": "node --test test/**/*.test.ts",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint src/",
     "format": "prettier --write src/**/*.ts",
     "type-check": "tsc --noEmit"
   },
@@ -28,9 +28,9 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.0",
     "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
+    "eslint": "^9.29.0",
     "prettier": "^3.0.0",
     "tsx": "^4.20.3",
     "typescript": "^5.0.0"

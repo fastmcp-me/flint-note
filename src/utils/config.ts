@@ -43,13 +43,11 @@ interface WorkspaceConfig {
 }
 
 export class ConfigManager {
-  private workspaceRoot: string;
-  private configPath: string;
+  #configPath: string;
   public config: WorkspaceConfig | null = null;
 
   constructor(workspaceRoot: string) {
-    this.workspaceRoot = workspaceRoot;
-    this.configPath = path.join(workspaceRoot, '.jade-note', 'config.yml');
+    this.#configPath = path.join(workspaceRoot, '.jade-note', 'config.yml');
   }
 
   /**
@@ -57,7 +55,7 @@ export class ConfigManager {
    */
   async load(): Promise<WorkspaceConfig> {
     try {
-      const configContent = await fs.readFile(this.configPath, 'utf-8');
+      const configContent = await fs.readFile(this.#configPath, 'utf-8');
       this.config = yaml.load(configContent) as WorkspaceConfig;
       this.validateConfig();
       return this.config;
@@ -89,7 +87,7 @@ export class ConfigManager {
         noRefs: true,
         sortKeys: true
       });
-      await fs.writeFile(this.configPath, configYaml, 'utf-8');
+      await fs.writeFile(this.#configPath, configYaml, 'utf-8');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to save configuration: ${errorMessage}`);
@@ -199,7 +197,7 @@ export class ConfigManager {
    * Ensure configuration directory exists
    */
   async ensureConfigDirectory(): Promise<void> {
-    const configDir = path.dirname(this.configPath);
+    const configDir = path.dirname(this.#configPath);
     try {
       await fs.access(configDir);
     } catch (error) {

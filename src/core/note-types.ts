@@ -104,22 +104,22 @@ export class NoteTypeManager {
 
     let content = `# ${formattedName}\n\n`;
     content += `## Purpose\n${description}\n\n`;
-    content += `## Agent Instructions\n`;
+    content += '## Agent Instructions\n';
     content += `- Handle notes of type '${name}' with specific behaviors\n`;
-    content += `- Apply appropriate formatting and structure\n`;
-    content += `- Extract relevant metadata and relationships\n`;
-    content += `- Suggest improvements and connections\n\n`;
+    content += '- Apply appropriate formatting and structure\n';
+    content += '- Extract relevant metadata and relationships\n';
+    content += '- Suggest improvements and connections\n\n';
 
     if (template) {
       content += `## Template\n${template}\n\n`;
     }
 
-    content += `## Metadata Schema\n`;
-    content += `Expected frontmatter or metadata fields for this note type:\n`;
+    content += '## Metadata Schema\n';
+    content += 'Expected frontmatter or metadata fields for this note type:\n';
     content += `- type: ${name}\n`;
-    content += `- created: Creation timestamp\n`;
-    content += `- updated: Last modification timestamp\n`;
-    content += `- tags: Relevant tags for categorization\n`;
+    content += '- created: Creation timestamp\n';
+    content += '- updated: Last modification timestamp\n';
+    content += '- tags: Relevant tags for categorization\n';
 
     return content;
   }
@@ -135,7 +135,7 @@ export class NoteTypeManager {
       // Check if note type exists
       try {
         await fs.access(typePath);
-      } catch (error) {
+      } catch {
         throw new Error(`Note type '${typeName}' does not exist`);
       }
 
@@ -156,7 +156,7 @@ export class NoteTypeManager {
       let template: string | null = null;
       try {
         template = await fs.readFile(templatePath, 'utf-8');
-      } catch (error) {
+      } catch {
         // Template is optional, ignore if not found
       }
 
@@ -272,7 +272,6 @@ export class NoteTypeManager {
         if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
           const typePath = path.join(workspaceRoot, entry.name);
           const descriptionPath = path.join(typePath, '.description.md');
-          const templatePath = path.join(typePath, '.template.md');
 
           // Check if this is a valid note type (has notes or description)
           const typeEntries = await fs.readdir(typePath);
@@ -294,7 +293,7 @@ export class NoteTypeManager {
 
               hasTemplate = typeEntries.includes('.template.md');
               noteCount = typeEntries.filter(file => file.endsWith('.md') && !file.startsWith('.')).length;
-            } catch (error) {
+            } catch {
               // Continue with default values if there's an error reading details
             }
 
@@ -348,7 +347,7 @@ export class NoteTypeManager {
           // Remove template if set to null/empty
           try {
             await fs.unlink(templatePath);
-          } catch (error) {
+          } catch {
             // Ignore if template doesn't exist
           }
         }
@@ -371,7 +370,7 @@ export class NoteTypeManager {
       // Check if note type exists
       try {
         await fs.access(typePath);
-      } catch (error) {
+      } catch {
         throw new Error(`Note type '${typeName}' does not exist`);
       }
 

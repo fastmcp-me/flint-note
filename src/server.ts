@@ -50,17 +50,18 @@ interface SearchNotesArgs {
 
 interface ListNoteTypesArgs {
   // Empty interface for consistency
+  [key: string]: never;
 }
 
 class JadeNoteServer {
-  private server: Server;
-  private workspace: Workspace | null = null;
-  private noteManager: NoteManager | null = null;
-  private noteTypeManager: NoteTypeManager | null = null;
-  private searchManager: SearchManager | null = null;
+  #server: Server;
+  #workspace: Workspace | null = null;
+  #noteManager: NoteManager | null = null;
+  #noteTypeManager: NoteTypeManager | null = null;
+  #searchManager: SearchManager | null = null;
 
   constructor() {
-    this.server = new Server(
+    this.#server = new Server(
       {
         name: 'jade-note',
         version: '0.1.0'
@@ -73,17 +74,17 @@ class JadeNoteServer {
       }
     );
 
-    this.setupHandlers();
+    this.#setupHandlers();
   }
 
   async initialize(workspacePath: string = process.cwd()): Promise<void> {
     try {
-      this.workspace = new Workspace(workspacePath);
-      await this.workspace.initialize();
+      this.#workspace = new Workspace(workspacePath);
+      await this.#workspace.initialize();
 
-      this.noteManager = new NoteManager(this.workspace);
-      this.noteTypeManager = new NoteTypeManager(this.workspace);
-      this.searchManager = new SearchManager(this.workspace);
+      this.#noteManager = new NoteManager(this.#workspace);
+      this.#noteTypeManager = new NoteTypeManager(this.#workspace);
+      this.#searchManager = new SearchManager(this.#workspace);
 
       console.error('jade-note server initialized successfully');
     } catch (error) {
@@ -93,9 +94,9 @@ class JadeNoteServer {
     }
   }
 
-  private setupHandlers(): void {
+  #setupHandlers(): void {
     // List available tools
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    this.#server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
           {
@@ -210,23 +211,23 @@ class JadeNoteServer {
     });
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async request => {
+    this.#server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
 
       try {
         switch (name) {
           case 'create_note_type':
-            return await this.handleCreateNoteType(args as any);
+            return await this.#handleCreateNoteType(args as any);
           case 'create_note':
-            return await this.handleCreateNote(args as any);
+            return await this.#handleCreateNote(args as any);
           case 'get_note':
-            return await this.handleGetNote(args as any);
+            return await this.#handleGetNote(args as any);
           case 'update_note':
-            return await this.handleUpdateNote(args as any);
+            return await this.#handleUpdateNote(args as any);
           case 'search_notes':
-            return await this.handleSearchNotes(args as any);
+            return await this.#handleSearchNotes(args as any);
           case 'list_note_types':
-            return await this.handleListNoteTypes(args as any);
+            return await this.#handleListNoteTypes(args as any);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -245,7 +246,7 @@ class JadeNoteServer {
     });
 
     // List available resources
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    this.#server.setRequestHandler(ListResourcesRequestSchema, async () => {
       return {
         resources: [
           {
@@ -271,17 +272,17 @@ class JadeNoteServer {
     });
 
     // Handle resource requests
-    this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
+    this.#server.setRequestHandler(ReadResourceRequestSchema, async request => {
       const { uri } = request.params;
 
       try {
         switch (uri) {
           case 'jade-note://types':
-            return await this.handleTypesResource();
+            return await this.#handleTypesResource();
           case 'jade-note://recent':
-            return await this.handleRecentResource();
+            return await this.#handleRecentResource();
           case 'jade-note://stats':
-            return await this.handleStatsResource();
+            return await this.#handleStatsResource();
           default:
             throw new Error(`Unknown resource: ${uri}`);
         }
@@ -293,12 +294,12 @@ class JadeNoteServer {
   }
 
   // Tool handlers
-  private async handleCreateNoteType(args: CreateNoteTypeArgs) {
-    if (!this.noteTypeManager) {
+  #handleCreateNoteType = async (args: CreateNoteTypeArgs) => {
+    if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
 
-    const result = await this.noteTypeManager.createNoteType(args.type_name, args.description, args.template);
+    await this.#noteTypeManager.createNoteType(args.type_name, args.description, args.template);
     return {
       content: [
         {
@@ -307,14 +308,14 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
-  private async handleCreateNote(args: CreateNoteArgs) {
-    if (!this.noteManager) {
+  #handleCreateNote = async (args: CreateNoteArgs) => {
+    if (!this.#noteManager) {
       throw new Error('Server not initialized');
     }
 
-    const result = await this.noteManager.createNote(args.type, args.title, args.content);
+    await this.#noteManager.createNote(args.type, args.title, args.content);
     return {
       content: [
         {
@@ -323,14 +324,14 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
-  private async handleGetNote(args: GetNoteArgs) {
-    if (!this.noteManager) {
+  #handleGetNote = async (args: GetNoteArgs) => {
+    if (!this.#noteManager) {
       throw new Error('Server not initialized');
     }
 
-    const note = await this.noteManager.getNote(args.identifier);
+    const note = await this.#noteManager.getNote(args.identifier);
     return {
       content: [
         {
@@ -339,14 +340,14 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
-  private async handleUpdateNote(args: UpdateNoteArgs) {
-    if (!this.noteManager) {
+  #handleUpdateNote = async (args: UpdateNoteArgs) => {
+    if (!this.#noteManager) {
       throw new Error('Server not initialized');
     }
 
-    await this.noteManager.updateNote(args.identifier, args.content);
+    await this.#noteManager.updateNote(args.identifier, args.content);
     return {
       content: [
         {
@@ -355,14 +356,14 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
-  private async handleSearchNotes(args: SearchNotesArgs) {
-    if (!this.searchManager) {
+  #handleSearchNotes = async (args: SearchNotesArgs) => {
+    if (!this.#searchManager) {
       throw new Error('Server not initialized');
     }
 
-    const results = await this.searchManager.searchNotes(args.query, args.type_filter, args.limit);
+    const results = await this.#searchManager.searchNotes(args.query, args.type_filter, args.limit);
     return {
       content: [
         {
@@ -371,14 +372,14 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
-  private async handleListNoteTypes(args: ListNoteTypesArgs) {
-    if (!this.noteTypeManager) {
+  #handleListNoteTypes = async (_args: ListNoteTypesArgs) => {
+    if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
 
-    const types = await this.noteTypeManager.listNoteTypes();
+    const types = await this.#noteTypeManager.listNoteTypes();
     return {
       content: [
         {
@@ -387,15 +388,15 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
   // Resource handlers
-  private async handleTypesResource() {
-    if (!this.noteTypeManager) {
+  #handleTypesResource = async () => {
+    if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
 
-    const types = await this.noteTypeManager.listNoteTypes();
+    const types = await this.#noteTypeManager.listNoteTypes();
     return {
       contents: [
         {
@@ -405,9 +406,9 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
-  private async handleRecentResource() {
+  #handleRecentResource = async () => {
     // TODO: Implement recent notes functionality
     return {
       contents: [
@@ -418,9 +419,9 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
-  private async handleStatsResource() {
+  #handleStatsResource = async () => {
     // TODO: Implement workspace statistics
     return {
       contents: [
@@ -431,11 +432,11 @@ class JadeNoteServer {
         }
       ]
     };
-  }
+  };
 
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
-    await this.server.connect(transport);
+    await this.#server.connect(transport);
     console.error('jade-note MCP server running on stdio');
   }
 }
