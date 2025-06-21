@@ -42,7 +42,7 @@ export default [
       'no-var': 'error',
       'no-console': 'off',
       semi: ['error', 'always'],
-      quotes: ['error', 'single'],
+      quotes: ['error', 'single', { allowTemplateLiterals: true, avoidEscape: true }],
       'comma-dangle': ['error', 'never']
     }
   },
