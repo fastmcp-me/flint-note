@@ -102,11 +102,16 @@ export class NoteManager {
       // Check if note already exists
       try {
         await fs.access(notePath);
+        // If we reach this line, the file exists - throw duplicate error
         throw new Error(
           `Note with title '${title}' already exists in type '${typeName}'`
         );
       } catch (error) {
-        if (error instanceof Error && 'code' in error && error.code !== 'ENOENT') {
+        // If it's a filesystem error with ENOENT, the file doesn't exist - continue
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+          // File doesn't exist, continue with creation
+        } else {
+          // Either our duplicate error or some other filesystem error - re-throw
           throw error;
         }
       }
