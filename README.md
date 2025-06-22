@@ -42,7 +42,7 @@ The agent instructions system is a core feature that enables users to define spe
 - Ask for the user's personal rating and recommendation
 - Suggest connections to previously read books
 
-## Project Notes  
+## Project Notes
 - Always ask about project goals and success criteria
 - Extract and track action items with owners and deadlines
 - Suggest next steps and potential blockers
@@ -58,9 +58,63 @@ The agent instructions system is a core feature that enables users to define spe
 ### Benefits
 
 - **Consistent Experience**: Agents behave predictably within each note category
-- **Personalized Workflow**: Instructions reflect your specific needs and conventions  
+- **Personalized Workflow**: Instructions reflect your specific needs and conventions
 - **Reduced Cognitive Load**: Agents proactively suggest relevant actions and connections
 - **Scalable Organization**: Easy to maintain consistent practices across large note collections
+
+## Metadata Schema System
+
+The metadata schema system provides structured data validation and type safety for note frontmatter, enabling consistent data collection and intelligent agent interactions.
+
+### How Metadata Schemas Work
+
+1. **Type-Specific Schemas**: Each note type can define its own metadata schema with field definitions
+2. **Automatic Validation**: Metadata is validated against the schema when creating or updating notes
+3. **Rich Field Types**: Support for strings, numbers, booleans, dates, arrays, and select fields
+4. **Constraint Validation**: Enforce min/max values, string patterns, and selection options
+5. **Default Values**: Automatic generation of sensible defaults for required fields
+
+### Supported Field Types
+
+- **string**: Text fields with optional pattern validation
+- **number**: Numeric fields with min/max constraints
+- **boolean**: True/false fields
+- **date**: ISO date strings with automatic validation
+- **array**: Lists of values with optional length constraints
+- **select**: Single choice from predefined options
+
+### Schema Definition Format
+
+Metadata schemas are defined in the note type's `.description.md` file:
+
+```markdown
+## Metadata Schema
+Expected frontmatter or metadata fields for this note type:
+- title: Book title (required, string)
+- author: Author name (required, string)
+- rating: Personal rating (required, number, min: 1, max: 5)
+- genre: Book genre (optional, string)
+- isbn: ISBN number (optional, string, pattern: "^[0-9-]{10,17}$")
+- status: Reading status (optional, select, options: ["to-read", "reading", "completed"])
+- tags: Topic tags (optional, array)
+- finished_date: Date completed (optional, date)
+```
+
+### Validation and Error Handling
+
+- **Required Field Validation**: Ensures all required fields are present
+- **Type Validation**: Verifies field values match expected types
+- **Constraint Validation**: Enforces min/max, patterns, and selection options
+- **Unknown Field Warnings**: Warns about fields not defined in schema
+- **Helpful Error Messages**: Clear feedback when validation fails
+
+### Benefits
+
+- **Data Consistency**: Ensures all notes of a type have consistent metadata structure
+- **Agent Intelligence**: Agents can reliably access and process structured metadata
+- **User Guidance**: Clear expectations for what metadata should be provided
+- **Validation Feedback**: Immediate feedback prevents invalid data entry
+- **Schema Evolution**: Easy to update schemas as requirements change
 
 ## Architecture
 
@@ -73,7 +127,7 @@ jade-note-workspace/
 │   ├── search-index.json       # Search index cache
 │   └── mcp-server.log         # MCP server logs
 ├── {note-type-1}/
-│   ├── .description.md        # Type definition and agent instructions
+│   ├── .description.md        # Type definition, agent instructions, and metadata schema
 │   ├── .template.md          # Optional default template
 │   ├── note-1.md
 │   └── note-2.md
@@ -113,8 +167,47 @@ Brief description of what this note type is for.
 ## Actions
 - [ ] Review and process
 
-## Metadata Schema (Optional)
-Expected frontmatter or metadata fields for this note type.
+## Metadata Schema
+Expected frontmatter or metadata fields for this note type:
+- title: Note title (required, string)
+- author: Author name (optional, string)
+- rating: Personal rating (optional, number, min: 1, max: 5)
+- status: Current status (optional, select, options: ["draft", "published", "archived"])
+- tags: Relevant tags (optional, array)
+- isbn: ISBN number (optional, string, pattern: "^[0-9-]{10,17}$")
+- published_date: Publication date (optional, date)
+```
+
+### Note File Structure with Metadata
+
+Individual notes are stored as Markdown files with YAML frontmatter containing structured metadata:
+
+```markdown
+---
+title: "Atomic Habits"
+author: "James Clear"
+rating: 5
+status: "completed"
+tags: ["productivity", "habits", "self-improvement"]
+isbn: "978-0735211292"
+published_date: "2024-01-15T00:00:00Z"
+type: "book-reviews"
+created: "2024-01-15T10:30:00Z"
+updated: "2024-01-15T10:30:00Z"
+---
+
+# Atomic Habits
+
+## Summary
+Excellent book about building good habits and breaking bad ones...
+
+## Key Insights
+- Small changes compound over time
+- Focus on systems, not goals
+- Environment design is crucial
+
+## My Rating: 5/5
+Would definitely recommend to anyone interested in personal development.
 ```
 
 ### MCP Server Interface
@@ -125,8 +218,8 @@ The jade-note MCP server exposes the following tools and resources:
 
 | Tool Name | Purpose | Parameters |
 |:----------|:--------|:-----------|
-| `create_note_type` | Create new note type with description | `type_name`, `description`, `template?`, `agent_instructions?` |
-| `create_note` | Create new note of specified type | `type`, `title`, `content`, `use_template?` |
+| `create_note_type` | Create new note type with description | `type_name`, `description`, `template?`, `agent_instructions?`, `metadata_schema?` |
+| `create_note` | Create new note of specified type | `type`, `title`, `content`, `use_template?`, `metadata?` |
 | `get_note` | Retrieve specific note | `identifier` |
 | `update_note` | Update existing note | `identifier`, `content` |
 | `search_notes` | Search notes by content/type | `query`, `type_filter?`, `limit?`, `use_regex?` |
@@ -156,10 +249,15 @@ The jade-note MCP server exposes the following tools and resources:
 - [x] Template-based note creation with variable substitution
 - [x] Agent instruction management and integration
 - [x] Note type field updates (instructions, description, template, metadata)
+- [x] Structured metadata schema system with validation
+- [x] Rich field types (string, number, boolean, date, array, select)
+- [x] Constraint validation and error handling
 
 ### Phase 2: Agent Intelligence
 - [x] Agent instructions integration with note creation
 - [x] Contextual agent guidance based on note types
+- [x] Metadata-driven agent behavior and validation
+- [x] Schema-based field suggestions and defaults
 - [ ] Content-based note type suggestions
 - [ ] Automatic note linking based on content similarity
 - [ ] Content enhancement suggestions
@@ -196,6 +294,10 @@ search:
 note_types:
   auto_create_directories: true
   require_descriptions: true
+metadata:
+  validate_on_create: true
+  validate_on_update: true
+  strict_validation: false  # If true, unknown fields cause errors instead of warnings
 ```
 
 ### Error Handling
@@ -204,12 +306,18 @@ note_types:
 - Concurrent file access protection
 - MCP protocol error responses
 - Regex validation and error handling for malformed patterns
+- Metadata schema validation with detailed error messages
+- Type coercion and constraint validation
+- Unknown field warnings vs. errors based on configuration
 
 ### Security Considerations
 - Restrict file operations to workspace directory
 - Validate all file paths to prevent directory traversal
 - No execution of user-provided code
 - Read-only access to system files
+- Sanitize metadata field names and values
+- Validate regex patterns in metadata constraints
+- Prevent schema injection attacks through field definitions
 
 ## User Experience
 
@@ -249,16 +357,69 @@ Agent: I'll create your book review. Can you tell me about James Clear's backgro
 ```
 User: "Add a reading note for 'Atomic Habits' by James Clear"
 
-Agent: I'll create a new reading note for that book. Based on your reading note guidelines, I should also ask about the author's background and your rating.
-[Creates note with template, includes agent instructions: "Always ask about author's background", "Extract key insights", "Ask for user's rating"]
+Agent: I'll create a new reading note for that book. Based on your reading note schema, I'll need the author name and your rating (1-5 stars). I can see you've provided the author as James Clear - what rating would you give this book?
+[Creates note with metadata validation, ensures required fields are provided]
 
-User: "The key insight is that small changes compound over time"
+User: "I'd give it 5 stars. The key insight is that small changes compound over time"
 
-Agent: I'll add that insight to your note. James Clear is a well-known habits researcher - what's your overall rating for this book, and would you recommend it to others?
-[Updates the note with the insight, following agent instructions to ask for rating]
+Agent: Perfect! I'll create your reading note with a 5-star rating and include that key insight.
+[Creates note with validated metadata: {author: "James Clear", rating: 5}, includes agent instructions to ask follow-up questions]
 ```
 
-#### Managing Agent Instructions
+#### Creating Notes with Metadata Validation
+```
+User: "Create a book review for 'Deep Work' - it's by Cal Newport, productivity genre, I'd rate it 4 stars"
+
+Agent: I'll create your book review with the provided metadata. Let me validate this against your book review schema...
+[Validates metadata: {title: "Deep Work", author: "Cal Newport", genre: "productivity", rating: 4} - all fields valid]
+
+Created your book review note with structured metadata. Based on your schema, all required fields are provided and the rating is within the valid range (1-5).
+
+User: "Add a book review but I haven't finished it yet"
+
+Agent: I'll create a book review note. Since you haven't finished it, I'll mark the status as "reading" and we can update the rating later when you're done. What's the book title and author?
+[Uses schema defaults and handles partial metadata entry]
+```
+
+#### Metadata Schema Management
+```
+User: "Update my book review schema to include a 'recommend' field"
+
+Agent: I'll add a recommendation field to your book review metadata schema.
+[Uses update_note_type("book-reviews", "metadata_schema", "...") to add new field]
+
+User: "Make the author field optional in meeting notes"
+
+Agent: I'll update your meeting notes schema to make the author field optional.
+[Updates schema definition, changing author from required to optional]
+
+User: "What metadata fields does my project note type expect?"
+
+Agent: Let me check your project note type schema...
+[Uses get_note_type_info("projects") to retrieve schema definition]
+
+Your project notes expect these metadata fields:
+- title: Project name (required, string)
+- status: Current status (required, select: "planning", "active", "completed", "on-hold")
+- priority: Priority level (optional, select: "low", "medium", "high")
+- due_date: Target completion date (optional, date)
+- team_members: Assigned team members (optional, array)
+```
+
+#### Error Handling and Validation Feedback
+```
+User: "Create a book review with rating 10"
+
+Agent: I can't create that note because the rating value exceeds the maximum allowed. Your book review schema requires ratings between 1 and 5 stars. Would you like to use a rating within that range?
+[Metadata validation catches constraint violation and provides helpful error message]
+
+User: "Add a meeting note without specifying the meeting type"
+
+Agent: I notice your meeting note schema requires a 'type' field. The valid options are: "standup", "planning", "retrospective", "one-on-one". Which type should I use for this meeting?
+[Validation error provides available options for select fields]
+```
+
+#### Managing Agent Instructions and Schemas
 ```
 User: "Update my reading notes so agents should always ask about the author's background"
 
@@ -274,6 +435,11 @@ User: "Change the template for meeting notes to include action items"
 
 Agent: I'll update the template for your meeting notes.
 [Uses update_note_type("meetings", "template", "# {{title}}\n\n**Date:** {{date}}\n\n## Action Items\n\n")]
+
+User: "Add a priority field to my project notes schema"
+
+Agent: I'll add a priority field to your project notes metadata schema.
+[Uses update_note_type("projects", "metadata_schema", "- priority: Priority level (optional, select, options: [\"low\", \"medium\", \"high\"])")]
 
 User: "Make sure agents help me track deadlines in project notes"
 
@@ -298,6 +464,12 @@ User: "Link my Atomic Habits note to my other productivity notes"
 Agent: I'll create connections between your habit and productivity notes. Based on your reading note guidelines, I should also suggest rating these books relative to each other.
 [Creates links and follows agent instructions to suggest comparative analysis]
 
+User: "Show me all book reviews with ratings above 4"
+
+Agent: I'll search your book review notes and filter by the rating metadata field.
+[Uses metadata field filtering to find highly-rated books based on structured data]
+```
+
 User: "Create a meeting note for tomorrow's team standup"
 
 Agent: I'll create a meeting note for your standup. Based on your meeting note settings, I'll include sections for attendees, decisions, and action items.
@@ -310,6 +482,8 @@ Agent: I'll create a meeting note for your standup. Based on your meeting note s
 - Implement incremental search indexing for large note collections
 - Consider database backend for metadata while keeping notes as files
 - Optimize file watching for large directories
+- Metadata field indexing for fast filtering and querying
+- Schema migration tools for evolving metadata definitions
 
 ### Integration Opportunities
 - Git integration for version control
@@ -322,6 +496,19 @@ Agent: I'll create a meeting note for your standup. Based on your meeting note s
 - Content gap analysis ("You have lots of notes about X but nothing about Y")
 - Periodic knowledge base reviews and suggestions
 - Cross-note insight generation
+- Metadata-driven content suggestions ("You usually rate books in this genre higher")
+- Automatic schema evolution based on usage patterns
+- Smart field completion using historical metadata values
+
+### Metadata-Enabled Intelligence
+The structured metadata system provides a foundation for advanced AI capabilities:
+
+- **Smart Recommendations**: "Based on your 5-star ratings, you might enjoy books by similar authors"
+- **Pattern Recognition**: "You tend to rate productivity books higher than fiction"
+- **Data-Driven Insights**: "You've read 12 books this year with an average rating of 4.2"
+- **Automated Workflows**: "Create follow-up tasks for all project notes with status 'needs-review'"
+- **Quality Metrics**: "Meeting notes with action items have 80% better follow-through"
+- **Trend Analysis**: "Your reading pace has increased 40% since adopting the rating system"
 
 ## Success Metrics
 
@@ -337,6 +524,9 @@ Agent: I'll create a meeting note for your standup. Based on your meeting note s
 - Quality of agent suggestions and automations
 - Speed and accuracy of search functionality
 - Community adoption and contribution
+- Metadata schema adoption and effectiveness
+- Reduction in data entry errors through validation
+- User satisfaction with structured data features
 
 ---
 
