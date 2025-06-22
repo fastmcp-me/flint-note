@@ -77,6 +77,7 @@ interface RebuildResult {
 
 export class SearchManager {
   #workspace: Workspace;
+  static #globalIndexLock: Promise<void> = Promise.resolve();
 
   constructor(workspace: Workspace) {
     this.#workspace = workspace;
@@ -151,12 +152,24 @@ export class SearchManager {
       return JSON.parse(indexContent);
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-        // Return empty index if file doesn't exist
-        return {
-          version: '1.0.0',
-          last_updated: new Date().toISOString(),
-          notes: {}
-        };
+        // Try to rebuild index if file doesn't exist
+        try {
+          console.log('Search index missing, attempting to rebuild...');
+          await this.rebuildSearchIndex();
+          const indexContent = await fs.readFile(
+            this.#workspace.searchIndexPath,
+            'utf-8'
+          );
+          return JSON.parse(indexContent);
+        } catch (rebuildError) {
+          console.error('Failed to rebuild search index:', rebuildError);
+          // Return empty index as fallback
+          return {
+            version: '1.0.0',
+            last_updated: new Date().toISOString(),
+            notes: {}
+          };
+        }
       }
       throw error;
     }
@@ -470,62 +483,238 @@ export class SearchManager {
    * Rebuild the entire search index
    */
   async rebuildSearchIndex(): Promise<RebuildResult> {
-    try {
-      const index: SearchIndex = {
-        version: '1.0.0',
-        last_updated: new Date().toISOString(),
-        notes: {}
-      };
+    // Use the same lock mechanism to prevent concurrent index operations
+    return this.#withIndexLock(async () => {
+      try {
+        const index: SearchIndex = {
+          version: '1.0.0',
+          last_updated: new Date().toISOString(),
+          notes: {}
+        };
 
-      // Scan all note types
-      const workspaceRoot = this.#workspace.rootPath;
-      const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
+        // Scan all note types
+        const workspaceRoot = this.#workspace.rootPath;
+        const entries = await fs.readdir(workspaceRoot, { withFileTypes: true });
 
-      for (const entry of entries) {
-        if (
-          entry.isDirectory() &&
-          !entry.name.startsWith('.') &&
-          entry.name !== 'node_modules'
-        ) {
-          const typePath = path.join(workspaceRoot, entry.name);
-          const typeEntries = await fs.readdir(typePath);
+        for (const entry of entries) {
+          if (
+            entry.isDirectory() &&
+            !entry.name.startsWith('.') &&
+            entry.name !== 'node_modules'
+          ) {
+            const typePath = path.join(workspaceRoot, entry.name);
+            const typeEntries = await fs.readdir(typePath);
 
-          for (const filename of typeEntries) {
-            if (filename.endsWith('.md') && !filename.startsWith('.')) {
-              const notePath = path.join(typePath, filename);
+            for (const filename of typeEntries) {
+              if (filename.endsWith('.md') && !filename.startsWith('.')) {
+                const notePath = path.join(typePath, filename);
 
-              try {
-                const content = await fs.readFile(notePath, 'utf-8');
-                const parsed = this.parseNoteContent(content);
+                try {
+                  const content = await fs.readFile(notePath, 'utf-8');
+                  const parsed = this.parseNoteContent(content);
 
-                index.notes[notePath] = {
-                  content: content,
-                  title: parsed.metadata.title || this.extractTitleFromFilename(filename),
-                  type: parsed.metadata.type || entry.name,
-                  tags: parsed.metadata.tags || [],
-                  updated: new Date().toISOString()
-                };
-              } catch (_error) {
-                // Skip files that can't be read
-                continue;
+                  index.notes[notePath] = {
+                    content: content,
+                    title:
+                      parsed.metadata.title || this.extractTitleFromFilename(filename),
+                    type: parsed.metadata.type || entry.name,
+                    tags: parsed.metadata.tags || [],
+                    updated: new Date().toISOString()
+                  };
+                } catch (_error) {
+                  // Skip files that can't be read
+                  continue;
+                }
               }
             }
           }
         }
+
+        // Save the rebuilt index
+        const indexPath = this.#workspace.searchIndexPath;
+        await this.#writeIndexFileWithRetry(indexPath, index);
+
+        return {
+          indexedNotes: Object.keys(index.notes).length,
+          timestamp: index.last_updated
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to rebuild search index: ${errorMessage}`);
       }
+    });
+  }
 
-      // Save the rebuilt index
-      const indexPath = this.#workspace.searchIndexPath;
-      await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+  /**
+   * Read index file with retry logic to handle JSON corruption
+   */
+  async #readIndexFileWithRetry(
+    indexPath: string,
+    maxRetries: number = 3
+  ): Promise<string> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const content = await fs.readFile(indexPath, 'utf-8');
 
-      return {
-        indexedNotes: Object.keys(index.notes).length,
-        timestamp: index.last_updated
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to rebuild search index: ${errorMessage}`);
+        // Validate JSON by parsing it
+        if (content.trim()) {
+          JSON.parse(content);
+        }
+
+        return content;
+      } catch (error) {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+          throw error; // File doesn't exist, don't retry
+        }
+
+        if (attempt === maxRetries - 1) {
+          throw error; // Last attempt, give up
+        }
+
+        // Wait a bit before retrying
+        await new Promise(resolve => setTimeout(resolve, 10 * (attempt + 1)));
+      }
     }
+
+    return '';
+  }
+
+  /**
+   * Write index file with atomic operation to prevent corruption
+   */
+  async #writeIndexFileWithRetry(indexPath: string, index: SearchIndex): Promise<void> {
+    const tempPath = `${indexPath}.tmp.${Date.now()}.${Math.random().toString(36).substr(2, 9)}`;
+    const content = JSON.stringify(index, null, 2);
+
+    try {
+      // Ensure parent directory exists
+      await fs.mkdir(path.dirname(indexPath), { recursive: true });
+
+      // Write to temporary file first
+      await fs.writeFile(tempPath, content, 'utf-8');
+
+      // Atomic move to final location
+      await fs.rename(tempPath, indexPath);
+    } catch (error) {
+      // Clean up temp file if it exists
+      try {
+        await fs.unlink(tempPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Execute a function with exclusive access to the search index
+   */
+  async #withIndexLock<T>(fn: () => Promise<T>): Promise<T> {
+    const currentLock = SearchManager.#globalIndexLock;
+    let resolve: () => void;
+    SearchManager.#globalIndexLock = new Promise<void>(r => (resolve = r));
+
+    try {
+      await currentLock;
+      return await fn();
+    } finally {
+      resolve!();
+    }
+  }
+
+  /**
+   * Update a single note in the search index (thread-safe)
+   */
+  async updateNoteInIndex(notePath: string, content: string): Promise<void> {
+    return this.#withIndexLock(async () => {
+      try {
+        const indexPath = this.#workspace.searchIndexPath;
+        let index: SearchIndex = {
+          version: '1.0.0',
+          last_updated: new Date().toISOString(),
+          notes: {}
+        };
+
+        // Load existing index with retry logic
+        try {
+          const indexContent = await this.#readIndexFileWithRetry(indexPath);
+          if (indexContent.trim()) {
+            index = JSON.parse(indexContent);
+          }
+        } catch (error) {
+          if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+            // Create parent directory if it doesn't exist
+            await fs.mkdir(path.dirname(indexPath), { recursive: true });
+          } else {
+            console.warn('Failed to load search index, using default:', error);
+          }
+        }
+
+        // Extract searchable content
+        const parsed = this.parseNoteContent(content);
+        const searchableContent = [
+          parsed.metadata.title || '',
+          parsed.content,
+          (parsed.metadata.tags || []).join(' ')
+        ].join(' ');
+
+        // Update index entry
+        index.notes[notePath] = {
+          content: searchableContent,
+          title:
+            parsed.metadata.title ||
+            this.extractTitleFromFilename(path.basename(notePath)),
+          type: parsed.metadata.type || path.basename(path.dirname(notePath)),
+          tags: parsed.metadata.tags || [],
+          updated: new Date().toISOString()
+        };
+
+        index.last_updated = new Date().toISOString();
+
+        // Save updated index with retry logic
+        await this.#writeIndexFileWithRetry(indexPath, index);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to update search index: ${errorMessage}`);
+      }
+    });
+  }
+
+  /**
+   * Remove a note from the search index (thread-safe)
+   */
+  async removeNoteFromIndex(notePath: string): Promise<void> {
+    return this.#withIndexLock(async () => {
+      try {
+        const indexPath = this.#workspace.searchIndexPath;
+
+        // Load existing index with retry logic
+        try {
+          const indexContent = await this.#readIndexFileWithRetry(indexPath);
+          if (!indexContent.trim()) {
+            return; // Empty index, nothing to remove
+          }
+
+          const index = JSON.parse(indexContent);
+
+          // Remove the note entry
+          delete index.notes[notePath];
+          index.last_updated = new Date().toISOString();
+
+          // Save updated index with retry logic
+          await this.#writeIndexFileWithRetry(indexPath, index);
+        } catch (error) {
+          if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+            // Index doesn't exist, nothing to remove
+            return;
+          }
+          throw error;
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to remove from search index: ${errorMessage}`);
+      }
+    });
   }
 
   /**

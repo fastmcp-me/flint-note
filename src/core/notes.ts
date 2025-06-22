@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import yaml from 'js-yaml';
 import { Workspace } from './workspace.ts';
 import { NoteTypeManager } from './note-types.ts';
+import { SearchManager } from './search.ts';
 import type { NoteLink } from '../types/index.ts';
 
 interface NoteMetadata {
@@ -668,51 +669,8 @@ export class NoteManager {
    */
   async updateSearchIndex(notePath: string, content: string): Promise<void> {
     try {
-      const indexPath = this.#workspace.searchIndexPath;
-      let index = {
-        version: '1.0.0',
-        last_updated: new Date().toISOString(),
-        notes: {} as Record<
-          string,
-          {
-            content: string;
-            title: string;
-            type: string;
-            tags: string[];
-            updated: string;
-          }
-        >
-      };
-
-      // Load existing index
-      try {
-        const indexContent = await fs.readFile(indexPath, 'utf-8');
-        index = JSON.parse(indexContent);
-      } catch {
-        // Use default index if file doesn't exist
-      }
-
-      // Extract searchable content
-      const parsed = this.parseNoteContent(content);
-      const searchableContent = [
-        parsed.metadata.title || '',
-        parsed.content,
-        (parsed.metadata.tags || []).join(' ')
-      ].join(' ');
-
-      // Update index entry
-      index.notes[notePath] = {
-        content: searchableContent,
-        title: parsed.metadata.title || '',
-        type: parsed.metadata.type || '',
-        tags: parsed.metadata.tags || [],
-        updated: new Date().toISOString()
-      };
-
-      index.last_updated = new Date().toISOString();
-
-      // Save updated index
-      await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+      const searchManager = new SearchManager(this.#workspace);
+      await searchManager.updateNoteInIndex(notePath, content);
     } catch (error) {
       // Don't fail note operations if search index update fails
       console.error(
@@ -727,18 +685,8 @@ export class NoteManager {
    */
   async removeFromSearchIndex(notePath: string): Promise<void> {
     try {
-      const indexPath = this.#workspace.searchIndexPath;
-
-      // Load existing index
-      const indexContent = await fs.readFile(indexPath, 'utf-8');
-      const index = JSON.parse(indexContent);
-
-      // Remove entry
-      delete index.notes[notePath];
-      index.last_updated = new Date().toISOString();
-
-      // Save updated index
-      await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+      const searchManager = new SearchManager(this.#workspace);
+      await searchManager.removeNoteFromIndex(notePath);
     } catch (error) {
       // Don't fail note operations if search index update fails
       console.error(
