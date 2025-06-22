@@ -336,7 +336,13 @@ describe('MCP Search Tool Integration Tests', () => {
 
       const results = JSON.parse(response.content[0].text);
       assert.ok(Array.isArray(results));
-      assert.strictEqual(results.length, 0, 'Should return empty array for empty query');
+      assert.ok(results.length > 0, 'Should return all notes for empty query');
+      // Results should be sorted by last updated (most recent first)
+      for (let i = 0; i < results.length - 1; i++) {
+        const current = new Date(results[i].lastUpdated).getTime();
+        const next = new Date(results[i + 1].lastUpdated).getTime();
+        assert.ok(current >= next, 'Results should be sorted by last updated descending');
+      }
     });
 
     test('should handle whitespace-only query', async () => {
@@ -347,11 +353,7 @@ describe('MCP Search Tool Integration Tests', () => {
 
       const results = JSON.parse(response.content[0].text);
       assert.ok(Array.isArray(results));
-      assert.strictEqual(
-        results.length,
-        0,
-        'Should return empty array for whitespace query'
-      );
+      assert.ok(results.length > 0, 'Should return all notes for whitespace query');
     });
 
     test('should handle special characters in query', async () => {

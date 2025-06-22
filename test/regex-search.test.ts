@@ -396,4 +396,47 @@ Content`
       assert(results[0].score >= results[1].score);
     });
   });
+
+  describe('Empty Pattern Handling', () => {
+    test('should return all notes for empty regex pattern', async () => {
+      // Create test notes
+      await noteManager.createNote('general', 'Test Note 1', 'First note content');
+      await noteManager.createNote('general', 'Test Note 2', 'Second note content');
+      await noteManager.createNote('general', 'Test Note 3', 'Third note content');
+
+      // Rebuild search index to include all notes
+      await searchManager.rebuildSearchIndex();
+
+      // Search with empty pattern
+      const results = await searchManager.searchNotes('', null, 10, true);
+
+      assert.ok(results.length > 0, 'Empty regex pattern should return all notes');
+      assert.strictEqual(results.length, 3, 'Should return all created notes');
+
+      // Results should be sorted by last updated (most recent first)
+      for (let i = 0; i < results.length - 1; i++) {
+        const current = new Date(results[i].lastUpdated).getTime();
+        const next = new Date(results[i + 1].lastUpdated).getTime();
+        assert.ok(current >= next, 'Results should be sorted by last updated descending');
+      }
+    });
+
+    test('should return all notes for whitespace-only regex pattern', async () => {
+      // Create test notes
+      await noteManager.createNote('general', 'Test Note 1', 'First note content');
+      await noteManager.createNote('general', 'Test Note 2', 'Second note content');
+
+      // Rebuild search index to include all notes
+      await searchManager.rebuildSearchIndex();
+
+      // Search with whitespace-only pattern
+      const results = await searchManager.searchNotes('   \t\n   ', null, 10, true);
+
+      assert.ok(
+        results.length > 0,
+        'Whitespace-only regex pattern should return all notes'
+      );
+      assert.strictEqual(results.length, 2, 'Should return all created notes');
+    });
+  });
 });

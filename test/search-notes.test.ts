@@ -104,9 +104,21 @@ describe('Search Notes Functionality', () => {
     });
 
     test('should be case insensitive', async () => {
-      const lowerResults = await context.searchManager.searchNotes('javascript', null, 10);
-      const upperResults = await context.searchManager.searchNotes('JAVASCRIPT', null, 10);
-      const mixedResults = await context.searchManager.searchNotes('JavaScript', null, 10);
+      const lowerResults = await context.searchManager.searchNotes(
+        'javascript',
+        null,
+        10
+      );
+      const upperResults = await context.searchManager.searchNotes(
+        'JAVASCRIPT',
+        null,
+        10
+      );
+      const mixedResults = await context.searchManager.searchNotes(
+        'JavaScript',
+        null,
+        10
+      );
 
       assert.strictEqual(
         lowerResults.length,
@@ -120,9 +132,15 @@ describe('Search Notes Functionality', () => {
       );
     });
 
-    test('should return empty array for empty query', async () => {
+    test('should return all notes for empty query', async () => {
       const results = await context.searchManager.searchNotes('', null, 10);
-      assert.strictEqual(results.length, 0, 'Empty query should return no results');
+      assert.ok(results.length > 0, 'Empty query should return all notes');
+      // Results should be sorted by last updated (most recent first)
+      for (let i = 0; i < results.length - 1; i++) {
+        const current = new Date(results[i].lastUpdated).getTime();
+        const next = new Date(results[i + 1].lastUpdated).getTime();
+        assert.ok(current >= next, 'Results should be sorted by last updated descending');
+      }
     });
 
     test('should handle query with no matches', async () => {
@@ -609,7 +627,7 @@ describe('Search Notes MCP Tool Integration', () => {
   test('should validate search parameters', async () => {
     // Test with various invalid parameters
     const emptyResults = await context.searchManager.searchNotes('');
-    assert.strictEqual(emptyResults.length, 0, 'Empty query should return empty array');
+    assert.ok(emptyResults.length > 0, 'Empty query should return all notes');
 
     const zeroLimitResults = await context.searchManager.searchNotes('test', null, 0);
     assert.strictEqual(

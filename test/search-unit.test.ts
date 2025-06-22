@@ -136,10 +136,16 @@ describe('Search Unit Tests', () => {
       }
     });
 
-    test('should return empty array for empty query', async () => {
+    test('should return all notes for empty query', async () => {
       const results = await context.searchManager.searchNotes('', null, 10);
       assert.ok(Array.isArray(results));
-      assert.strictEqual(results.length, 0);
+      assert.ok(results.length > 0, 'Empty query should return all notes');
+      // Results should be sorted by last updated (most recent first)
+      for (let i = 0; i < results.length - 1; i++) {
+        const current = new Date(results[i].lastUpdated).getTime();
+        const next = new Date(results[i + 1].lastUpdated).getTime();
+        assert.ok(current >= next, 'Results should be sorted by last updated descending');
+      }
     });
 
     test('should handle query with no matches', async () => {

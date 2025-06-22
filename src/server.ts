@@ -200,13 +200,15 @@ class JadeNoteServer {
           },
           {
             name: 'search_notes',
-            description: 'Search notes by content and/or type',
+            description:
+              'Search notes by content and/or type. Empty queries return all notes sorted by last updated.',
             inputSchema: {
               type: 'object',
               properties: {
                 query: {
                   type: 'string',
-                  description: 'Search query or regex pattern'
+                  description:
+                    'Search query or regex pattern. Empty string returns all notes.'
                 },
                 type_filter: {
                   type: 'string',

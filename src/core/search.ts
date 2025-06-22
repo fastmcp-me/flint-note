@@ -107,8 +107,34 @@ export class SearchManager {
         .split(/\s+/)
         .filter(term => term.length > 0);
 
+      // If no search terms, return all notes (matching everything)
       if (searchTerms.length === 0) {
-        return [];
+        // Return all notes, respecting type filter
+        for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
+          // Apply type filter if specified
+          if (typeFilter && noteData.type !== typeFilter) {
+            continue;
+          }
+
+          // Parse note path to get identifier
+          const identifier = this.pathToIdentifier(notePath);
+
+          results.push({
+            id: identifier,
+            title: noteData.title,
+            type: noteData.type,
+            tags: noteData.tags,
+            score: 1, // Default score for empty query
+            snippet: this.generateSnippet(noteData.content, []),
+            lastUpdated: noteData.updated
+          });
+        }
+
+        // Sort by last updated (most recent first) for empty queries
+        results.sort(
+          (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+        );
+        return results.slice(0, limit);
       }
 
       // Search through indexed notes
@@ -158,6 +184,37 @@ export class SearchManager {
     searchIndex: SearchIndex
   ): Promise<SearchResult[]> {
     try {
+      const results: SearchResult[] = [];
+
+      // If pattern is empty, return all notes (matching everything)
+      if (!pattern || pattern.trim() === '') {
+        for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
+          // Apply type filter if specified
+          if (typeFilter && noteData.type !== typeFilter) {
+            continue;
+          }
+
+          // Parse note path to get identifier
+          const identifier = this.pathToIdentifier(notePath);
+
+          results.push({
+            id: identifier,
+            title: noteData.title,
+            type: noteData.type,
+            tags: noteData.tags,
+            score: 1, // Default score for empty pattern
+            snippet: this.generateSnippet(noteData.content, []),
+            lastUpdated: noteData.updated
+          });
+        }
+
+        // Sort by last updated (most recent first) for empty pattern
+        results.sort(
+          (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+        );
+        return results.slice(0, limit);
+      }
+
       // Validate and create regex with default flags
       let regex: RegExp;
       try {
@@ -167,8 +224,6 @@ export class SearchManager {
           `Invalid regex pattern: ${regexError instanceof Error ? regexError.message : 'Unknown regex error'}`
         );
       }
-
-      const results: SearchResult[] = [];
 
       // Search through indexed notes
       for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
