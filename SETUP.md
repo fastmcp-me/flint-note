@@ -39,9 +39,37 @@ mkdir my-notes
 cd my-notes
 ```
 
-### 2. Start the MCP Server
+### 2. Set the Workspace Environment Variable
 
-From the jade-note directory, start the server pointing to your notes directory:
+jade-note uses the `JADE_NOTE_WORKSPACE` environment variable to know where your notes are stored. Set this to point to your notes directory:
+
+**For the current session:**
+```bash
+export JADE_NOTE_WORKSPACE=/path/to/your/notes-directory
+```
+
+**To make it permanent (recommended):**
+
+Add the export command to your shell configuration file:
+
+```bash
+# For bash users
+echo 'export JADE_NOTE_WORKSPACE=/path/to/your/notes-directory' >> ~/.bashrc
+source ~/.bashrc
+
+# For zsh users (macOS default)
+echo 'export JADE_NOTE_WORKSPACE=/path/to/your/notes-directory' >> ~/.zshrc
+source ~/.zshrc
+
+# For fish users
+set -Ux JADE_NOTE_WORKSPACE /path/to/your/notes-directory
+```
+
+Replace `/path/to/your/notes-directory` with the absolute path to your notes directory (e.g., `/Users/yourname/my-notes` on macOS or `/home/yourname/my-notes` on Linux).
+
+### 3. Start the MCP Server
+
+From the jade-note directory, start the server:
 
 ```bash
 npm start
@@ -53,7 +81,7 @@ Or for development with auto-reload:
 npm run dev
 ```
 
-### 3. Configure Your MCP Client
+### 4. Configure Your MCP Client
 
 Add jade-note to your MCP client configuration. For Claude Desktop, add this to your `claude_desktop_config.json`:
 
@@ -63,13 +91,17 @@ Add jade-note to your MCP client configuration. For Claude Desktop, add this to 
     "jade-note": {
       "command": "node",
       "args": ["/path/to/jade-note/src/server.js"],
-      "cwd": "/path/to/your/notes-directory"
+      "env": {
+        "JADE_NOTE_WORKSPACE": "/path/to/your/notes-directory"
+      }
     }
   }
 }
 ```
 
-### 4. Start Taking Notes!
+**Note:** You can either use the `env` field in the MCP configuration (as shown above) or rely on the environment variable you set in step 2. The `env` field takes precedence and is useful if you want to use different workspaces for different MCP clients.
+
+### 5. Start Taking Notes!
 
 Once connected, you can interact with your notes through natural language:
 
@@ -217,6 +249,11 @@ jade-note/
 3. **Permission errors**
    - Ensure the user has write permissions to the workspace directory
    - Check that the `.jade-note` directory can be created
+
+4. **Workspace not found errors**
+   - Verify that the `JADE_NOTE_WORKSPACE` environment variable is set correctly
+   - Check that the workspace directory exists and is accessible
+   - Ensure the path is absolute, not relative
 
 ### Logs
 
