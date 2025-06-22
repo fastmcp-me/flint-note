@@ -26,7 +26,9 @@ describe('Search Unit Tests', () => {
 
   beforeEach(async () => {
     // Create temporary workspace
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jade-note-search-unit-test-'));
+    const tempDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'jade-note-search-unit-test-')
+    );
     const workspace = new Workspace(tempDir);
 
     // Initialize managers
@@ -108,7 +110,10 @@ describe('Search Unit Tests', () => {
       );
 
       if (relevantNote) {
-        assert.ok(relevantNote.score > 0, 'Multi-term matches should have positive scores');
+        assert.ok(
+          relevantNote.score > 0,
+          'Multi-term matches should have positive scores'
+        );
       }
     });
 
@@ -145,17 +150,17 @@ describe('Search Unit Tests', () => {
       );
 
       assert.ok(Array.isArray(results));
-      assert.strictEqual(results.length, 0, 'Should return empty array for non-matching query');
+      assert.strictEqual(
+        results.length,
+        0,
+        'Should return empty array for non-matching query'
+      );
     });
   });
 
   describe('Type Filtering', () => {
     test('should filter by note type', async () => {
-      const results = await context.searchManager.searchNotes(
-        'project',
-        'projects',
-        10
-      );
+      const results = await context.searchManager.searchNotes('project', 'projects', 10);
 
       assert.ok(Array.isArray(results));
 
@@ -250,9 +255,10 @@ describe('Search Unit Tests', () => {
       const titleMatch = results.find(note =>
         note.title.toLowerCase().includes('python')
       );
-      const contentMatch = results.find(note =>
-        !note.title.toLowerCase().includes('python') &&
-        note.snippet.toLowerCase().includes('python')
+      const contentMatch = results.find(
+        note =>
+          !note.title.toLowerCase().includes('python') &&
+          note.snippet.toLowerCase().includes('python')
       );
 
       if (titleMatch && contentMatch) {
@@ -336,15 +342,12 @@ describe('Search Unit Tests', () => {
     });
 
     test('should handle long content in snippets', async () => {
-      const longContent = 'This is a very long document. '.repeat(100) +
+      const longContent =
+        'This is a very long document. '.repeat(100) +
         'JavaScript is mentioned here in the middle of a very long document. ' +
         'More content follows. '.repeat(50);
 
-      await context.noteManager.createNote(
-        'general',
-        'Long Document Test',
-        longContent
-      );
+      await context.noteManager.createNote('general', 'Long Document Test', longContent);
 
       // Rebuild index to include new note
       await context.searchManager.rebuildSearchIndex();
@@ -383,7 +386,10 @@ describe('Search Unit Tests', () => {
       const result = await context.searchManager.rebuildSearchIndex();
 
       assert.ok(typeof result === 'object', 'Should return rebuild result');
-      assert.ok(typeof result.indexedNotes === 'number', 'Should report indexed note count');
+      assert.ok(
+        typeof result.indexedNotes === 'number',
+        'Should report indexed note count'
+      );
       assert.ok(result.indexedNotes > 0, 'Should have indexed some notes');
       assert.ok(typeof result.timestamp === 'string', 'Should have timestamp');
     });
@@ -491,7 +497,10 @@ This is a note with tags.`;
 
       for (const result of results) {
         assert.ok(typeof result.similarity === 'number', 'Should have similarity score');
-        assert.ok(result.similarity >= 0 && result.similarity <= 1, 'Similarity should be between 0 and 1');
+        assert.ok(
+          result.similarity >= 0 && result.similarity <= 1,
+          'Similarity should be between 0 and 1'
+        );
         assert.ok(typeof result.id === 'string', 'Should have note ID');
       }
     });
@@ -658,7 +667,7 @@ This note has complex frontmatter.`;
         try {
           const results = await context.searchManager.searchNotes(query, null, 5);
           assert.ok(Array.isArray(results), `Should handle query: ${query}`);
-        } catch (error) {
+        } catch {
           assert.fail(`Should not throw error for query: ${query}`);
         }
       }
@@ -670,7 +679,7 @@ This note has complex frontmatter.`;
       try {
         const results = await context.searchManager.searchNotes(longQuery, null, 5);
         assert.ok(Array.isArray(results), 'Should handle very long queries');
-      } catch (error) {
+      } catch {
         assert.fail('Should not throw error for long queries');
       }
     });

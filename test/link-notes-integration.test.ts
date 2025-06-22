@@ -20,14 +20,50 @@ interface MCPRequest {
   jsonrpc: '2.0';
   id: number;
   method: string;
-  params: any;
+  params: Record<string, unknown>;
 }
 
 interface MCPResponse {
   jsonrpc: '2.0';
   id: number;
-  result?: any;
-  error?: any;
+  result?: MCPToolResult;
+  error?: Record<string, unknown>;
+}
+
+interface LinkObject {
+  target: string;
+  relationship: string;
+  context?: string;
+  created?: string | Date;
+}
+
+interface NoteMetadata {
+  links?: LinkObject[];
+  [key: string]: unknown;
+}
+
+interface NoteObject {
+  id: string;
+  title: string;
+  content: string;
+  metadata: NoteMetadata;
+  [key: string]: unknown;
+}
+
+interface MCPToolResult {
+  isError?: boolean;
+  success?: boolean;
+  content?: Array<{ text: string }>;
+  link_created?: {
+    source: string;
+    target: string;
+    relationship: string;
+    context?: string;
+    timestamp: string;
+    bidirectional?: boolean;
+  };
+  reverse_link_created?: boolean;
+  [key: string]: unknown;
 }
 
 class MCPTestClient {
@@ -77,7 +113,10 @@ class MCPTestClient {
     }
   }
 
-  async sendRequest(method: string, params: any = {}): Promise<MCPResponse> {
+  async sendRequest(
+    method: string,
+    params: Record<string, unknown> = {}
+  ): Promise<MCPResponse> {
     if (!this.serverProcess) {
       throw new Error('Server not started');
     }
@@ -136,10 +175,10 @@ class MCPTestClient {
       arguments: { type, title, content }
     });
 
-    return response.result && !response.result.isError;
+    return !!(response.result && !response.result.isError);
   }
 
-  async getNote(identifier: string): Promise<any> {
+  async getNote(identifier: string): Promise<NoteObject> {
     const response = await this.sendRequest('tools/call', {
       name: 'get_note',
       arguments: { identifier }
@@ -157,14 +196,14 @@ class MCPTestClient {
     relationship?: string;
     bidirectional?: boolean;
     context?: string;
-  }): Promise<any> {
+  }): Promise<MCPToolResult> {
     const response = await this.sendRequest('tools/call', {
       name: 'link_notes',
       arguments: args
     });
 
     if (response.result && response.result.isError) {
-      throw new Error(response.result.content[0].text);
+      throw new Error(response.result.content![0].text);
     }
     if (response.result && response.result.content) {
       return JSON.parse(response.result.content[0].text);
@@ -257,12 +296,12 @@ Detailed technical requirements and architecture.
       });
 
       assert.ok(result.success, 'Link creation should succeed');
-      assert.strictEqual(result.link_created.source, 'general/meeting-notes.md');
-      assert.strictEqual(result.link_created.target, 'general/project-plan.md');
-      assert.strictEqual(result.link_created.relationship, 'references');
-      assert.strictEqual(result.link_created.bidirectional, true);
+      assert.strictEqual(result.link_created!.source, 'general/meeting-notes.md');
+      assert.strictEqual(result.link_created!.target, 'general/project-plan.md');
+      assert.strictEqual(result.link_created!.relationship, 'references');
+      assert.ok(result.link_created!.bidirectional, 'Should be bidirectional');
       assert.ok(result.reverse_link_created, 'Reverse link should be created');
-      assert.ok(result.link_created.timestamp, 'Should have timestamp');
+      assert.ok(result.link_created!.timestamp, 'Should have timestamp');
     });
 
     test('should create unidirectional mentions link', async () => {
@@ -274,7 +313,7 @@ Detailed technical requirements and architecture.
       });
 
       assert.ok(result.success, 'Link creation should succeed');
-      assert.strictEqual(result.link_created.bidirectional, false);
+      assert.strictEqual(result.link_created!.bidirectional, false);
       assert.strictEqual(
         result.reverse_link_created,
         false,
@@ -290,12 +329,12 @@ Detailed technical requirements and architecture.
 
       assert.ok(result.success, 'Link creation with defaults should succeed');
       assert.strictEqual(
-        result.link_created.relationship,
+        result.link_created!.relationship,
         'references',
         'Should use default relationship'
       );
       assert.strictEqual(
-        result.link_created.bidirectional,
+        result.link_created!.bidirectional,
         true,
         'Should be bidirectional by default'
       );
@@ -324,7 +363,7 @@ Detailed technical requirements and architecture.
         });
 
         assert.ok(result.success, `${relationship} link should succeed`);
-        assert.strictEqual(result.link_created.relationship, relationship);
+        assert.strictEqual(result.link_created!.relationship, relationship);
       });
     });
 
@@ -358,8 +397,8 @@ Detailed technical requirements and architecture.
       assert.ok(sourceNote.metadata.links, 'Source note should have links');
       assert.ok(Array.isArray(sourceNote.metadata.links), 'Links should be array');
 
-      const sourceLink = sourceNote.metadata.links.find(
-        (l: any) => l.target === 'general/project-plan.md'
+      const sourceLink = sourceNote.metadata.links!.find(
+        (l: LinkObject) => l.target === 'general/project-plan.md'
       );
       assert.ok(sourceLink, 'Source should have link to target');
       assert.strictEqual(sourceLink.relationship, 'references');
@@ -367,8 +406,8 @@ Detailed technical requirements and architecture.
 
       // Check target note reverse link
       assert.ok(targetNote.metadata.links, 'Target note should have reverse links');
-      const reverseLink = targetNote.metadata.links.find(
-        (l: any) => l.target === 'general/meeting-notes.md'
+      const reverseLink = targetNote.metadata.links!.find(
+        (l: LinkObject) => l.target === 'general/meeting-notes.md'
       );
       assert.ok(reverseLink, 'Target should have reverse link');
       assert.strictEqual(reverseLink.relationship, 'mentions'); // references -> mentions
@@ -384,7 +423,7 @@ Detailed technical requirements and architecture.
       const sourceNote = await client.getNote('general/meeting-notes.md');
 
       assert.ok(
-        sourceNote.content.includes('[[project-plan|Project Plan]]'),
+        (sourceNote.content as string).includes('[[project-plan|Project Plan]]'),
         'Should contain wikilink in content'
       );
     });
@@ -455,8 +494,8 @@ Detailed technical requirements and architecture.
       const links = sourceNote.metadata.links || [];
 
       assert.strictEqual(links.length, 2, 'Should have two different links');
-      assert.ok(links.some((l: any) => l.relationship === 'references'));
-      assert.ok(links.some((l: any) => l.relationship === 'supports'));
+      assert.ok(links.some((l: LinkObject) => l.relationship === 'references'));
+      assert.ok(links.some((l: LinkObject) => l.relationship === 'supports'));
     });
   });
 
@@ -525,8 +564,8 @@ Detailed technical requirements and architecture.
       const links = sourceNote.metadata.links || [];
 
       assert.strictEqual(links.length, 2, 'Should have two links');
-      assert.ok(links.some((l: any) => l.target === 'general/project-plan.md'));
-      assert.ok(links.some((l: any) => l.target === 'general/technical-spec.md'));
+      assert.ok(links.some((l: LinkObject) => l.target === 'general/project-plan.md'));
+      assert.ok(links.some((l: LinkObject) => l.target === 'general/technical-spec.md'));
     });
 
     test('should handle bidirectional link network', async () => {
@@ -555,15 +594,15 @@ Detailed technical requirements and architecture.
       const techNote = await client.getNote('general/technical-spec.md');
 
       assert.ok(
-        meetingNote.metadata.links?.length >= 2,
+        (meetingNote.metadata.links?.length ?? 0) >= 2,
         'Meeting note should have multiple links'
       );
       assert.ok(
-        projectNote.metadata.links?.length >= 2,
+        (projectNote.metadata.links?.length ?? 0) >= 2,
         'Project note should have multiple links'
       );
       assert.ok(
-        techNote.metadata.links?.length >= 2,
+        (techNote.metadata.links?.length ?? 0) >= 2,
         'Tech note should have multiple links'
       );
     });

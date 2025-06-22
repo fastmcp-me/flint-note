@@ -144,9 +144,11 @@ More content here.`;
   describe('Note Identifier Parsing', () => {
     test('should handle different note identifier formats', async () => {
       // Create notes in different types
-      await noteTypeManager.createNoteType('projects', {
-        template: '# {{title}}\n\n{{content}}'
-      });
+      await noteTypeManager.createNoteType(
+        'projects',
+        'Project notes',
+        '# {{title}}\n\n{{content}}'
+      );
 
       const noteContent = 'Project note content';
       const notePath = path.join(workspace.getNoteTypePath('projects'), 'my-project.md');
@@ -232,17 +234,12 @@ This note has links in frontmatter.`;
       assert.strictEqual(note.metadata.links[0].target, 'other-note.md');
       assert.strictEqual(note.metadata.links[0].relationship, 'references');
       // YAML parses ISO date strings as Date objects, so we need to check the string representation
-      assert.ok(
-        note.metadata.links[0].created instanceof Date ||
-          typeof note.metadata.links[0].created === 'string'
-      );
-      if (note.metadata.links[0].created instanceof Date) {
-        assert.strictEqual(
-          note.metadata.links[0].created.toISOString(),
-          '2024-01-15T10:00:00.000Z'
-        );
+      const createdValue = note.metadata.links[0].created as unknown;
+      assert.ok(createdValue instanceof Date || typeof createdValue === 'string');
+      if (createdValue instanceof Date) {
+        assert.strictEqual(createdValue.toISOString(), '2024-01-15T10:00:00.000Z');
       } else {
-        assert.strictEqual(note.metadata.links[0].created, '2024-01-15T10:00:00Z');
+        assert.strictEqual(createdValue, '2024-01-15T10:00:00Z');
       }
       assert.strictEqual(note.metadata.links[0].context, 'Test link');
     });
@@ -408,7 +405,7 @@ const code = "preserved";
           async () => await noteManager.getNote('general/permission-test.md'),
           /Failed to get note/
         );
-      } catch (error) {
+      } catch (_error) {
         // Skip test on systems that don't support chmod
         console.log('Skipping permission test on this system');
       } finally {
@@ -436,10 +433,11 @@ const code = "preserved";
   describe('Note Types Integration', () => {
     test('should retrieve notes from custom note types', async () => {
       // Create custom note type
-      await noteTypeManager.createNoteType('meeting-notes', {
-        template:
-          '# {{title}}\n\n**Date:** {{date}}\n**Attendees:** \n\n## Agenda\n\n{{content}}'
-      });
+      await noteTypeManager.createNoteType(
+        'meeting-notes',
+        'Meeting notes',
+        '# {{title}}\n\n**Date:** {{date}}\n**Attendees:** \n\n## Agenda\n\n{{content}}'
+      );
 
       const noteContent = `# Weekly Standup
 
@@ -468,9 +466,11 @@ const code = "preserved";
 
     test('should handle notes with same filename in different types', async () => {
       // Create custom note type
-      await noteTypeManager.createNoteType('personal', {
-        template: '# {{title}}\n\n{{content}}'
-      });
+      await noteTypeManager.createNoteType(
+        'personal',
+        'Personal notes',
+        '# {{title}}\n\n{{content}}'
+      );
 
       // Create notes with same filename in different types
       const generalContent = 'This is a general todo list';
