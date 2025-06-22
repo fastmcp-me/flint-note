@@ -46,6 +46,14 @@ export class LinkManager {
     const _sourceNote = await this.#noteManager.getNote(source);
     const _targetNote = await this.#noteManager.getNote(target);
 
+    if (!_sourceNote) {
+      throw new Error(`Source note does not exist: ${source}`);
+    }
+
+    if (!_targetNote) {
+      throw new Error(`Target note does not exist: ${target}`);
+    }
+
     // Check for duplicate links
     if (await this.linkExists(source, target, relationship)) {
       throw new Error(

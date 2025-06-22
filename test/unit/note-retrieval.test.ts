@@ -8,7 +8,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
+
 import {
   createTestWorkspace,
   cleanupTestWorkspace,
@@ -387,7 +387,7 @@ function example() {
     });
 
     test('should handle notes with same filename in different types', async () => {
-      const filename = 'same-name';
+      const _filename = 'same-name';
       const types = [
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         TEST_CONSTANTS.NOTE_TYPES.PROJECT

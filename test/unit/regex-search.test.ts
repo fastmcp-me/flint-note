@@ -192,7 +192,7 @@ describe('Regex Search', () => {
       assert.ok(results.length > 0, 'Should find word boundary matches');
 
       // Should match "test" but not "testing" or "retest"
-      const foundExactWord = results.some(
+      const _foundExactWord = results.some(
         r => r.snippet.match(/\btest\b/) && !r.snippet.includes('testing')
       );
       // This test is challenging since we might not have exact control over content
@@ -309,7 +309,7 @@ describe('Regex Search', () => {
     });
 
     test('should handle regex with special characters', async () => {
-      const specialCharsPattern = /[\[\]{}()*+?.,\\^$|#\s]/g;
+      const specialCharsPattern = /[[\]{}()*+?.,\\^$|#\s]/g;
       const results = await context.searchManager.searchNotes(
         specialCharsPattern.source,
         null,

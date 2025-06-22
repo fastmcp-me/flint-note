@@ -9,11 +9,10 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import {
   MetadataSchemaParser,
-  MetadataValidator
+  MetadataValidator,
+  type MetadataSchema,
+  type MetadataFieldType
 } from '../../src/core/metadata-schema.ts';
-import { NoteTypeManager } from '../../src/core/note-types.ts';
-import { NoteManager } from '../../src/core/notes.ts';
-import { Workspace } from '../../src/core/workspace.ts';
 
 describe('MetadataSchemaParser', () => {
   describe('parseFromDescription', () => {
@@ -124,24 +123,24 @@ Just a simple note type.
 
   describe('generateSchemaSection', () => {
     test('should generate metadata section from schema definition', () => {
-      const schema = {
+      const schema: MetadataSchema = {
         fields: [
           {
             name: 'title',
-            type: 'string',
+            type: 'string' as MetadataFieldType,
             required: true,
             description: 'Book title'
           },
           {
             name: 'rating',
-            type: 'number',
+            type: 'number' as MetadataFieldType,
             required: true,
             description: 'Personal rating',
             constraints: { min: 1, max: 5 }
           },
           {
             name: 'tags',
-            type: 'array',
+            type: 'array' as MetadataFieldType,
             required: false,
             description: 'Topic tags'
           }
@@ -159,7 +158,7 @@ Just a simple note type.
     });
 
     test('should generate default schema when no fields provided', () => {
-      const schema = { fields: [] };
+      const schema: MetadataSchema = { fields: [] };
       const section = MetadataSchemaParser.generateSchemaSection(schema);
 
       assert.ok(section.includes('## Metadata Schema'));
@@ -174,34 +173,34 @@ Just a simple note type.
 
 describe('MetadataValidator', () => {
   describe('validate', () => {
-    const schema = {
+    const schema: MetadataSchema = {
       fields: [
         {
           name: 'title',
-          type: 'string',
+          type: 'string' as MetadataFieldType,
           required: true,
           description: 'Title'
         },
         {
           name: 'rating',
-          type: 'number',
+          type: 'number' as MetadataFieldType,
           required: true,
           constraints: { min: 1, max: 5 }
         },
         {
           name: 'status',
-          type: 'select',
+          type: 'select' as MetadataFieldType,
           required: false,
           constraints: { options: ['draft', 'published', 'archived'] }
         },
         {
           name: 'tags',
-          type: 'array',
+          type: 'array' as MetadataFieldType,
           required: false
         },
         {
           name: 'published_date',
-          type: 'date',
+          type: 'date' as MetadataFieldType,
           required: false
         }
       ]
@@ -321,11 +320,11 @@ describe('MetadataValidator', () => {
     });
 
     test('should validate string patterns', () => {
-      const patternSchema = {
+      const patternSchema: MetadataSchema = {
         fields: [
           {
             name: 'isbn',
-            type: 'string',
+            type: 'string' as MetadataFieldType,
             required: false,
             constraints: { pattern: '^[0-9-]{10,17}$' }
           }
@@ -342,39 +341,39 @@ describe('MetadataValidator', () => {
 
   describe('getDefaults', () => {
     test('should provide default values for required fields', () => {
-      const schema = {
+      const schema: MetadataSchema = {
         fields: [
           {
             name: 'title',
-            type: 'string',
+            type: 'string' as MetadataFieldType,
             required: true
           },
           {
             name: 'rating',
-            type: 'number',
+            type: 'number' as MetadataFieldType,
             required: true,
             constraints: { min: 1, max: 5 }
           },
           {
             name: 'published',
-            type: 'boolean',
+            type: 'boolean' as MetadataFieldType,
             required: true
           },
           {
             name: 'tags',
-            type: 'array',
+            type: 'array' as MetadataFieldType,
             required: true
           },
           {
-            name: 'status',
-            type: 'select',
-            required: true,
-            constraints: { options: ['draft', 'published'] }
+            name: 'created',
+            type: 'date' as MetadataFieldType,
+            required: false
           },
           {
-            name: 'optional_field',
-            type: 'string',
-            required: false
+            name: 'status',
+            type: 'select' as MetadataFieldType,
+            required: true,
+            constraints: { options: ['draft', 'published'] }
           }
         ]
       };
@@ -386,22 +385,22 @@ describe('MetadataValidator', () => {
       assert.strictEqual(defaults.published, false);
       assert.deepStrictEqual(defaults.tags, []);
       assert.strictEqual(defaults.status, 'draft'); // first option
-      assert.ok(!defaults.hasOwnProperty('optional_field'));
+      assert.ok(!Object.prototype.hasOwnProperty.call(defaults, 'created'));
     });
 
     test('should use explicit default values when provided', () => {
-      const schema = {
+      const schema: MetadataSchema = {
         fields: [
           {
             name: 'priority',
-            type: 'select',
+            type: 'select' as MetadataFieldType,
             required: false,
             default: 'medium',
             constraints: { options: ['low', 'medium', 'high'] }
           },
           {
             name: 'score',
-            type: 'number',
+            type: 'number' as MetadataFieldType,
             required: false,
             default: 3
           }

@@ -101,6 +101,7 @@ describe('LinkManager', () => {
       });
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(sourceNote, 'Source note should exist');
       const links = sourceNote.metadata.links || [];
 
       assert.ok(links.length > 0, 'Links should exist');
@@ -139,6 +140,7 @@ describe('LinkManager', () => {
 
         // Check forward link
         const sourceNote = await noteManager.getNote('general/source-note.md');
+        assert.ok(sourceNote, 'Source note should exist');
         const sourceLinks = sourceNote.metadata.links || [];
         const forwardLink = sourceLinks.find(l => l.target === 'general/target-note.md');
         assert.ok(forwardLink, 'Forward link should exist');
@@ -146,6 +148,7 @@ describe('LinkManager', () => {
 
         // Check reverse link
         const targetNote = await noteManager.getNote('general/target-note.md');
+        assert.ok(targetNote, 'Target note should exist');
         const targetLinks = targetNote.metadata.links || [];
         const reverseLink = targetLinks.find(l => l.target === 'general/source-note.md');
         assert.ok(reverseLink, 'Reverse link should exist');
@@ -177,6 +180,7 @@ describe('LinkManager', () => {
       });
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(sourceNote, 'Source note should exist');
       const links = sourceNote.metadata.links;
 
       assert.ok(Array.isArray(links), 'Links should be an array');
@@ -213,6 +217,7 @@ This is a note with custom metadata.`;
       });
 
       const updatedNote = await noteManager.getNote('general/custom-note.md');
+      assert.ok(updatedNote, 'Updated note should exist');
 
       assert.strictEqual(updatedNote.metadata.author, 'Test Author');
       assert.deepStrictEqual(updatedNote.metadata.tags, ['test', 'custom']);
@@ -227,6 +232,7 @@ This is a note with custom metadata.`;
       });
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(sourceNote, 'Source note should exist');
 
       assert.ok(
         sourceNote.content.includes('[[target-note|Target Note]]'),
@@ -250,6 +256,7 @@ This is a note with custom metadata.`;
       });
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(sourceNote, 'Source note should exist');
       const wikilinkMatches = sourceNote.content.match(
         /\[\[target-note\|Target Note\]\]/g
       );
@@ -305,6 +312,7 @@ This is a note with custom metadata.`;
       assert.ok(result.success, 'Should allow different relationship');
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(sourceNote, 'Source note should exist');
       const links = sourceNote.metadata.links || [];
 
       assert.strictEqual(links.length, 2, 'Should have two links');
@@ -441,6 +449,7 @@ This is a note with custom metadata.`;
       assert.ok(result.success, 'Should successfully add second link');
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(sourceNote, 'Source note should exist');
       const links = sourceNote.metadata.links || [];
 
       assert.strictEqual(links.length, 2, 'Should have two links');
@@ -463,12 +472,14 @@ This is a note with custom metadata.`;
       assert.ok(result.success, 'Should handle note without frontmatter');
 
       const updatedNote = await noteManager.getNote('general/plain-note.md');
+      assert.ok(updatedNote, 'Updated note should exist');
       assert.ok(updatedNote.metadata.links, 'Should add links metadata');
       assert.ok(updatedNote.rawContent.startsWith('---'), 'Should add frontmatter');
     });
 
     test('should preserve note content structure', async () => {
       const originalNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(originalNote, 'Original note should exist');
       const originalContent = originalNote.content;
 
       await linkManager.linkNotes({
@@ -478,6 +489,7 @@ This is a note with custom metadata.`;
       });
 
       const updatedNote = await noteManager.getNote('general/source-note.md');
+      assert.ok(updatedNote, 'Updated note should exist');
 
       // Content should still contain the original content
       assert.ok(
