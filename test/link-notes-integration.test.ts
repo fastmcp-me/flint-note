@@ -117,7 +117,7 @@ class MCPTestClient {
                 resolve(response);
                 return;
               }
-            } catch (e) {
+            } catch (_e) {
               // Not a complete JSON response yet
             }
           }
@@ -163,11 +163,11 @@ class MCPTestClient {
       arguments: args
     });
 
-    if (response.result && response.result.content) {
-      return JSON.parse(response.result.content[0].text);
-    }
     if (response.result && response.result.isError) {
       throw new Error(response.result.content[0].text);
+    }
+    if (response.result && response.result.content) {
+      return JSON.parse(response.result.content[0].text);
     }
     throw new Error('Failed to create link');
   }
@@ -241,7 +241,7 @@ Detailed technical requirements and architecture.
     await client.stop();
     try {
       await fs.rm(tempDir, { recursive: true, force: true });
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   });

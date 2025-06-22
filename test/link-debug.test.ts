@@ -37,7 +37,7 @@ describe('Link Debug', () => {
     // Clean up
     try {
       await fs.rm(tempDir, { recursive: true, force: true });
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   });
@@ -95,7 +95,10 @@ describe('Link Debug', () => {
 
     // Basic assertions
     assert.ok(result.success, 'Link creation should succeed');
-    assert.ok(updatedNoteA.metadata.links || updatedNoteB.metadata.links, 'At least one note should have links');
+    assert.ok(
+      updatedNoteA.metadata.links || updatedNoteB.metadata.links,
+      'At least one note should have links'
+    );
   });
 
   test('should debug frontmatter parsing', async () => {
@@ -112,7 +115,10 @@ tags: ["test"]
 
 This is a test note with frontmatter.`;
 
-    const testNotePath = path.join(workspace.getNoteTypePath('general'), 'frontmatter-test.md');
+    const testNotePath = path.join(
+      workspace.getNoteTypePath('general'),
+      'frontmatter-test.md'
+    );
     await fs.writeFile(testNotePath, noteWithFrontmatter);
 
     console.log('1. Reading note with frontmatter...');
@@ -170,7 +176,15 @@ This note has manually added links.`;
     assert.ok(parsedNote.metadata.links, 'Links should be parsed');
     assert.ok(Array.isArray(parsedNote.metadata.links), 'Links should be an array');
     assert.strictEqual(parsedNote.metadata.links.length, 1, 'Should have one link');
-    assert.strictEqual(parsedNote.metadata.links[0].target, 'general/note-a.md', 'Link target should be correct');
-    assert.strictEqual(parsedNote.metadata.links[0].relationship, 'references', 'Link relationship should be correct');
+    assert.strictEqual(
+      parsedNote.metadata.links[0].target,
+      'general/note-a.md',
+      'Link target should be correct'
+    );
+    assert.strictEqual(
+      parsedNote.metadata.links[0].relationship,
+      'references',
+      'Link relationship should be correct'
+    );
   });
 });

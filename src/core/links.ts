@@ -19,11 +19,9 @@ interface LinkNotesArgs {
 }
 
 export class LinkManager {
-  #workspace: Workspace;
   #noteManager: NoteManager;
 
-  constructor(workspace: Workspace, noteManager: NoteManager) {
-    this.#workspace = workspace;
+  constructor(_workspace: Workspace, noteManager: NoteManager) {
     this.#noteManager = noteManager;
   }
 
@@ -45,8 +43,8 @@ export class LinkManager {
     }
 
     // Normalize identifiers and verify both notes exist
-    const sourceNote = await this.#noteManager.getNote(source);
-    const targetNote = await this.#noteManager.getNote(target);
+    const _sourceNote = await this.#noteManager.getNote(source);
+    const _targetNote = await this.#noteManager.getNote(target);
 
     // Check for duplicate links
     if (await this.linkExists(source, target, relationship)) {
@@ -126,7 +124,7 @@ export class LinkManager {
    */
   private formatNoteWithLinks(
     content: string,
-    metadata: Record<string, unknown>
+    _metadata: Record<string, unknown>
   ): string {
     // This method is deprecated - NoteManager handles frontmatter formatting
     return content;

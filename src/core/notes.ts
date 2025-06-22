@@ -398,7 +398,7 @@ export class NoteManager {
         // Special handling for links array
         if (value.length > 0) {
           formattedContent += 'links:\n';
-          value.forEach((link: NoteLink) => {
+          (value as NoteLink[]).forEach((link: NoteLink) => {
             formattedContent += `  - target: "${link.target}"\n`;
             formattedContent += `    relationship: "${link.relationship}"\n`;
             formattedContent += `    created: "${link.created}"\n`;

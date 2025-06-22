@@ -18,6 +18,7 @@
 - Include semicolons
 - Prefer `const` over `let` when possible
 - No unused variables (prefix with `_` if intentionally unused)
+- prefer empty catch bindings when unused (`catch {}` vs `catch (error) {}`)
 
 ### Linting
 - ESLint configured with modern flat config
