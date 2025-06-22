@@ -7,555 +7,669 @@
 
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import fs from 'fs/promises';
-import path from 'path';
-import { tmpdir } from 'os';
-import { Workspace } from '../../src/core/workspace.ts';
-import { NoteManager } from '../../src/core/notes.ts';
-import { NoteTypeManager } from '../../src/core/note-types.ts';
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+import {
+  createTestWorkspace,
+  cleanupTestWorkspace,
+  createTestNotes,
+  createTestNotesWithMetadata,
+  createTestNoteTypes,
+  TEST_CONSTANTS,
+  type TestContext
+} from './helpers/test-utils.ts';
 
 describe('Note Retrieval', () => {
-  let testWorkspaceRoot: string;
-  let workspace: Workspace;
-  let noteManager: NoteManager;
-  let noteTypeManager: NoteTypeManager;
+  let context: TestContext;
 
   beforeEach(async () => {
-    // Create a unique temporary directory for each test
-    testWorkspaceRoot = path.join(
-      tmpdir(),
-      `jade-note-test-${Date.now()}-${Math.random().toString(36).substring(7)}`
-    );
-    await fs.mkdir(testWorkspaceRoot, { recursive: true });
-
-    // Initialize workspace and managers
-    workspace = new Workspace(testWorkspaceRoot);
-    await workspace.initialize();
-
-    noteManager = new NoteManager(workspace);
-    noteTypeManager = new NoteTypeManager(workspace);
+    context = await createTestWorkspace('note-retrieval-test');
+    await createTestNoteTypes(context);
+    await createTestNotes(context);
+    await createTestNotesWithMetadata(context);
   });
 
   afterEach(async () => {
-    // Clean up test workspace
-    try {
-      await fs.rm(testWorkspaceRoot, { recursive: true, force: true });
-    } catch (_error) {
-      // Ignore cleanup errors
-    }
+    await cleanupTestWorkspace(context);
   });
 
   describe('Basic Note Retrieval', () => {
     test('should retrieve a note with basic content', async () => {
       // Create a simple note first
-      const title = 'Test Note';
-      const content = 'This is the content of my test note.';
-
-      const result = await noteManager.createNote('general', title, content);
-
-      // Retrieve the note using the ID from the creation result
-      const note = await noteManager.getNote(result.id);
-
-      assert.strictEqual(note.title, title);
-      assert.ok(note.content.includes(content));
-      assert.strictEqual(note.type, 'general');
-      assert.strictEqual(note.filename, 'test-note.md');
-      assert.ok(note.path.includes('test-note.md'));
-      assert.ok(note.id, 'Note should have an ID');
-      assert.ok(note.created, 'Note should have creation timestamp');
-      assert.ok(note.modified, 'Note should have modification timestamp');
-      assert.ok(note.size > 0, 'Note should have non-zero size');
-    });
-
-    test('should retrieve note with frontmatter metadata', async () => {
-      // Create note with frontmatter
-      const noteContent = `---
-title: Custom Title
-author: John Doe
-tags:
-  - important
-  - work
-priority: high
----
-
-# Custom Title
-
-This is a note with custom frontmatter.`;
-
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'frontmatter-note.md'
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Simple Retrieval Test',
+        'This is a simple note for retrieval testing.'
       );
-      await fs.writeFile(notePath, noteContent);
 
       // Retrieve the note
-      const note = await noteManager.getNote('general/frontmatter-note.md');
+      const retrievedNote = await context.noteManager.getNote(noteInfo.id);
 
-      assert.strictEqual(note.title, 'Custom Title');
-      assert.strictEqual(note.metadata.author, 'John Doe');
-      assert.deepStrictEqual(note.metadata.tags, ['important', 'work']);
-      assert.strictEqual(note.metadata.priority, 'high');
-      assert.ok(note.content.includes('This is a note with custom frontmatter'));
-      assert.ok(note.rawContent.includes('---'));
-    });
-
-    test('should retrieve note without frontmatter', async () => {
-      // Create note without frontmatter
-      const noteContent = `# Simple Note
-
-This is a simple note without frontmatter.
-
-## Section 1
-Some content here.
-
-## Section 2
-More content here.`;
-
-      const notePath = path.join(workspace.getNoteTypePath('general'), 'simple-note.md');
-      await fs.writeFile(notePath, noteContent);
-
-      // Retrieve the note
-      const note = await noteManager.getNote('general/simple-note.md');
-
-      assert.strictEqual(note.title, 'Simple Note');
-      assert.strictEqual(note.content, noteContent);
-      assert.strictEqual(note.rawContent, noteContent);
-      assert.ok(note.metadata, 'Should have metadata object even without frontmatter');
-    });
-
-    test('should extract title from filename when no title in content', async () => {
-      // Create note without title
-      const noteContent = `This note has no title in the content.`;
-
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'untitled-note.md'
+      assert.ok(retrievedNote, 'Should retrieve the note');
+      assert.strictEqual(retrievedNote.id, noteInfo.id, 'Should have correct ID');
+      assert.strictEqual(
+        retrievedNote.title,
+        'Simple Retrieval Test',
+        'Should have correct title'
       );
-      await fs.writeFile(notePath, noteContent);
+      assert.strictEqual(
+        retrievedNote.type,
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Should have correct type'
+      );
+      assert.ok(
+        retrievedNote.content.includes('simple note for retrieval'),
+        'Should have correct content'
+      );
+      assert.ok(retrievedNote.created, 'Should have created timestamp');
+      assert.ok(retrievedNote.updated, 'Should have updated timestamp');
+    });
 
-      // Retrieve the note
-      const note = await noteManager.getNote('general/untitled-note.md');
+    test('should retrieve note by file path', async () => {
+      // Create a note in a specific type
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.PROJECT,
+        'Project Note',
+        'This is a project note.'
+      );
 
-      assert.strictEqual(note.title, 'Untitled Note');
-      assert.strictEqual(note.content, noteContent);
+      // Retrieve by path
+      const retrievedNote = await context.noteManager.getNoteByPath(noteInfo.path);
+
+      assert.ok(retrievedNote, 'Should retrieve note by path');
+      assert.strictEqual(
+        retrievedNote.title,
+        'Project Note',
+        'Should have correct title'
+      );
+      assert.strictEqual(
+        retrievedNote.type,
+        TEST_CONSTANTS.NOTE_TYPES.PROJECT,
+        'Should have correct type'
+      );
+    });
+
+    test('should return null for non-existent note', async () => {
+      const nonExistentId = 'general/non-existent-note.md';
+      const result = await context.noteManager.getNote(nonExistentId);
+
+      assert.strictEqual(result, null, 'Should return null for non-existent note');
     });
   });
 
-  describe('Note Identifier Parsing', () => {
-    test('should handle different note identifier formats', async () => {
-      // Create notes in different types
-      await noteTypeManager.createNoteType(
-        'projects',
-        'Project notes',
-        '# {{title}}\n\n{{content}}'
+  describe('Metadata Extraction', () => {
+    test('should parse YAML frontmatter correctly', async () => {
+      const noteWithMetadata = `---
+title: "Test Note with Metadata"
+author: "Test Author"
+tags: ["test", "metadata", "parsing"]
+priority: 1
+published: true
+custom_field: "custom value"
+---
+
+# Test Content
+
+This note has comprehensive metadata.`;
+
+      // Write note directly to test parsing
+      const notePath = context.workspace.getNotePath(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'metadata-test.md'
       );
+      await fs.writeFile(notePath, noteWithMetadata, 'utf8');
 
-      const noteContent = 'Project note content';
-      const notePath = path.join(workspace.getNoteTypePath('projects'), 'my-project.md');
-      await fs.writeFile(notePath, `# My Project\n\n${noteContent}`);
+      const noteId = `${TEST_CONSTANTS.NOTE_TYPES.DEFAULT}/metadata-test.md`;
+      const retrievedNote = await context.noteManager.getNote(noteId);
 
-      // Test identifier with .md extension
-      const note1 = await noteManager.getNote('projects/my-project.md');
-      assert.strictEqual(note1.type, 'projects');
-      assert.strictEqual(note1.filename, 'my-project.md');
-      assert.ok(note1.content.includes(noteContent));
-
-      // Test identifier without .md extension
-      const note2 = await noteManager.getNote('projects/my-project');
-      assert.strictEqual(note2.type, 'projects');
-      assert.strictEqual(note2.filename, 'my-project.md');
-      assert.ok(note2.content.includes(noteContent));
+      assert.ok(retrievedNote, 'Should retrieve note with metadata');
+      assert.strictEqual(
+        retrievedNote.metadata?.author,
+        'Test Author',
+        'Should parse author'
+      );
+      assert.deepStrictEqual(
+        retrievedNote.metadata?.tags,
+        ['test', 'metadata', 'parsing'],
+        'Should parse tags array'
+      );
+      assert.strictEqual(
+        retrievedNote.metadata?.priority,
+        1,
+        'Should parse numeric priority'
+      );
+      assert.strictEqual(retrievedNote.metadata?.published, true, 'Should parse boolean');
+      assert.strictEqual(
+        retrievedNote.metadata?.custom_field,
+        'custom value',
+        'Should parse custom fields'
+      );
     });
 
-    test('should handle notes with special characters in filenames', async () => {
-      const noteContent = 'Note with special characters';
-      const filename = 'note-with-åéîøü-chars.md';
-      const notePath = path.join(workspace.getNoteTypePath('general'), filename);
-      await fs.writeFile(notePath, `# Special Note\n\n${noteContent}`);
+    test('should handle malformed YAML frontmatter gracefully', async () => {
+      const noteWithBadYaml = `---
+title: "Unclosed quote
+invalid: yaml: structure: here
+bad_list:
+  - item 1
+  - item 2
+    - nested without proper indentation
+---
 
-      const note = await noteManager.getNote(`general/${filename}`);
+# Content
 
-      assert.strictEqual(note.filename, filename);
-      assert.ok(note.content.includes(noteContent));
+This note has malformed YAML.`;
+
+      const notePath = context.workspace.getNotePath(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'bad-yaml.md'
+      );
+      await fs.writeFile(notePath, noteWithBadYaml, 'utf8');
+
+      const noteId = `${TEST_CONSTANTS.NOTE_TYPES.DEFAULT}/bad-yaml.md`;
+      const retrievedNote = await context.noteManager.getNote(noteId);
+
+      assert.ok(retrievedNote, 'Should retrieve note despite bad YAML');
+      assert.ok(
+        retrievedNote.content.includes('This note has malformed YAML'),
+        'Should preserve content'
+      );
+      // Metadata might be empty or partial due to parsing errors
+      assert.ok(
+        typeof retrievedNote.metadata === 'object',
+        'Should provide metadata object'
+      );
+    });
+
+    test('should handle notes without frontmatter', async () => {
+      const noteWithoutFrontmatter = `# Simple Note
+
+This note has no frontmatter at all.
+
+Just plain markdown content.`;
+
+      const notePath = context.workspace.getNotePath(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'no-frontmatter.md'
+      );
+      await fs.writeFile(notePath, noteWithoutFrontmatter, 'utf8');
+
+      const noteId = `${TEST_CONSTANTS.NOTE_TYPES.DEFAULT}/no-frontmatter.md`;
+      const retrievedNote = await context.noteManager.getNote(noteId);
+
+      assert.ok(retrievedNote, 'Should retrieve note without frontmatter');
+      assert.ok(retrievedNote.content.includes('Simple Note'), 'Should have content');
+      assert.ok(retrievedNote.metadata, 'Should provide empty metadata object');
+    });
+
+    test('should extract title from content if not in frontmatter', async () => {
+      const noteWithContentTitle = `# Content Title
+
+This note's title comes from the H1 header, not frontmatter.`;
+
+      const notePath = context.workspace.getNotePath(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'content-title.md'
+      );
+      await fs.writeFile(notePath, noteWithContentTitle, 'utf8');
+
+      const noteId = `${TEST_CONSTANTS.NOTE_TYPES.DEFAULT}/content-title.md`;
+      const retrievedNote = await context.noteManager.getNote(noteId);
+
+      assert.ok(retrievedNote, 'Should retrieve note');
+      assert.strictEqual(
+        retrievedNote.title,
+        'Content Title',
+        'Should extract title from content'
+      );
     });
   });
 
-  describe('Content Parsing', () => {
-    test('should parse complex frontmatter correctly', async () => {
-      const noteContent = `---
-title: Complex Frontmatter
-tags:
-  - tag1
-  - tag2
-priority: high
----
+  describe('Content Processing', () => {
+    test('should preserve markdown formatting', async () => {
+      const markdownContent = `# Main Title
 
-# Complex Frontmatter
+## Subsection
 
-Content with various data types in frontmatter.`;
+This note contains:
 
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'complex-frontmatter.md'
-      );
-      await fs.writeFile(notePath, noteContent);
+- **Bold text**
+- *Italic text*
+- [Links](https://example.com)
+- \`inline code\`
 
-      const note = await noteManager.getNote('general/complex-frontmatter.md');
-
-      assert.strictEqual(note.metadata.title, 'Complex Frontmatter');
-      assert.deepStrictEqual(note.metadata.tags, ['tag1', 'tag2']);
-      assert.strictEqual(note.metadata.priority, 'high');
-    });
-
-    test('should parse frontmatter with links correctly', async () => {
-      const noteContent = `---
-title: Note With Links
-links:
-  - target: other-note.md
-    relationship: references
-    created: 2024-01-15T10:00:00Z
-    context: Test link
----
-
-# Note With Links
-
-This note has links in frontmatter.`;
-
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'note-with-links.md'
-      );
-      await fs.writeFile(notePath, noteContent);
-
-      const note = await noteManager.getNote('general/note-with-links.md');
-
-      assert.strictEqual(note.title, 'Note With Links');
-      assert.ok(Array.isArray(note.metadata.links));
-      assert.strictEqual(note.metadata.links[0].target, 'other-note.md');
-      assert.strictEqual(note.metadata.links[0].relationship, 'references');
-      // YAML parses ISO date strings as Date objects, so we need to check the string representation
-      const createdValue = note.metadata.links[0].created as unknown;
-      assert.ok(createdValue instanceof Date || typeof createdValue === 'string');
-      if (createdValue instanceof Date) {
-        assert.strictEqual(createdValue.toISOString(), '2024-01-15T10:00:00.000Z');
-      } else {
-        assert.strictEqual(createdValue, '2024-01-15T10:00:00Z');
-      }
-      assert.strictEqual(note.metadata.links[0].context, 'Test link');
-    });
-
-    test('should handle malformed frontmatter gracefully', async () => {
-      const noteContent = `---
-title: Malformed Frontmatter
-invalid_key: unclosed_value
----
-
-# Malformed Frontmatter
-
-This note has invalid YAML frontmatter.`;
-
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'malformed-frontmatter.md'
-      );
-      await fs.writeFile(notePath, noteContent);
-
-      const note = await noteManager.getNote('general/malformed-frontmatter.md');
-
-      // Should still retrieve the note, even with malformed frontmatter
-      assert.strictEqual(note.title, 'Malformed Frontmatter');
-      assert.ok(note.content.includes('This note has invalid YAML frontmatter'));
-      assert.ok(note.metadata, 'Should have metadata object');
-      // When frontmatter is malformed, it should return empty metadata but still extract title from content
-    });
-
-    test('should handle empty frontmatter', async () => {
-      const noteContent = `---
----
-
-# Empty Frontmatter
-
-This note has empty frontmatter.`;
-
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'empty-frontmatter.md'
-      );
-      await fs.writeFile(notePath, noteContent);
-
-      const note = await noteManager.getNote('general/empty-frontmatter.md');
-
-      assert.strictEqual(note.title, 'Empty Frontmatter');
-      assert.ok(note.content.includes('This note has empty frontmatter'));
-    });
-
-    test('should preserve original content formatting', async () => {
-      const noteContent = `# Formatted Note
-
-This note has:
-- List items
-- With multiple items
+### Code Block
 
 \`\`\`javascript
-const code = "preserved";
+function example() {
+  return "code block";
+}
 \`\`\`
 
-| Table | Header |
-|-------|--------|
-| Cell  | Data   |
+### Lists
 
-> Blockquote text
-> continues here`;
+1. Numbered item
+2. Another item
+   - Nested bullet
+   - Another bullet
 
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'formatted-note.md'
+### Blockquote
+
+> This is a blockquote
+> with multiple lines
+
+### Table
+
+| Column 1 | Column 2 |
+|----------|----------|
+| Cell 1   | Cell 2   |
+| Cell 3   | Cell 4   |
+`;
+
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Markdown Test',
+        markdownContent
       );
-      await fs.writeFile(notePath, noteContent);
 
-      const note = await noteManager.getNote('general/formatted-note.md');
+      const retrievedNote = await context.noteManager.getNote(noteInfo.id);
 
-      assert.strictEqual(note.content, noteContent);
-      assert.ok(note.content.includes('```javascript'));
-      assert.ok(note.content.includes('| Table | Header |'));
-      assert.ok(note.content.includes('> Blockquote text'));
+      assert.ok(retrievedNote, 'Should retrieve markdown note');
+      assert.ok(
+        retrievedNote.content.includes('**Bold text**'),
+        'Should preserve bold formatting'
+      );
+      assert.ok(
+        retrievedNote.content.includes('*Italic text*'),
+        'Should preserve italic formatting'
+      );
+      assert.ok(
+        retrievedNote.content.includes('[Links](https://example.com)'),
+        'Should preserve links'
+      );
+      assert.ok(
+        retrievedNote.content.includes('```javascript'),
+        'Should preserve code blocks'
+      );
+      assert.ok(
+        retrievedNote.content.includes('> This is a blockquote'),
+        'Should preserve blockquotes'
+      );
+      assert.ok(
+        retrievedNote.content.includes('| Column 1 | Column 2 |'),
+        'Should preserve tables'
+      );
+    });
+
+    test('should handle empty content', async () => {
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Empty Content Note',
+        ''
+      );
+
+      const retrievedNote = await context.noteManager.getNote(noteInfo.id);
+
+      assert.ok(retrievedNote, 'Should retrieve note with empty content');
+      assert.strictEqual(retrievedNote.title, 'Empty Content Note', 'Should have title');
+      assert.ok(typeof retrievedNote.content === 'string', 'Content should be string');
+    });
+
+    test('should handle very large content', async () => {
+      const largeContent = 'A'.repeat(10000) + '\n\n' + 'B'.repeat(10000);
+
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Large Content Note',
+        largeContent
+      );
+
+      const retrievedNote = await context.noteManager.getNote(noteInfo.id);
+
+      assert.ok(retrievedNote, 'Should retrieve note with large content');
+      assert.ok(retrievedNote.content.length > 20000, 'Should preserve large content');
+      assert.ok(
+        retrievedNote.content.includes('A'.repeat(100)),
+        'Should contain expected content'
+      );
     });
   });
 
-  describe('File System Properties', () => {
-    test('should include correct file system metadata', async () => {
-      const title = 'File System Test';
-      const content = 'Testing file system properties';
+  describe('Multiple Note Types', () => {
+    test('should retrieve notes from different types', async () => {
+      const noteTypes = [
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        TEST_CONSTANTS.NOTE_TYPES.PROJECT,
+        TEST_CONSTANTS.NOTE_TYPES.MEETING,
+        TEST_CONSTANTS.NOTE_TYPES.BOOK_REVIEW
+      ];
 
-      const result = await noteManager.createNote('general', title, content);
+      const createdNotes = [];
 
-      const note = await noteManager.getNote(result.id);
-
-      // Check timestamps are valid ISO strings
-      assert.ok(
-        new Date(note.created).toISOString() === note.created,
-        'Created should be valid ISO string'
-      );
-      assert.ok(
-        new Date(note.modified).toISOString() === note.modified,
-        'Modified should be valid ISO string'
-      );
-
-      // Check file size
-      assert.ok(note.size > 0, 'Size should be greater than 0');
-      assert.strictEqual(typeof note.size, 'number', 'Size should be a number');
-
-      // Check path is absolute
-      assert.ok(path.isAbsolute(note.path), 'Path should be absolute');
-      assert.ok(note.path.includes(note.filename), 'Path should include filename');
-    });
-
-    test('should handle large note files', async () => {
-      // Create a large note
-      const largeContent = 'A'.repeat(10000); // 10KB of content
-      const noteContent = `# Large Note\n\n${largeContent}`;
-
-      const notePath = path.join(workspace.getNoteTypePath('general'), 'large-note.md');
-      await fs.writeFile(notePath, noteContent);
-
-      const note = await noteManager.getNote('general/large-note.md');
-
-      assert.strictEqual(note.title, 'Large Note');
-      assert.ok(note.content.includes(largeContent));
-      assert.ok(note.size > 10000, 'Size should reflect large content');
-    });
-  });
-
-  describe('Error Handling', () => {
-    test('should throw error for non-existent note', async () => {
-      await assert.rejects(
-        async () => await noteManager.getNote('general/non-existent.md'),
-        /Note 'general\/non-existent\.md' does not exist/
-      );
-    });
-
-    test('should throw error for invalid note identifier', async () => {
-      await assert.rejects(
-        async () => await noteManager.getNote('invalid-identifier'),
-        /Failed to get note/
-      );
-    });
-
-    test('should throw error for note in non-existent type', async () => {
-      await assert.rejects(
-        async () => await noteManager.getNote('nonexistent/some-note.md'),
-        /Failed to get note/
-      );
-    });
-
-    test('should handle permission errors gracefully', async () => {
-      // Create a note first
-      const noteContent = 'Permission test note';
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'permission-test.md'
-      );
-      await fs.writeFile(notePath, noteContent);
-
-      // Change permissions to make it unreadable (Unix-like systems)
-      try {
-        await fs.chmod(notePath, 0o000);
-
-        await assert.rejects(
-          async () => await noteManager.getNote('general/permission-test.md'),
-          /Failed to get note/
+      // Create notes in different types
+      for (const type of noteTypes) {
+        const noteInfo = await context.noteManager.createNote(
+          type,
+          `${type} Note`,
+          `This is a note in ${type} type.`
         );
-      } catch (_error) {
-        // Skip test on systems that don't support chmod
-        console.log('Skipping permission test on this system');
-      } finally {
-        // Restore permissions for cleanup
-        try {
-          await fs.chmod(notePath, 0o644);
-        } catch (_error) {
-          // Ignore chmod errors
-        }
+        createdNotes.push(noteInfo);
       }
-    });
 
-    test('should provide helpful error messages', async () => {
-      try {
-        await noteManager.getNote('general/missing-note.md');
-        assert.fail('Should have thrown an error');
-      } catch (error) {
-        assert.ok(error instanceof Error);
-        assert.ok(error.message.includes('general/missing-note.md'));
-        assert.ok(error.message.includes('does not exist'));
+      // Retrieve all notes
+      for (let i = 0; i < createdNotes.length; i++) {
+        const retrievedNote = await context.noteManager.getNote(createdNotes[i].id);
+
+        assert.ok(retrievedNote, `Should retrieve ${noteTypes[i]} note`);
+        assert.strictEqual(
+          retrievedNote.type,
+          noteTypes[i],
+          `Should have correct type: ${noteTypes[i]}`
+        );
+        assert.ok(
+          retrievedNote.content.includes(noteTypes[i]),
+          'Should have type-specific content'
+        );
       }
-    });
-  });
-
-  describe('Note Types Integration', () => {
-    test('should retrieve notes from custom note types', async () => {
-      // Create custom note type
-      await noteTypeManager.createNoteType(
-        'meeting-notes',
-        'Meeting notes',
-        '# {{title}}\n\n**Date:** {{date}}\n**Attendees:** \n\n## Agenda\n\n{{content}}'
-      );
-
-      const noteContent = `# Weekly Standup
-
-**Date:** 2024-01-15
-**Attendees:** Alice, Bob, Charlie
-
-## Agenda
-
-- Project updates
-- Blockers
-- Next steps`;
-
-      const notePath = path.join(
-        workspace.getNoteTypePath('meeting-notes'),
-        'weekly-standup.md'
-      );
-      await fs.writeFile(notePath, noteContent);
-
-      const note = await noteManager.getNote('meeting-notes/weekly-standup.md');
-
-      assert.strictEqual(note.type, 'meeting-notes');
-      assert.strictEqual(note.title, 'Weekly Standup');
-      assert.ok(note.content.includes('**Date:** 2024-01-15'));
-      assert.ok(note.content.includes('**Attendees:** Alice, Bob, Charlie'));
     });
 
     test('should handle notes with same filename in different types', async () => {
-      // Create custom note type
-      await noteTypeManager.createNoteType(
-        'personal',
-        'Personal notes',
-        '# {{title}}\n\n{{content}}'
-      );
+      const filename = 'same-name';
+      const types = [
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        TEST_CONSTANTS.NOTE_TYPES.PROJECT
+      ];
 
-      // Create notes with same filename in different types
-      const generalContent = 'This is a general todo list';
-      const personalContent = 'This is a personal todo list';
+      const notes = [];
+      for (const type of types) {
+        const noteInfo = await context.noteManager.createNote(
+          type,
+          'Same Name',
+          `Content for ${type} note.`
+        );
+        notes.push(noteInfo);
+      }
 
-      const generalPath = path.join(workspace.getNoteTypePath('general'), 'todo.md');
-      const personalPath = path.join(workspace.getNoteTypePath('personal'), 'todo.md');
+      // Retrieve both notes
+      for (let i = 0; i < notes.length; i++) {
+        const retrievedNote = await context.noteManager.getNote(notes[i].id);
 
-      await fs.writeFile(generalPath, `# General Todo\n\n${generalContent}`);
-      await fs.writeFile(personalPath, `# Personal Todo\n\n${personalContent}`);
+        assert.ok(retrievedNote, `Should retrieve note from ${types[i]}`);
+        assert.strictEqual(retrievedNote.type, types[i], 'Should have correct type');
+        assert.ok(
+          retrievedNote.content.includes(types[i]),
+          'Should have correct content'
+        );
+      }
 
-      const generalNote = await noteManager.getNote('general/todo.md');
-      const personalNote = await noteManager.getNote('personal/todo.md');
-
-      assert.strictEqual(generalNote.type, 'general');
-      assert.strictEqual(personalNote.type, 'personal');
-      assert.ok(generalNote.content.includes(generalContent));
-      assert.ok(personalNote.content.includes(personalContent));
-      assert.notStrictEqual(generalNote.path, personalNote.path);
+      // Verify IDs are different
+      assert.notStrictEqual(notes[0].id, notes[1].id, 'Should have different IDs');
     });
   });
 
-  describe('Edge Cases', () => {
-    test('should handle empty note files', async () => {
-      const notePath = path.join(workspace.getNoteTypePath('general'), 'empty-note.md');
-      await fs.writeFile(notePath, '');
-
-      const note = await noteManager.getNote('general/empty-note.md');
-
-      assert.strictEqual(note.title, 'Empty Note');
-      assert.strictEqual(note.content, '');
-      assert.strictEqual(note.rawContent, '');
-      assert.strictEqual(note.size, 0);
-    });
-
-    test('should handle notes with only whitespace', async () => {
-      const notePath = path.join(
-        workspace.getNoteTypePath('general'),
-        'whitespace-note.md'
+  describe('File System Integration', () => {
+    test('should handle file modifications outside the system', async () => {
+      // Create a note normally
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'External Modification Test',
+        'Original content.'
       );
-      await fs.writeFile(notePath, '   \n\n\t  \n  ');
 
-      const note = await noteManager.getNote('general/whitespace-note.md');
+      // Modify the file directly
+      const modifiedContent = `---
+title: "Externally Modified Note"
+author: "External Editor"
+---
 
-      assert.strictEqual(note.title, 'Whitespace Note');
-      // Content gets trimmed during parsing
-      assert.strictEqual(note.content, '');
-    });
+# Modified Content
 
-    test('should handle notes with Unicode content', async () => {
-      const unicodeContent = `# 📝 Unicode Note
+This was modified outside the system.`;
 
-This note contains various Unicode characters:
-- Emojis: 🎉 🚀 ⭐ 💡
-- Accents: café, naïve, résumé
-- Math: α + β = γ, ∀x ∈ ℝ
-- CJK: 你好世界 こんにちは 안녕하세요`;
+      await fs.writeFile(noteInfo.path, modifiedContent, 'utf8');
 
-      const notePath = path.join(workspace.getNoteTypePath('general'), 'unicode-note.md');
-      await fs.writeFile(notePath, unicodeContent, 'utf-8');
+      // Retrieve the note
+      const retrievedNote = await context.noteManager.getNote(noteInfo.id);
 
-      const note = await noteManager.getNote('general/unicode-note.md');
-
-      // Title extraction removes emoji characters from filename generation
-      assert.strictEqual(note.title, 'Unicode Note');
-      assert.ok(note.content.includes('🎉 🚀 ⭐ 💡'));
-      assert.ok(note.content.includes('café, naïve, résumé'));
-      assert.ok(note.content.includes('α + β = γ'));
-      assert.ok(note.content.includes('你好世界 こんにちは 안녕하세요'));
-    });
-
-    test('should handle very long filenames', async () => {
-      // Create note with long filename (but within filesystem limits)
-      const longTitle = 'A'.repeat(100);
-      const content = 'Note with very long title';
-
-      // Create the note using noteManager to ensure proper filename generation
-      const result = await noteManager.createNote('general', longTitle, content);
-
-      // Retrieve the note using the returned ID
-      const retrievedNote = await noteManager.getNote(result.id);
-      assert.ok(retrievedNote.content.includes(content));
+      assert.ok(retrievedNote, 'Should retrieve externally modified note');
+      assert.strictEqual(
+        retrievedNote.title,
+        'Externally Modified Note',
+        'Should reflect external changes'
+      );
+      assert.strictEqual(
+        retrievedNote.metadata?.author,
+        'External Editor',
+        'Should parse new metadata'
+      );
       assert.ok(
-        retrievedNote.filename.length <= 255,
-        'Filename should be within filesystem limits'
+        retrievedNote.content.includes('Modified Content'),
+        'Should have modified content'
+      );
+    });
+
+    test('should handle corrupted files gracefully', async () => {
+      // Create a note normally
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Corruption Test',
+        'Original content.'
+      );
+
+      // Corrupt the file with binary data
+      const corruptedContent = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
+      await fs.writeFile(noteInfo.path, corruptedContent);
+
+      // Try to retrieve the corrupted note
+      const retrievedNote = await context.noteManager.getNote(noteInfo.id);
+
+      // Should handle gracefully - either return null or return with error indication
+      if (retrievedNote) {
+        assert.ok(
+          typeof retrievedNote.content === 'string',
+          'Content should be string even if corrupted'
+        );
+      } else {
+        assert.strictEqual(retrievedNote, null, 'Should return null for corrupted file');
+      }
+    });
+
+    test('should respect file permissions', async () => {
+      // Create a note normally
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Permissions Test',
+        'Original content.'
+      );
+
+      // Make file unreadable (skip on Windows)
+      if (process.platform !== 'win32') {
+        await fs.chmod(noteInfo.path, 0o000);
+
+        // Try to retrieve the unreadable note
+        await assert.rejects(
+          () => context.noteManager.getNote(noteInfo.id),
+          /permission denied|EACCES/i,
+          'Should throw permission error'
+        );
+
+        // Restore permissions for cleanup
+        await fs.chmod(noteInfo.path, 0o644);
+      }
+    });
+  });
+
+  describe('Performance and Edge Cases', () => {
+    test('should handle concurrent retrieval requests', async () => {
+      // Create a note
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Concurrent Test',
+        'Content for concurrent testing.'
+      );
+
+      // Make multiple concurrent retrieval requests
+      const promises = [];
+      const concurrentCount = 10;
+
+      for (let i = 0; i < concurrentCount; i++) {
+        promises.push(context.noteManager.getNote(noteInfo.id));
+      }
+
+      const results = await Promise.all(promises);
+
+      // All requests should succeed
+      for (let i = 0; i < concurrentCount; i++) {
+        assert.ok(results[i], `Request ${i} should succeed`);
+        assert.strictEqual(
+          results[i]?.title,
+          'Concurrent Test',
+          `Request ${i} should have correct title`
+        );
+      }
+    });
+
+    test('should cache repeated requests efficiently', async () => {
+      // Create a note
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Cache Test',
+        'Content for cache testing.'
+      );
+
+      // Make repeated requests
+      const startTime = Date.now();
+
+      const firstRetrieval = await context.noteManager.getNote(noteInfo.id);
+      const secondRetrieval = await context.noteManager.getNote(noteInfo.id);
+      const thirdRetrieval = await context.noteManager.getNote(noteInfo.id);
+
+      const endTime = Date.now();
+
+      // All should return the same data
+      assert.strictEqual(
+        firstRetrieval?.title,
+        'Cache Test',
+        'First retrieval should work'
+      );
+      assert.strictEqual(
+        secondRetrieval?.title,
+        'Cache Test',
+        'Second retrieval should work'
+      );
+      assert.strictEqual(
+        thirdRetrieval?.title,
+        'Cache Test',
+        'Third retrieval should work'
+      );
+
+      // Should complete reasonably quickly
+      assert.ok(endTime - startTime < 1000, 'Multiple retrievals should be fast');
+    });
+
+    test('should handle special characters in file content', async () => {
+      const specialContent = `# Special Characters Test
+
+Unicode characters: 🚀 💫 ⭐
+Emoji: 😀 😃 😄 😁 😆 😅
+Non-Latin: 你好 世界 こんにちは العالم
+Mathematical: ∑ ∫ ∂ ∇ ∞ ≈ ≠ ≤ ≥
+Special symbols: © ® ™ § ¶ † ‡
+Combining: é ñ ü ø å æ œ ß
+
+Binary-like content: \x00\x01\x02
+Control chars:
+Quotes: "double" 'single' "smart" 'smart'
+Backslashes: \\n \\t \\r \\
+`;
+
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Special Characters Test',
+        specialContent
+      );
+
+      const retrievedNote = await context.noteManager.getNote(noteInfo.id);
+
+      assert.ok(retrievedNote, 'Should retrieve note with special characters');
+      assert.ok(retrievedNote.content.includes('🚀'), 'Should preserve emoji');
+      assert.ok(retrievedNote.content.includes('你好'), 'Should preserve Unicode');
+      assert.ok(
+        retrievedNote.content.includes('∑'),
+        'Should preserve mathematical symbols'
+      );
+      assert.ok(
+        retrievedNote.content.includes('"smart"'),
+        'Should preserve smart quotes'
+      );
+    });
+  });
+
+  describe('Error Handling and Recovery', () => {
+    test('should provide helpful error messages for invalid IDs', async () => {
+      const invalidIds = [
+        '',
+        'invalid-format',
+        'missing/extension',
+        'too/many/slashes/here.md',
+        '../parent-directory.md',
+        'absolute/path.md'
+      ];
+
+      for (const invalidId of invalidIds) {
+        const result = await context.noteManager.getNote(invalidId);
+        assert.strictEqual(
+          result,
+          null,
+          `Should return null for invalid ID: ${invalidId}`
+        );
+      }
+    });
+
+    test('should handle workspace path traversal attempts', async () => {
+      const maliciousIds = [
+        '../../../etc/passwd',
+        'general/../../../etc/passwd',
+        'general/../../outside-workspace.md',
+        '..\\..\\windows-path.md'
+      ];
+
+      for (const maliciousId of maliciousIds) {
+        const result = await context.noteManager.getNote(maliciousId);
+        assert.strictEqual(result, null, `Should reject malicious path: ${maliciousId}`);
+      }
+    });
+
+    test('should recover from temporary file system issues', async () => {
+      // Create a note
+      const noteInfo = await context.noteManager.createNote(
+        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+        'Recovery Test',
+        'Test recovery functionality.'
+      );
+
+      // Verify it can be retrieved initially
+      const initialRetrieval = await context.noteManager.getNote(noteInfo.id);
+      assert.ok(initialRetrieval, 'Should retrieve note initially');
+
+      // Temporarily move the file to simulate file system issue
+      const tempPath = noteInfo.path + '.temp';
+      await fs.rename(noteInfo.path, tempPath);
+
+      // Should return null when file is missing
+      const missingRetrieval = await context.noteManager.getNote(noteInfo.id);
+      assert.strictEqual(missingRetrieval, null, 'Should return null when file missing');
+
+      // Restore the file
+      await fs.rename(tempPath, noteInfo.path);
+
+      // Should work again after recovery
+      const recoveredRetrieval = await context.noteManager.getNote(noteInfo.id);
+      assert.ok(recoveredRetrieval, 'Should retrieve note after recovery');
+      assert.strictEqual(
+        recoveredRetrieval.title,
+        'Recovery Test',
+        'Should have correct data after recovery'
       );
     });
   });

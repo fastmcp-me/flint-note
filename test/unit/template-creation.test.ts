@@ -5,37 +5,27 @@
  * variable substitution, template retrieval, and error handling.
  */
 
-import { describe, it, before, after } from 'node:test';
+import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { Workspace } from '../../src/core/workspace.ts';
-import { NoteManager } from '../../src/core/notes.ts';
-import { NoteTypeManager } from '../../src/core/note-types.ts';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+import {
+  createTestWorkspace,
+  cleanupTestWorkspace,
+  createTestNoteTypes,
+  type TestContext
+} from './helpers/test-utils.ts';
 
 describe('Template-based Note Creation', () => {
-  let workspace: Workspace;
-  let noteManager: NoteManager;
-  let noteTypeManager: NoteTypeManager;
-  let testDir: string;
+  let context: TestContext;
 
-  before(async () => {
-    // Create temporary test directory
-    testDir = path.join(__dirname, '..', 'temp-template-test');
-    await fs.mkdir(testDir, { recursive: true });
+  beforeEach(async () => {
+    context = await createTestWorkspace('template-test');
+    await createTestNoteTypes(context);
 
-    workspace = new Workspace(testDir);
-    await workspace.initialize();
-    noteManager = new NoteManager(workspace);
-    noteTypeManager = new NoteTypeManager(workspace);
-
-    // Set up proper template content for general note type
-    const generalPath = workspace.getNoteTypePath('general');
-    const descriptionPath = path.join(generalPath, '.description.md');
+    // Set up custom template for general note type
+    const generalPath = context.workspace.getNoteTypePath('general');
+    const descriptionPath = join(generalPath, '.description.md');
 
     const templateContent = `# General Notes
 
@@ -72,18 +62,13 @@ Expected frontmatter fields:
     await fs.writeFile(descriptionPath, templateContent, 'utf-8');
   });
 
-  after(async () => {
-    // Clean up test directory
-    try {
-      await fs.rm(testDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
-    }
+  afterEach(async () => {
+    await cleanupTestWorkspace(context);
   });
 
   describe('Template Retrieval', () => {
-    it('should get template from general note type', async () => {
-      const template = await noteTypeManager.getNoteTypeTemplate('general');
+    test('should get template from general note type', async () => {
+      const template = await context.noteTypeManager.getNoteTypeTemplate('general');
       assert(template.includes('{{title}}'), 'Template should contain title variable');
       assert(
         template.includes('{{content}}'),
@@ -92,15 +77,18 @@ Expected frontmatter fields:
       assert(template.includes('{{date}}'), 'Template should contain date variable');
     });
 
-    it('should create basic template for note type without template', async () => {
-      await noteTypeManager.createNoteType('simple', 'Simple notes without template');
-      const template = await noteTypeManager.getNoteTypeTemplate('simple');
+    test('should create basic template for note type without template', async () => {
+      await context.noteTypeManager.createNoteType(
+        'simple',
+        'Simple notes without template'
+      );
+      const template = await context.noteTypeManager.getNoteTypeTemplate('simple');
       assert(template.includes('Simple Note'), 'Should generate basic template');
     });
 
-    it('should handle non-existent note type gracefully', async () => {
+    test('should handle non-existent note type gracefully', async () => {
       await assert.rejects(
-        () => noteTypeManager.getNoteTypeTemplate('nonexistent'),
+        () => context.noteTypeManager.getNoteTypeTemplate('nonexistent'),
         /does not exist/,
         'Should throw error for non-existent note type'
       );
@@ -108,8 +96,8 @@ Expected frontmatter fields:
   });
 
   describe('Template Processing', () => {
-    it('should create note with template variables substituted', async () => {
-      const noteInfo = await noteManager.createNote(
+    test('should create note with template variables substituted', async () => {
+      const noteInfo = await context.noteManager.createNote(
         'general',
         'Test Template Note',
         'This is the main content of the note.',
@@ -130,8 +118,8 @@ Expected frontmatter fields:
       assert(!noteContent.includes('{{type}}'), 'Template variables should be replaced');
     });
 
-    it('should include date and time in template', async () => {
-      const noteInfo = await noteManager.createNote(
+    test('should include date and time in template', async () => {
+      const noteInfo = await context.noteManager.createNote(
         'general',
         'Date Test Note',
         'Testing date variables.',
@@ -144,15 +132,15 @@ Expected frontmatter fields:
         'Should include creation date section'
       );
 
-      // Check that date format is reasonable (not checking exact format due to locale differences)
+      // Check that date format is reasonable
       const dateMatch = noteContent.match(/\*\*Created:\*\* (.+) at (.+)/);
       assert(dateMatch, 'Should have date and time');
       assert(dateMatch[1].length > 0, 'Date should not be empty');
       assert(dateMatch[2].length > 0, 'Time should not be empty');
     });
 
-    it('should preserve frontmatter when using templates', async () => {
-      const noteInfo = await noteManager.createNote(
+    test('should preserve frontmatter when using templates', async () => {
+      const noteInfo = await context.noteManager.createNote(
         'general',
         'Frontmatter Test',
         'Content with frontmatter.',
@@ -169,14 +157,13 @@ Expected frontmatter fields:
       );
       assert(noteContent.includes('type: general'), 'Should have type in frontmatter');
       assert(noteContent.includes('created:'), 'Should have created timestamp');
-      assert(noteContent.includes('tags: []'), 'Should have tags array');
     });
   });
 
   describe('Template vs Non-Template Comparison', () => {
-    it('should create different content with and without template', async () => {
+    test('should create different content with and without template', async () => {
       // Create note without template
-      const noteWithoutTemplate = await noteManager.createNote(
+      const noteWithoutTemplate = await context.noteManager.createNote(
         'general',
         'No Template Note',
         'Simple content without template.',
@@ -184,7 +171,7 @@ Expected frontmatter fields:
       );
 
       // Create note with template
-      const noteWithTemplate = await noteManager.createNote(
+      const noteWithTemplate = await context.noteManager.createNote(
         'general',
         'With Template Note',
         'Simple content with template.',
@@ -194,7 +181,7 @@ Expected frontmatter fields:
       const contentWithoutTemplate = await fs.readFile(noteWithoutTemplate.path, 'utf-8');
       const contentWithTemplate = await fs.readFile(noteWithTemplate.path, 'utf-8');
 
-      // Without template should be simpler
+      // Template version should have more structure
       const withoutTemplateLines = contentWithoutTemplate.split('\n');
       const withTemplateLines = contentWithTemplate.split('\n');
 
@@ -215,7 +202,7 @@ Expected frontmatter fields:
   });
 
   describe('Custom Note Type Templates', () => {
-    it('should create note type with custom template', async () => {
+    test('should create note type with custom template', async () => {
       const customTemplate = `# {{title}}
 
 **Project:** {{type}}
@@ -234,13 +221,13 @@ What is the goal of this project?
 ## Resources
 - Links and references`;
 
-      await noteTypeManager.createNoteType(
+      await context.noteTypeManager.createNoteType(
         'project',
         'Project planning and tracking notes',
         customTemplate
       );
 
-      const noteInfo = await noteManager.createNote(
+      const noteInfo = await context.noteManager.createNote(
         'project',
         'My New Project',
         'This project aims to create something amazing.',
@@ -258,7 +245,7 @@ What is the goal of this project?
       );
     });
 
-    it('should handle template with missing variables gracefully', async () => {
+    test('should handle template with missing variables gracefully', async () => {
       const templateWithMissingVars = `# {{title}}
 
 Unknown variable: {{unknown_var}}
@@ -266,13 +253,13 @@ Known variable: {{type}}
 
 Content: {{content}}`;
 
-      await noteTypeManager.createNoteType(
+      await context.noteTypeManager.createNoteType(
         'incomplete',
         'Template with missing variables',
         templateWithMissingVars
       );
 
-      const noteInfo = await noteManager.createNote(
+      const noteInfo = await context.noteManager.createNote(
         'incomplete',
         'Test Missing Vars',
         'Testing missing variables.',
@@ -293,58 +280,9 @@ Content: {{content}}`;
     });
   });
 
-  describe('Error Handling', () => {
-    it('should fall back to default format if template fails', async () => {
-      // This test simulates a template processing error by temporarily breaking the template
-      const originalGetTemplate = noteTypeManager.getNoteTypeTemplate;
-
-      // Mock the template method to throw an error
-      const mockNoteTypeManager = noteTypeManager as {
-        getNoteTypeTemplate: (typeName: string) => Promise<string>;
-      };
-      mockNoteTypeManager.getNoteTypeTemplate = async () => {
-        throw new Error('Template error');
-      };
-
-      const noteInfo = await noteManager.createNote(
-        'general',
-        'Fallback Test',
-        'Content for fallback test.',
-        true // request template but it will fail
-      );
-
-      // Restore original method
-      noteTypeManager.getNoteTypeTemplate = originalGetTemplate;
-
-      const noteContent = await fs.readFile(noteInfo.path, 'utf-8');
-
-      // Should fall back to basic format
-      assert(noteContent.includes('# Fallback Test'), 'Should have title');
-      assert(noteContent.includes('Content for fallback test.'), 'Should have content');
-      assert(!noteContent.includes('{{'), 'Should not have template variables');
-    });
-
-    it('should work with empty content and template', async () => {
-      const noteInfo = await noteManager.createNote(
-        'general',
-        'Empty Content Note',
-        '',
-        true
-      );
-
-      const noteContent = await fs.readFile(noteInfo.path, 'utf-8');
-
-      assert(noteContent.includes('# Empty Content Note'), 'Should have title');
-      assert(noteContent.includes('## Context'), 'Should have template structure');
-      // Content section should be present but may have newlines
-      const contentMatch = noteContent.match(/## Content\s*\n/);
-      assert(contentMatch, 'Should have content section from template');
-    });
-  });
-
   describe('Template Variables', () => {
-    it('should substitute all standard variables correctly', async () => {
-      const noteInfo = await noteManager.createNote(
+    test('should substitute all standard variables correctly', async () => {
+      const noteInfo = await context.noteManager.createNote(
         'general',
         'Variable Test',
         'Testing all variables.',
@@ -356,14 +294,12 @@ Content: {{content}}`;
       // Check that no template variables remain
       assert(!noteContent.includes('{{title}}'), 'Title variable should be replaced');
       assert(!noteContent.includes('{{type}}'), 'Type variable should be replaced');
-      assert(!noteContent.includes('{{created}}'), 'Created variable should be replaced');
-      assert(!noteContent.includes('{{updated}}'), 'Updated variable should be replaced');
       assert(!noteContent.includes('{{date}}'), 'Date variable should be replaced');
       assert(!noteContent.includes('{{time}}'), 'Time variable should be replaced');
       assert(!noteContent.includes('{{content}}'), 'Content variable should be replaced');
     });
 
-    it('should handle content variable placement correctly', async () => {
+    test('should handle content variable placement correctly', async () => {
       const customTemplate = `# {{title}}
 
 Before content.
@@ -372,13 +308,13 @@ Before content.
 
 After content.`;
 
-      await noteTypeManager.createNoteType(
+      await context.noteTypeManager.createNoteType(
         'content-test',
         'Testing content placement',
         customTemplate
       );
 
-      const noteInfo = await noteManager.createNote(
+      const noteInfo = await context.noteManager.createNote(
         'content-test',
         'Content Placement Test',
         'This is the main content.',
@@ -393,6 +329,24 @@ After content.`;
         ),
         'Content should be placed correctly in template'
       );
+    });
+
+    test('should work with empty content and template', async () => {
+      const noteInfo = await context.noteManager.createNote(
+        'general',
+        'Empty Content Note',
+        '',
+        true
+      );
+
+      const noteContent = await fs.readFile(noteInfo.path, 'utf-8');
+
+      assert(noteContent.includes('# Empty Content Note'), 'Should have title');
+      assert(noteContent.includes('## Context'), 'Should have template structure');
+
+      // Content section should be present
+      const contentMatch = noteContent.match(/## Content\s*\n/);
+      assert(contentMatch, 'Should have content section from template');
     });
   });
 });

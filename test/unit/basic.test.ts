@@ -1,68 +1,87 @@
 /**
  * Basic tests for jade-note project structure and imports
+ * Tests core class imports, configuration, and workspace functionality
  */
 
-import { test, describe } from 'node:test';
+import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { Workspace } from '../../src/core/workspace.ts';
-import { NoteManager } from '../../src/core/notes.ts';
-import { NoteTypeManager } from '../../src/core/note-types.ts';
-import { SearchManager } from '../../src/core/search.ts';
-import { ConfigManager } from '../../src/utils/config.ts';
+import {
+  createTestWorkspace,
+  cleanupTestWorkspace,
+  TestAssertions,
+  type TestContext
+} from './helpers/test-utils.ts';
 
 describe('Project Structure', () => {
-  test('should import core classes without errors', () => {
-    assert.ok(Workspace, 'Workspace class should be importable');
-    assert.ok(NoteManager, 'NoteManager class should be importable');
-    assert.ok(NoteTypeManager, 'NoteTypeManager class should be importable');
-    assert.ok(SearchManager, 'SearchManager class should be importable');
-    assert.ok(ConfigManager, 'ConfigManager class should be importable');
+  let context: TestContext;
+
+  beforeEach(async () => {
+    context = await createTestWorkspace('basic-test');
   });
 
-  test('should create instances of core classes', () => {
-    const workspace = new Workspace('/tmp/test-workspace');
-    assert.ok(workspace instanceof Workspace, 'Should create Workspace instance');
+  afterEach(async () => {
+    await cleanupTestWorkspace(context);
+  });
 
-    const noteManager = new NoteManager(workspace);
-    assert.ok(noteManager instanceof NoteManager, 'Should create NoteManager instance');
+  test('should import and instantiate all core classes', () => {
+    TestAssertions.assertCoreClassesImportable(context);
+  });
 
-    const noteTypeManager = new NoteTypeManager(workspace);
-    assert.ok(
-      noteTypeManager instanceof NoteTypeManager,
-      'Should create NoteTypeManager instance'
-    );
+  test('should create workspace paths correctly', () => {
+    TestAssertions.assertWorkspacePaths(context.workspace);
+  });
 
-    const searchManager = new SearchManager(workspace);
-    assert.ok(
-      searchManager instanceof SearchManager,
-      'Should create SearchManager instance'
-    );
-
-    const configManager = new ConfigManager('/tmp/test-workspace');
-    assert.ok(
-      configManager instanceof ConfigManager,
-      'Should create ConfigManager instance'
-    );
+  test('should validate workspace path security', () => {
+    TestAssertions.assertWorkspacePathValidation(context.workspace, context.tempDir);
   });
 });
 
-describe('Configuration', () => {
-  test('should generate default configuration', () => {
-    const configManager = new ConfigManager('/tmp/test-workspace');
-    const defaultConfig = configManager.getDefaultConfig();
+describe('Configuration Management', () => {
+  let context: TestContext;
 
+  beforeEach(async () => {
+    context = await createTestWorkspace('config-test');
+  });
+
+  afterEach(async () => {
+    await cleanupTestWorkspace(context);
+  });
+
+  test('should generate complete default configuration', () => {
+    const defaultConfig = context.configManager.getDefaultConfig();
+
+    // Verify all required top-level config sections exist
     assert.ok(defaultConfig.version, 'Should have version');
     assert.ok(defaultConfig.workspace_root, 'Should have workspace_root');
     assert.ok(defaultConfig.default_note_type, 'Should have default_note_type');
     assert.ok(defaultConfig.mcp_server, 'Should have mcp_server config');
     assert.ok(defaultConfig.search, 'Should have search config');
     assert.ok(defaultConfig.note_types, 'Should have note_types config');
+    assert.ok(defaultConfig.metadata, 'Should have metadata config');
+
+    // Verify nested config structure
+    assert.ok(
+      typeof defaultConfig.mcp_server.port === 'number',
+      'MCP server should have port'
+    );
+    assert.ok(
+      typeof defaultConfig.search.index_enabled === 'boolean',
+      'Search should have index_enabled'
+    );
+    assert.ok(
+      typeof defaultConfig.note_types.auto_create_directories === 'boolean',
+      'Note types should have auto_create_directories'
+    );
   });
 
-  test('should validate note type names', () => {
-    const configManager = new ConfigManager('/tmp/test-workspace');
+  test('should validate note type names correctly', () => {
+    const { configManager } = context;
 
-    assert.ok(configManager.isValidNoteTypeName('general'), 'Should accept valid name');
+    // Valid names
+    assert.ok(
+      configManager.isValidNoteTypeName('general'),
+      'Should accept basic valid name'
+    );
     assert.ok(
       configManager.isValidNoteTypeName('my-notes'),
       'Should accept hyphenated name'
@@ -71,42 +90,32 @@ describe('Configuration', () => {
       configManager.isValidNoteTypeName('my_notes'),
       'Should accept underscored name'
     );
+    assert.ok(
+      configManager.isValidNoteTypeName('notes123'),
+      'Should accept names with numbers'
+    );
 
+    // Invalid names
     assert.ok(!configManager.isValidNoteTypeName(''), 'Should reject empty name');
     assert.ok(
       !configManager.isValidNoteTypeName('.hidden'),
       'Should reject name starting with dot'
     );
-    assert.ok(!configManager.isValidNoteTypeName('CON'), 'Should reject reserved name');
+    assert.ok(
+      !configManager.isValidNoteTypeName('CON'),
+      'Should reject Windows reserved name'
+    );
     assert.ok(
       !configManager.isValidNoteTypeName('my notes'),
       'Should reject name with spaces'
     );
-  });
-});
-
-describe('Workspace', () => {
-  test('should create workspace paths correctly', () => {
-    const workspace = new Workspace('/tmp/test-workspace');
-
-    const typePath = workspace.getNoteTypePath('general');
-    assert.ok(typePath.includes('general'), 'Should create correct type path');
-
-    const notePath = workspace.getNotePath('general', 'test.md');
-    assert.ok(notePath.includes('general'), 'Should create correct note path');
-    assert.ok(notePath.includes('test.md'), 'Should include filename in path');
-  });
-
-  test('should validate paths are in workspace', () => {
-    const workspace = new Workspace('/tmp/test-workspace');
-
     assert.ok(
-      workspace.isPathInWorkspace('/tmp/test-workspace/general/note.md'),
-      'Should accept path in workspace'
+      !configManager.isValidNoteTypeName('notes/test'),
+      'Should reject name with slashes'
     );
     assert.ok(
-      !workspace.isPathInWorkspace('/etc/passwd'),
-      'Should reject path outside workspace'
+      !configManager.isValidNoteTypeName('notes\\test'),
+      'Should reject name with backslashes'
     );
   });
 });

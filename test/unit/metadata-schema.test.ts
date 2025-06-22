@@ -7,8 +7,6 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import fs from 'fs/promises';
-import path from 'path';
 import {
   MetadataSchemaParser,
   MetadataValidator
