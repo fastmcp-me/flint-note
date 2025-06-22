@@ -49,6 +49,7 @@ interface SearchNotesArgs {
   query: string;
   type_filter?: string;
   limit?: number;
+  use_regex?: boolean;
 }
 
 interface ListNoteTypesArgs {
@@ -205,7 +206,7 @@ class JadeNoteServer {
               properties: {
                 query: {
                   type: 'string',
-                  description: 'Search query'
+                  description: 'Search query or regex pattern'
                 },
                 type_filter: {
                   type: 'string',
@@ -215,6 +216,11 @@ class JadeNoteServer {
                   type: 'number',
                   description: 'Maximum number of results to return',
                   default: 10
+                },
+                use_regex: {
+                  type: 'boolean',
+                  description: 'Enable regex pattern matching',
+                  default: false
                 }
               },
               required: ['query']
@@ -470,7 +476,8 @@ class JadeNoteServer {
     const results = await this.#searchManager.searchNotes(
       args.query,
       args.type_filter,
-      args.limit
+      args.limit,
+      args.use_regex
     );
     return {
       content: [

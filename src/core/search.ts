@@ -89,13 +89,19 @@ export class SearchManager {
   async searchNotes(
     query: string,
     typeFilter: string | null = null,
-    limit: number = 10
+    limit: number = 10,
+    useRegex: boolean = false
   ): Promise<SearchResult[]> {
     try {
       const searchIndex = await this.loadSearchIndex();
       const results: SearchResult[] = [];
 
-      // Prepare search terms
+      // Handle regex search
+      if (useRegex) {
+        return this.searchWithRegex(query, typeFilter, limit, searchIndex);
+      }
+
+      // Prepare search terms for regular text search
       const searchTerms = query
         .toLowerCase()
         .split(/\s+/)
@@ -140,6 +146,114 @@ export class SearchManager {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Search failed: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Search notes using regex patterns
+   */
+  private async searchWithRegex(
+    pattern: string,
+    typeFilter: string | null,
+    limit: number,
+    searchIndex: SearchIndex
+  ): Promise<SearchResult[]> {
+    try {
+      // Validate and create regex with default flags
+      let regex: RegExp;
+      try {
+        regex = new RegExp(pattern, 'gi'); // global, case-insensitive
+      } catch (regexError) {
+        throw new Error(
+          `Invalid regex pattern: ${regexError instanceof Error ? regexError.message : 'Unknown regex error'}`
+        );
+      }
+
+      const results: SearchResult[] = [];
+
+      // Search through indexed notes
+      for (const [notePath, noteData] of Object.entries(searchIndex.notes)) {
+        // Apply type filter if specified
+        if (typeFilter && noteData.type !== typeFilter) {
+          continue;
+        }
+
+        // Test regex against content, title, and tags
+        const contentMatches = regex.test(noteData.content);
+        const titleMatches = regex.test(noteData.title);
+        const tagMatches = noteData.tags.some(tag => regex.test(tag));
+
+        if (contentMatches || titleMatches || tagMatches) {
+          // Reset regex for snippet generation
+          regex.lastIndex = 0;
+
+          // Calculate score based on match types
+          let score = 0;
+          if (titleMatches) score += 10;
+          if (contentMatches) score += 5;
+          if (tagMatches) score += 3;
+
+          // Parse note path to get identifier
+          const identifier = this.pathToIdentifier(notePath);
+
+          results.push({
+            id: identifier,
+            title: noteData.title,
+            type: noteData.type,
+            tags: noteData.tags,
+            score,
+            snippet: this.generateRegexSnippet(noteData.content, regex),
+            lastUpdated: noteData.updated
+          });
+        }
+      }
+
+      // Sort by relevance score (highest first)
+      results.sort((a, b) => b.score - a.score);
+
+      // Apply limit
+      return results.slice(0, limit);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Regex search failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Generate snippet for regex matches
+   */
+  private generateRegexSnippet(content: string, regex: RegExp): string {
+    const maxSnippetLength = 200;
+    const contextLength = 50;
+
+    // Reset regex
+    regex.lastIndex = 0;
+
+    const match = regex.exec(content);
+    if (!match) {
+      return (
+        content.substring(0, maxSnippetLength) +
+        (content.length > maxSnippetLength ? '...' : '')
+      );
+    }
+
+    const matchStart = match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    // Calculate snippet boundaries
+    const snippetStart = Math.max(0, matchStart - contextLength);
+    const snippetEnd = Math.min(content.length, matchEnd + contextLength);
+
+    let snippet = content.substring(snippetStart, snippetEnd);
+
+    // Add ellipsis if we're not at the beginning/end
+    if (snippetStart > 0) {
+      snippet = '...' + snippet;
+    }
+    if (snippetEnd < content.length) {
+      snippet = snippet + '...';
+    }
+
+    return snippet;
   }
 
   /**

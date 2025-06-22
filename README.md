@@ -89,7 +89,7 @@ The jade-note MCP server exposes the following tools and resources:
 | `create_note` | Create new note of specified type | `type`, `title`, `content`, `use_template?` |
 | `get_note` | Retrieve specific note | `identifier` |
 | `update_note` | Update existing note | `identifier`, `content` |
-| `search_notes` | Search notes by content/type | `query`, `type_filter?`, `limit?` |
+| `search_notes` | Search notes by content/type | `query`, `type_filter?`, `limit?`, `use_regex?` |
 | `list_note_types` | List all available note types | none |
 | `link_notes` | Create explicit links between notes | `source`, `target`, `relationship?` |
 | `get_note_type_template` | Get template for a note type | `type_name` |
@@ -132,7 +132,7 @@ The jade-note MCP server exposes the following tools and resources:
 - **Runtime**: Node.js 18+
 - **MCP SDK**: @modelcontextprotocol/sdk
 - **File Operations**: Node.js fs/promises
-- **Search**: Simple text search initially, with plans for vector search
+- **Search**: Simple text search with regex support, with plans for vector search
 - **Configuration**: YAML parsing (js-yaml)
 
 ### Configuration Schema
@@ -157,6 +157,7 @@ note_types:
 - Validation of note type names (filesystem-safe)
 - Concurrent file access protection
 - MCP protocol error responses
+- Regex validation and error handling for malformed patterns
 
 ### Security Considerations
 - Restrict file operations to workspace directory
@@ -200,6 +201,11 @@ User: "What notes do I have about habit formation?"
 
 Agent: I found several notes related to habit formation...
 [Searches across all notes, returns relevant results]
+
+User: "Find all notes that mention dates in YYYY-MM-DD format"
+
+Agent: I'll search using a regex pattern to find date mentions.
+[Searches with regex pattern \d{4}-\d{2}-\d{2} across all notes]
 
 User: "Link my Atomic Habits note to my other productivity notes"
 
