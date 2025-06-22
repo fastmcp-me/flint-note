@@ -22,7 +22,7 @@ interface NoteMetadata {
   updated?: string;
   tags?: string[];
   links?: NoteLink[];
-  [key: string]: string | string[] | NoteLink[] | undefined;
+  [key: string]: string | string[] | number | boolean | NoteLink[] | undefined;
 }
 
 interface ParsedNote {
@@ -50,6 +50,7 @@ interface Note {
   rawContent: string;
   created: string;
   modified: string;
+  updated: string;
   size: number;
 }
 
@@ -102,37 +103,34 @@ export class NoteManager {
     metadata: Record<string, unknown> = {}
   ): Promise<NoteInfo> {
     try {
-      // Validate note type exists
-      const typePath = this.#workspace.getNoteTypePath(typeName);
-      try {
-        await fs.access(typePath);
-      } catch {
-        throw new Error(`Note type '${typeName}' does not exist`);
+      // Validate inputs
+      if (!title || title.trim().length === 0) {
+        throw new Error('Note title is required and cannot be empty');
       }
 
-      // Generate filename from title
-      const filename = this.generateFilename(title);
+      // Trim the title for consistent handling
+      const trimmedTitle = title.trim();
+
+      // Validate and ensure note type exists
+      if (!this.#workspace.isValidNoteTypeName(typeName)) {
+        throw new Error(`Invalid note type name: ${typeName}`);
+      }
+
+      const typePath = await this.#workspace.ensureNoteType(typeName);
+
+      // Generate unique filename from title
+      const baseFilename = this.generateFilename(trimmedTitle);
+      const filename = await this.generateUniqueFilename(typePath, baseFilename);
       const notePath = path.join(typePath, filename);
 
-      // Check if note already exists
-      try {
-        await fs.access(notePath);
-        // If we reach this line, the file exists - throw duplicate error
-        throw new Error(
-          `Note with title '${title}' already exists in type '${typeName}'`
-        );
-      } catch (error) {
-        // If it's a filesystem error with ENOENT, the file doesn't exist - continue
-        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-          // File doesn't exist, continue with creation
-        } else {
-          // Either our duplicate error or some other filesystem error - re-throw
-          throw error;
-        }
-      }
+      // Prepare metadata with title for validation
+      const metadataWithTitle = {
+        title: trimmedTitle,
+        ...metadata
+      };
 
       // Validate metadata against schema
-      const validationResult = await this.validateMetadata(typeName, metadata);
+      const validationResult = await this.validateMetadata(typeName, metadataWithTitle);
       if (!validationResult.valid) {
         throw new Error(
           `Metadata validation failed: ${validationResult.errors.map(e => e.message).join(', ')}`
@@ -141,7 +139,7 @@ export class NoteManager {
 
       // Prepare note content with metadata and optional template
       const noteContent = await this.formatNoteContent(
-        title,
+        trimmedTitle,
         content,
         typeName,
         useTemplate,
@@ -157,7 +155,7 @@ export class NoteManager {
       return {
         id: this.generateNoteId(typeName, filename),
         type: typeName,
-        title,
+        title: trimmedTitle,
         filename,
         path: notePath,
         created: new Date().toISOString()
@@ -185,12 +183,38 @@ export class NoteManager {
       filename = 'untitled';
     }
 
-    // Ensure it doesn't exceed filesystem limits
-    if (filename.length > 200) {
-      filename = filename.substring(0, 200);
+    // Ensure it doesn't exceed filesystem limits (considering full path length)
+    if (filename.length > 100) {
+      filename = filename.substring(0, 100);
     }
 
     return `${filename}.md`;
+  }
+
+  /**
+   * Generate a unique filename by appending numbers if file already exists
+   */
+  async generateUniqueFilename(typePath: string, baseFilename: string): Promise<string> {
+    let filename = baseFilename;
+    let counter = 1;
+
+    while (true) {
+      const filePath = path.join(typePath, filename);
+      try {
+        await fs.access(filePath);
+        // File exists, try next number
+        const nameWithoutExt = baseFilename.replace(/\.md$/, '');
+        filename = `${nameWithoutExt}-${counter}.md`;
+        counter++;
+      } catch (error) {
+        // File doesn't exist, we can use this filename
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+          return filename;
+        } else {
+          throw error;
+        }
+      }
+    }
   }
 
   /**
@@ -298,7 +322,7 @@ export class NoteManager {
   /**
    * Get a specific note by identifier
    */
-  async getNote(identifier: string): Promise<Note> {
+  async getNote(identifier: string): Promise<Note | null> {
     try {
       const { typeName, filename, notePath } = this.parseNoteIdentifier(identifier);
 
@@ -306,7 +330,7 @@ export class NoteManager {
       try {
         await fs.access(notePath);
       } catch {
-        throw new Error(`Note '${identifier}' does not exist`);
+        return null;
       }
 
       // Read note content
@@ -325,13 +349,65 @@ export class NoteManager {
         content: parsed.content,
         metadata: parsed.metadata,
         rawContent: content,
-        created: stats.birthtime.toISOString(),
-        modified: stats.mtime.toISOString(),
+        created: parsed.metadata.created || stats.birthtime.toISOString(),
+        modified: parsed.metadata.updated || stats.mtime.toISOString(),
+        updated: parsed.metadata.updated || stats.mtime.toISOString(),
         size: stats.size
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to get note '${identifier}': ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get a specific note by file path
+   */
+  async getNoteByPath(notePath: string): Promise<Note | null> {
+    try {
+      // Validate path is in workspace
+      if (!this.#workspace.isPathInWorkspace(notePath)) {
+        throw new Error('Path is outside workspace');
+      }
+
+      // Check if note exists
+      try {
+        await fs.access(notePath);
+      } catch {
+        return null;
+      }
+
+      // Extract type and filename from path
+      const relativePath = path.relative(this.#workspace.rootPath, notePath);
+      const pathParts = relativePath.split(path.sep);
+      const typeName = pathParts[0];
+      const filename = pathParts.slice(1).join(path.sep);
+      const identifier = `${typeName}/${filename}`;
+
+      // Read note content
+      const content = await fs.readFile(notePath, 'utf-8');
+      const stats = await fs.stat(notePath);
+
+      // Parse frontmatter and content
+      const parsed = this.parseNoteContent(content);
+
+      return {
+        id: identifier,
+        type: typeName,
+        filename,
+        path: notePath,
+        title: parsed.metadata.title || this.extractTitleFromFilename(filename),
+        content: parsed.content,
+        metadata: parsed.metadata,
+        rawContent: content,
+        created: parsed.metadata.created || stats.birthtime.toISOString(),
+        modified: parsed.metadata.updated || stats.mtime.toISOString(),
+        updated: parsed.metadata.updated || stats.mtime.toISOString(),
+        size: stats.size
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to get note by path '${notePath}': ${errorMessage}`);
     }
   }
 

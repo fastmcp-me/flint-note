@@ -348,10 +348,23 @@ function example() {
 
       // Create notes in different types
       for (const type of noteTypes) {
+        let metadata = {};
+
+        // Provide required metadata for book-reviews type
+        if (type === 'book-reviews') {
+          metadata = {
+            author: 'Test Author',
+            rating: 4,
+            status: 'completed'
+          };
+        }
+
         const noteInfo = await context.noteManager.createNote(
           type,
           `${type} Note`,
-          `This is a note in ${type} type.`
+          `This is a note in ${type} type.`,
+          false,
+          metadata
         );
         createdNotes.push(noteInfo);
       }

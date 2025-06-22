@@ -5,6 +5,7 @@
 
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
+import { promises as fs } from 'node:fs';
 import {
   createTestWorkspace,
   cleanupTestWorkspace,
@@ -44,7 +45,7 @@ describe('Search Unit Tests', () => {
     );
 
     // Update search index
-    await context.searchManager.updateIndex();
+    await context.searchManager.rebuildSearchIndex();
   });
 
   afterEach(async () => {
@@ -61,7 +62,7 @@ describe('Search Unit Tests', () => {
       const jsNote = results.find(r => r.title === 'JavaScript Programming');
       assert.ok(jsNote, 'Should find JavaScript Programming note');
       assert.ok(
-        jsNote.content.includes('JavaScript'),
+        jsNote.snippet.includes('JavaScript'),
         'Result should contain search term'
       );
     });
@@ -76,7 +77,7 @@ describe('Search Unit Tests', () => {
       const titleNote = titleResults.find(r => r.title.includes('Programming'));
       assert.ok(titleNote, 'Should find note with Programming in title');
 
-      const contentNote = contentResults.find(r => r.content.includes('versatile'));
+      const contentNote = contentResults.find(r => r.snippet.includes('versatile'));
       assert.ok(contentNote, 'Should find note with versatile in content');
     });
 
@@ -125,9 +126,12 @@ describe('Search Unit Tests', () => {
 
   describe('Advanced Search Features', () => {
     test('should search by note type', async () => {
-      const projectResults = await context.searchManager.searchNotes('', {
-        noteType: TEST_CONSTANTS.NOTE_TYPES.PROJECT
-      });
+      const projectResults = await context.searchManager.searchNotes(
+        '',
+        TEST_CONSTANTS.NOTE_TYPES.PROJECT,
+        10,
+        false
+      );
 
       assert.ok(projectResults.length > 0, 'Should find project notes');
 
@@ -138,9 +142,12 @@ describe('Search Unit Tests', () => {
     });
 
     test('should search with multiple filters', async () => {
-      const results = await context.searchManager.searchNotes('React', {
-        noteType: TEST_CONSTANTS.NOTE_TYPES.PROJECT
-      });
+      const results = await context.searchManager.searchNotes(
+        'React',
+        TEST_CONSTANTS.NOTE_TYPES.PROJECT,
+        10,
+        false
+      );
 
       assert.ok(results.length > 0, 'Should find filtered results');
 
@@ -198,7 +205,7 @@ describe('Search Unit Tests', () => {
         'This note has "Test Ranking" in the content for comparison.'
       );
 
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
       const results = await context.searchManager.searchNotes('Test Ranking');
 
       assert.ok(results.length >= 2, 'Should find both notes');
@@ -228,7 +235,7 @@ describe('Search Unit Tests', () => {
         'This note has multiple relevance mentions. Relevance is key. Relevance matters.'
       );
 
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
       const results = await context.searchManager.searchNotes('relevance');
 
       assert.ok(results.length >= 2, 'Should find both notes');
@@ -264,7 +271,7 @@ describe('Search Unit Tests', () => {
       );
 
       // Index should be updated automatically or we can force update
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
 
       const results = await context.searchManager.searchNotes('New Indexed Note');
 
@@ -301,10 +308,10 @@ describe('Search Unit Tests', () => {
       }
 
       await Promise.all(promises);
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
 
       const startTime = Date.now();
-      const results = await context.searchManager.searchNotes('searchable');
+      const results = await context.searchManager.searchNotes('searchable', null, 50);
       const endTime = Date.now();
 
       assert.ok(results.length >= 20, 'Should find all notes with common term');
@@ -333,7 +340,7 @@ describe('Search Unit Tests', () => {
         'This note contains special chars: @#$%^&*()[]{}|\\:";\'<>?,./'
       );
 
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
 
       const results = await context.searchManager.searchNotes('@#$%');
       assert.ok(Array.isArray(results), 'Should handle special characters');
@@ -346,7 +353,7 @@ describe('Search Unit Tests', () => {
         'This note contains Unicode: 你好世界 こんにちは 안녕하세요 🌟'
       );
 
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
 
       const unicodeResults = await context.searchManager.searchNotes('你好');
       const emojiResults = await context.searchManager.searchNotes('🚀');
@@ -471,7 +478,7 @@ describe('Search Unit Tests', () => {
         'Original content for update testing.'
       );
 
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
 
       // Search for original content
       const originalResults = await context.searchManager.searchNotes('Original content');
@@ -495,8 +502,8 @@ updated: ${new Date().toISOString()}
 
 ${updatedContent}`;
 
-        await require('fs/promises').writeFile(note.path, noteContent, 'utf8');
-        await context.searchManager.updateIndex();
+        await fs.writeFile(note.path, noteContent, 'utf8');
+        await context.searchManager.rebuildSearchIndex();
 
         // Search for updated content
         const updatedResults = await context.searchManager.searchNotes('Updated content');
@@ -519,7 +526,7 @@ ${updatedContent}`;
         'This note will be deleted for testing.'
       );
 
-      await context.searchManager.updateIndex();
+      await context.searchManager.rebuildSearchIndex();
 
       // Verify note is searchable
       const beforeResults = await context.searchManager.searchNotes('Deletion Test Note');
@@ -527,8 +534,8 @@ ${updatedContent}`;
       assert.ok(foundBefore, 'Should find note before deletion');
 
       // Delete the note file
-      await require('fs/promises').unlink(note.path);
-      await context.searchManager.updateIndex();
+      await fs.unlink(note.path);
+      await context.searchManager.rebuildSearchIndex();
 
       // Should not find deleted note
       const afterResults = await context.searchManager.searchNotes('Deletion Test Note');

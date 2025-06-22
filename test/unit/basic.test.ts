@@ -57,7 +57,8 @@ describe('Configuration Management', () => {
     assert.ok(defaultConfig.mcp_server, 'Should have mcp_server config');
     assert.ok(defaultConfig.search, 'Should have search config');
     assert.ok(defaultConfig.note_types, 'Should have note_types config');
-    assert.ok(defaultConfig.metadata, 'Should have metadata config');
+    assert.ok(defaultConfig.features, 'Should have features config');
+    assert.ok(defaultConfig.security, 'Should have security config');
 
     // Verify nested config structure
     assert.ok(
@@ -71,6 +72,14 @@ describe('Configuration Management', () => {
     assert.ok(
       typeof defaultConfig.note_types.auto_create_directories === 'boolean',
       'Note types should have auto_create_directories'
+    );
+    assert.ok(
+      typeof defaultConfig.features.auto_linking === 'boolean',
+      'Features should have auto_linking'
+    );
+    assert.ok(
+      typeof defaultConfig.security.restrict_to_workspace === 'boolean',
+      'Security should have restrict_to_workspace'
     );
   });
 
