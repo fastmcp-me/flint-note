@@ -87,7 +87,7 @@ export class SearchManager {
    * Search notes by content and/or type
    */
   async searchNotes(
-    query: string,
+    query: string | undefined,
     typeFilter: string | null = null,
     limit: number = 10,
     useRegex: boolean = false

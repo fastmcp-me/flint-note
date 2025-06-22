@@ -149,7 +149,7 @@ describe('Search Unit Tests', () => {
     });
 
     test('should handle undefined query parameter', async () => {
-      const results = await context.searchManager.searchNotes(undefined as any, null, 10);
+      const results = await context.searchManager.searchNotes(void 0, null, 10);
       assert.ok(Array.isArray(results));
       assert.ok(results.length > 0, 'Undefined query should return all notes');
       // Results should be sorted by last updated (most recent first)
