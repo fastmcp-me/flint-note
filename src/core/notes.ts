@@ -9,7 +9,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import yaml from 'js-yaml';
 import { Workspace } from './workspace.ts';
-import { NoteLink } from '../types/index.ts';
+import type { NoteLink } from '../types/index.ts';
 
 interface NoteMetadata {
   title?: string;
@@ -394,8 +394,26 @@ export class NoteManager {
     let formattedContent = '---\n';
 
     for (const [key, value] of Object.entries(metadata)) {
-      if (Array.isArray(value)) {
-        formattedContent += `${key}: [${value.join(', ')}]\n`;
+      if (key === 'links' && Array.isArray(value)) {
+        // Special handling for links array
+        if (value.length > 0) {
+          formattedContent += 'links:\n';
+          value.forEach((link: NoteLink) => {
+            formattedContent += `  - target: "${link.target}"\n`;
+            formattedContent += `    relationship: "${link.relationship}"\n`;
+            formattedContent += `    created: "${link.created}"\n`;
+            if (link.context) {
+              formattedContent += `    context: "${link.context}"\n`;
+            }
+          });
+        }
+      } else if (Array.isArray(value)) {
+        // Handle other arrays (like tags)
+        if (value.length > 0) {
+          formattedContent += `${key}: [${value.map(v => `"${v}"`).join(', ')}]\n`;
+        } else {
+          formattedContent += `${key}: []\n`;
+        }
       } else if (typeof value === 'string' && value.includes(' ')) {
         formattedContent += `${key}: "${value}"\n`;
       } else {
@@ -407,6 +425,54 @@ export class NoteManager {
     formattedContent += newContent;
 
     return formattedContent;
+  }
+
+  /**
+   * Update a note with custom metadata, avoiding duplicate frontmatter
+   */
+  async updateNoteWithMetadata(
+    identifier: string,
+    content: string,
+    metadata: NoteMetadata
+  ): Promise<UpdateResult> {
+    try {
+      const {
+        typeName: _typeName,
+        filename: _filename,
+        notePath
+      } = this.parseNoteIdentifier(identifier);
+
+      // Check if note exists
+      try {
+        await fs.access(notePath);
+      } catch {
+        throw new Error(`Note '${identifier}' does not exist`);
+      }
+
+      // Add timestamp to metadata
+      const updatedMetadata = {
+        ...metadata,
+        updated: new Date().toISOString()
+      };
+
+      // Format content with metadata
+      const formattedContent = this.formatUpdatedNoteContent(updatedMetadata, content);
+
+      // Write updated content
+      await fs.writeFile(notePath, formattedContent, 'utf-8');
+
+      // Update search index
+      await this.updateSearchIndex(notePath, formattedContent);
+
+      return {
+        id: identifier,
+        updated: true,
+        timestamp: updatedMetadata.updated
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to update note '${identifier}': ${errorMessage}`);
+    }
   }
 
   /**

@@ -21,7 +21,7 @@ import { NoteManager } from './core/notes.ts';
 import { NoteTypeManager } from './core/note-types.ts';
 import { SearchManager } from './core/search.ts';
 import { LinkManager } from './core/links.ts';
-import { LinkRelationship } from './types/index.ts';
+import type { LinkRelationship } from './types/index.ts';
 
 interface CreateNoteTypeArgs {
   type_name: string;

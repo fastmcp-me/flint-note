@@ -4,11 +4,8 @@
  * This file provides common type definitions used across the application.
  */
 
-// Re-export types that might be used elsewhere
-export type {} from '../core/workspace.js';
-export type {} from '../core/notes.js';
-export type {} from '../core/note-types.js';
-export type {} from '../core/search.js';
+// Test export to verify module loading
+export const TEST_EXPORT = 'test';
 
 // Common utility types
 export type Timestamp = string;

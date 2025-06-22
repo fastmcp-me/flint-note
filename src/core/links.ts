@@ -8,7 +8,7 @@
 import path from 'path';
 import { Workspace } from './workspace.ts';
 import { NoteManager } from './notes.ts';
-import { NoteLink, LinkRelationship, LinkResult } from '../types/index.ts';
+import type { NoteLink, LinkRelationship, LinkResult } from '../types/index.ts';
 
 interface LinkNotesArgs {
   source: string;
@@ -109,56 +109,27 @@ export class LinkManager {
     // Add the new link
     links.push(link);
 
-    // Update the note with new links
+    // Update the note metadata and let updateNote handle the content formatting
     const updatedMetadata = { ...note.metadata, links };
-    const updatedContent = this.formatNoteWithLinks(note.content, updatedMetadata);
 
-    await this.#noteManager.updateNote(identifier, updatedContent);
+    // Pass the plain content - updateNote will handle frontmatter formatting
+    await this.#noteManager.updateNoteWithMetadata(
+      identifier,
+      note.content,
+      updatedMetadata
+    );
   }
 
   /**
    * Format note content with updated frontmatter including links
+   * @deprecated Use NoteManager.formatUpdatedNoteContent instead
    */
   private formatNoteWithLinks(
     content: string,
     metadata: Record<string, unknown>
   ): string {
-    // Parse existing content to separate frontmatter and body
-    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
-    const match = content.match(frontmatterRegex);
-
-    let bodyContent = content;
-    if (match) {
-      bodyContent = match[2]; // Extract only the body content
-    }
-
-    const frontmatterLines = ['---'];
-
-    // Add standard metadata
-    Object.entries(metadata).forEach(([key, value]) => {
-      if (key === 'links') {
-        // Special handling for links array
-        if (Array.isArray(value) && value.length > 0) {
-          frontmatterLines.push('links:');
-          value.forEach((link: NoteLink) => {
-            frontmatterLines.push(`  - target: "${link.target}"`);
-            frontmatterLines.push(`    relationship: "${link.relationship}"`);
-            frontmatterLines.push(`    created: "${link.created}"`);
-            if (link.context) {
-              frontmatterLines.push(`    context: "${link.context}"`);
-            }
-          });
-        }
-      } else if (Array.isArray(value)) {
-        frontmatterLines.push(`${key}: [${value.map(v => `"${v}"`).join(', ')}]`);
-      } else if (value !== undefined) {
-        frontmatterLines.push(`${key}: "${value}"`);
-      }
-    });
-
-    frontmatterLines.push('---');
-
-    return frontmatterLines.join('\n') + '\n\n' + bodyContent;
+    // This method is deprecated - NoteManager handles frontmatter formatting
+    return content;
   }
 
   /**
@@ -200,14 +171,15 @@ export class LinkManager {
       // Add a simple reference at the end of the content
       const updatedContent = sourceNote.content.trim() + `\n\nSee also: ${wikilink}`;
 
-      // Get the current note again to ensure we have the latest metadata with links
+      // Get the current note again to ensure we have the latest metadata
       const currentNote = await this.#noteManager.getNote(sourceIdentifier);
-      const contentWithFrontmatter = this.formatNoteWithLinks(
+
+      // Update just the content, preserving existing metadata
+      await this.#noteManager.updateNoteWithMetadata(
+        sourceIdentifier,
         updatedContent,
         currentNote.metadata
       );
-
-      await this.#noteManager.updateNote(sourceIdentifier, contentWithFrontmatter);
     }
   }
 
@@ -296,10 +268,9 @@ export class LinkManager {
     // Remove the link
     links.splice(linkIndex, 1);
 
-    // Update the note
+    // Update the note with new metadata
     const updatedMetadata = { ...note.metadata, links };
-    const updatedContent = this.formatNoteWithLinks(note.content, updatedMetadata);
-    await this.#noteManager.updateNote(source, updatedContent);
+    await this.#noteManager.updateNoteWithMetadata(source, note.content, updatedMetadata);
 
     return true;
   }
