@@ -7,6 +7,7 @@
 
 import path from 'path';
 import fs from 'fs/promises';
+import yaml from 'js-yaml';
 import { Workspace } from './workspace.ts';
 
 interface SearchIndex {
@@ -545,38 +546,31 @@ export class SearchManager {
   }
 
   /**
-   * Parse YAML frontmatter (simplified)
+   * Parse YAML frontmatter using js-yaml
    */
   parseFrontmatter(frontmatter: string): NoteMetadata {
-    const metadata: NoteMetadata = {};
-    const lines = frontmatter.split('\n');
+    try {
+      const parsed = yaml.load(frontmatter) as Record<string, unknown>;
 
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (trimmedLine && trimmedLine.includes(':')) {
-        const colonIndex = trimmedLine.indexOf(':');
-        const key = trimmedLine.substring(0, colonIndex).trim();
-        let value: string | string[] = trimmedLine.substring(colonIndex + 1).trim();
-
-        if (
-          (value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))
-        ) {
-          value = value.slice(1, -1);
-        }
-
-        if (value.startsWith('[') && value.endsWith(']')) {
-          value = value
-            .slice(1, -1)
-            .split(',')
-            .map((item: string) => item.trim());
-        }
-
-        metadata[key] = value;
+      if (!parsed || typeof parsed !== 'object') {
+        return {};
       }
-    }
 
-    return metadata;
+      // Convert to NoteMetadata format
+      const metadata: NoteMetadata = {};
+
+      for (const [key, value] of Object.entries(parsed)) {
+        // Type guard for allowed metadata values
+        if (typeof value === 'string' || Array.isArray(value) || value === undefined) {
+          metadata[key] = value;
+        }
+      }
+
+      return metadata;
+    } catch (error) {
+      // If YAML parsing fails, return empty metadata
+      return {};
+    }
   }
 
   /**
