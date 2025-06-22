@@ -36,7 +36,7 @@ const setupTestWorkspace = async () => {
 const cleanupTestWorkspace = async () => {
   try {
     await fs.rm(testDir, { recursive: true, force: true });
-  } catch (error) {
+  } catch (_error) {
     // Ignore cleanup errors
   }
 };
@@ -176,9 +176,9 @@ describe('Regex Search', () => {
 
     test('should find regex matches in tags', async () => {
       // Create notes with tags
-      const note1 = await noteManager.createNote('general', 'Test Note 1', 'Content');
-      const note2 = await noteManager.createNote('general', 'Test Note 2', 'Content');
-      const note3 = await noteManager.createNote('general', 'Test Note 3', 'Content');
+      await noteManager.createNote('general', 'Test Note 1', 'Content');
+      await noteManager.createNote('general', 'Test Note 2', 'Content');
+      await noteManager.createNote('general', 'Test Note 3', 'Content');
 
       // Add tags to notes by updating their metadata
       const note1Path = join(testDir, 'general', 'test-note-1.md');

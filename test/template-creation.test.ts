@@ -299,7 +299,10 @@ Content: {{content}}`;
       const originalGetTemplate = noteTypeManager.getNoteTypeTemplate;
 
       // Mock the template method to throw an error
-      (noteTypeManager as any).getNoteTypeTemplate = async () => {
+      const mockNoteTypeManager = noteTypeManager as {
+        getNoteTypeTemplate: (typeName: string) => Promise<string>;
+      };
+      mockNoteTypeManager.getNoteTypeTemplate = async () => {
         throw new Error('Template error');
       };
 
