@@ -110,6 +110,9 @@ export class LinkManager {
    */
   private async addLinkToNote(identifier: string, link: NoteLink): Promise<void> {
     const note = await this.#noteManager.getNote(identifier);
+    if (!note) {
+      throw new Error(`Note not found: ${identifier}`);
+    }
     const links = note.metadata.links || [];
 
     // Add the new link
@@ -149,6 +152,13 @@ export class LinkManager {
     const sourceNote = await this.#noteManager.getNote(sourceIdentifier);
     const targetNote = await this.#noteManager.getNote(targetIdentifier);
 
+    if (!sourceNote) {
+      throw new Error(`Source note not found: ${sourceIdentifier}`);
+    }
+    if (!targetNote) {
+      throw new Error(`Target note not found: ${targetIdentifier}`);
+    }
+
     const targetTitle = targetNote.title;
     const targetFilename = path.basename(targetNote.filename, '.md');
 
@@ -179,6 +189,9 @@ export class LinkManager {
 
       // Get the current note again to ensure we have the latest metadata
       const currentNote = await this.#noteManager.getNote(sourceIdentifier);
+      if (!currentNote) {
+        throw new Error(`Source note not found: ${sourceIdentifier}`);
+      }
 
       // Update just the content, preserving existing metadata
       await this.#noteManager.updateNoteWithMetadata(
@@ -198,8 +211,11 @@ export class LinkManager {
     relationship: LinkRelationship
   ): Promise<boolean> {
     try {
-      const note = await this.#noteManager.getNote(sourceIdentifier);
-      const links = note.metadata.links || [];
+      const currentNote = await this.#noteManager.getNote(sourceIdentifier);
+      if (!currentNote) {
+        return false;
+      }
+      const links = currentNote.metadata?.links || [];
 
       return links.some(
         link => link.target === targetIdentifier && link.relationship === relationship
@@ -249,6 +265,9 @@ export class LinkManager {
    */
   async getLinksForNote(identifier: string): Promise<NoteLink[]> {
     const note = await this.#noteManager.getNote(identifier);
+    if (!note) {
+      return [];
+    }
     return note.metadata.links || [];
   }
 
@@ -261,6 +280,9 @@ export class LinkManager {
     relationship: LinkRelationship
   ): Promise<boolean> {
     const note = await this.#noteManager.getNote(source);
+    if (!note) {
+      return false;
+    }
     const links = note.metadata.links || [];
 
     const linkIndex = links.findIndex(
