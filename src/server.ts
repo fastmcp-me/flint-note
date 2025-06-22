@@ -33,6 +33,7 @@ interface CreateNoteArgs {
   type: string;
   title: string;
   content: string;
+  use_template?: boolean;
 }
 
 interface GetNoteArgs {
@@ -61,6 +62,10 @@ interface LinkNotesArgs {
   relationship?: LinkRelationship;
   bidirectional?: boolean;
   context?: string;
+}
+
+interface GetNoteTypeTemplateArgs {
+  type_name: string;
 }
 
 class JadeNoteServer {
@@ -150,6 +155,11 @@ class JadeNoteServer {
                 content: {
                   type: 'string',
                   description: 'Content of the note in markdown format'
+                },
+                use_template: {
+                  type: 'boolean',
+                  description: 'Whether to use the note type template for structure',
+                  default: false
                 }
               },
               required: ['type', 'title', 'content']
@@ -260,6 +270,20 @@ class JadeNoteServer {
               },
               required: ['source', 'target']
             }
+          },
+          {
+            name: 'get_note_type_template',
+            description: 'Get the template for a note type for preview or inspection',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type_name: {
+                  type: 'string',
+                  description: 'Name of the note type to get template for'
+                }
+              },
+              required: ['type_name']
+            }
           }
         ]
       };
@@ -287,6 +311,10 @@ class JadeNoteServer {
             return await this.#handleListNoteTypes(args as unknown as ListNoteTypesArgs);
           case 'link_notes':
             return await this.#handleLinkNotes(args as unknown as LinkNotesArgs);
+          case 'get_note_type_template':
+            return await this.#handleGetNoteTypeTemplate(
+              args as unknown as GetNoteTypeTemplateArgs
+            );
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -389,7 +417,8 @@ class JadeNoteServer {
     const noteInfo = await this.#noteManager.createNote(
       args.type,
       args.title,
-      args.content
+      args.content,
+      args.use_template || false
     );
     return {
       content: [
@@ -480,6 +509,38 @@ class JadeNoteServer {
         {
           type: 'text',
           text: JSON.stringify(result, null, 2)
+        }
+      ]
+    };
+  };
+
+  #handleGetNoteTypeTemplate = async (args: GetNoteTypeTemplateArgs) => {
+    if (!this.#noteTypeManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const template = await this.#noteTypeManager.getNoteTypeTemplate(args.type_name);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              type_name: args.type_name,
+              template: template,
+              available_variables: [
+                '{{title}}',
+                '{{type}}',
+                '{{created}}',
+                '{{updated}}',
+                '{{date}}',
+                '{{time}}',
+                '{{content}}'
+              ]
+            },
+            null,
+            2
+          )
         }
       ]
     };

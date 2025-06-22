@@ -9,6 +9,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import yaml from 'js-yaml';
 import { Workspace } from './workspace.ts';
+import { NoteTypeManager } from './note-types.ts';
 import type { NoteLink } from '../types/index.ts';
 
 interface NoteMetadata {
@@ -80,15 +81,22 @@ interface ParsedIdentifier {
 
 export class NoteManager {
   #workspace: Workspace;
+  #noteTypeManager: NoteTypeManager;
 
   constructor(workspace: Workspace) {
     this.#workspace = workspace;
+    this.#noteTypeManager = new NoteTypeManager(workspace);
   }
 
   /**
    * Create a new note of the specified type
    */
-  async createNote(typeName: string, title: string, content: string): Promise<NoteInfo> {
+  async createNote(
+    typeName: string,
+    title: string,
+    content: string,
+    useTemplate: boolean = false
+  ): Promise<NoteInfo> {
     try {
       // Validate note type exists
       const typePath = this.#workspace.getNoteTypePath(typeName);
@@ -119,8 +127,13 @@ export class NoteManager {
         }
       }
 
-      // Prepare note content with metadata
-      const noteContent = this.formatNoteContent(title, content, typeName);
+      // Prepare note content with metadata and optional template
+      const noteContent = await this.formatNoteContent(
+        title,
+        content,
+        typeName,
+        useTemplate
+      );
 
       // Write the note file
       await fs.writeFile(notePath, noteContent, 'utf-8');
@@ -175,9 +188,14 @@ export class NoteManager {
   }
 
   /**
-   * Format note content with metadata frontmatter
+   * Format note content with metadata frontmatter and optional template
    */
-  formatNoteContent(title: string, content: string, typeName: string): string {
+  async formatNoteContent(
+    title: string,
+    content: string,
+    typeName: string,
+    useTemplate: boolean = false
+  ): Promise<string> {
     const timestamp = new Date().toISOString();
 
     let formattedContent = '---\n';
@@ -187,10 +205,59 @@ export class NoteManager {
     formattedContent += `updated: ${timestamp}\n`;
     formattedContent += 'tags: []\n';
     formattedContent += '---\n\n';
-    formattedContent += `# ${title}\n\n`;
-    formattedContent += content;
+
+    if (useTemplate) {
+      try {
+        const template = await this.#noteTypeManager.getNoteTypeTemplate(typeName);
+        const hasContentPlaceholder = template.includes('{{content}}');
+
+        const processedTemplate = this.processTemplate(template, {
+          title,
+          type: typeName,
+          created: timestamp,
+          updated: timestamp,
+          date: new Date().toLocaleDateString(),
+          time: new Date().toLocaleTimeString(),
+          content: hasContentPlaceholder ? content : ''
+        });
+
+        // If template doesn't include title header, add it
+        if (!processedTemplate.includes(`# ${title}`)) {
+          formattedContent += `# ${title}\n\n`;
+        }
+
+        formattedContent += processedTemplate;
+
+        // Add user content if provided and template doesn't have content placeholder
+        if (content && !hasContentPlaceholder) {
+          formattedContent += `\n\n${content}`;
+        }
+      } catch {
+        // Fall back to default format if template fails
+        formattedContent += `# ${title}\n\n`;
+        formattedContent += content;
+      }
+    } else {
+      formattedContent += `# ${title}\n\n`;
+      formattedContent += content;
+    }
 
     return formattedContent;
+  }
+
+  /**
+   * Process template variables with substitutions
+   */
+  private processTemplate(template: string, variables: Record<string, string>): string {
+    let processed = template;
+
+    // Replace template variables
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      processed = processed.replace(regex, value);
+    }
+
+    return processed;
   }
 
   /**

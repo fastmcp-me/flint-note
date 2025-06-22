@@ -18,8 +18,9 @@ Create a note-taking system where:
 1. **Agent-First**: Design every feature with AI agent interaction as the primary interface
 2. **User Ownership**: All data stored as simple files in user-controlled directories
 3. **Semantic Organization**: Note types carry meaning that agents can understand and act upon
-4. **Extensible**: Easy to add new note types and agent behaviors
-5. **Portable**: No vendor lock-in, works with standard file systems and version control
+4. **Template-Driven**: Consistent structure through customizable templates with variable substitution
+5. **Extensible**: Easy to add new note types and agent behaviors
+6. **Portable**: No vendor lock-in, works with standard file systems and version control
 
 ## Architecture
 
@@ -61,10 +62,16 @@ Brief description of what this note type is for.
 - Content enhancement suggestions
 
 ## Template (Optional)
-Default structure for new notes of this type:
-- Field 1:
-- Field 2:
-- Content:
+# {{title}}
+
+**Created:** {{date}} at {{time}}
+**Type:** {{type}}
+
+## Content
+{{content}}
+
+## Actions
+- [ ] Review and process
 
 ## Metadata Schema (Optional)
 Expected frontmatter or metadata fields for this note type.
@@ -79,12 +86,13 @@ The jade-note MCP server exposes the following tools and resources:
 | Tool Name | Purpose | Parameters |
 |:----------|:--------|:-----------|
 | `create_note_type` | Create new note type with description | `type_name`, `description`, `template?` |
-| `create_note` | Create new note of specified type | `type`, `title`, `content` |
+| `create_note` | Create new note of specified type | `type`, `title`, `content`, `use_template?` |
 | `get_note` | Retrieve specific note | `identifier` |
 | `update_note` | Update existing note | `identifier`, `content` |
 | `search_notes` | Search notes by content/type | `query`, `type_filter?`, `limit?` |
 | `list_note_types` | List all available note types | none |
 | `link_notes` | Create explicit links between notes | `source`, `target`, `relationship?` |
+| `get_note_type_template` | Get template for a note type | `type_name` |
 | `analyze_note` | Get AI analysis/suggestions for a note | `identifier` |
 
 #### Resources
@@ -103,11 +111,11 @@ The jade-note MCP server exposes the following tools and resources:
 - [x] Basic MCP server with CRUD operations
 - [x] Simple search functionality
 - [x] Integration with MCP-compatible clients
+- [x] Template-based note creation with variable substitution
 
 ### Phase 2: Agent Intelligence
 - [ ] Content-based note type suggestions
 - [ ] Automatic note linking based on content similarity
-- [ ] Template-based note creation
 - [ ] Content enhancement suggestions
 - [ ] Action item extraction and tracking
 

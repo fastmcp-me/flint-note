@@ -233,7 +233,7 @@ export class NoteTypeManager {
         }
         currentSection = 'metadataSchema';
         sectionContent = [];
-      } else if (currentSection && trimmed) {
+      } else if (currentSection) {
         sectionContent.push(line);
       }
     }
