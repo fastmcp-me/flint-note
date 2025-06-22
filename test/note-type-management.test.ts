@@ -89,8 +89,7 @@ class MCPClient {
     // Notifications would be handled here if needed
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async sendRequest(method: string, params?: unknown): Promise<any> {
+  async sendRequest(method: string, params?: unknown): Promise<MCPResponse> {
     const id = this.#requestId++;
     const request: MCPRequest = {
       jsonrpc: '2.0',
@@ -134,7 +133,7 @@ class MCPClient {
     });
 
     assert.ok(response.result);
-    assert.ok(response.result.capabilities);
+    assert.ok((response.result as any).capabilities);
 
     // Send initialized notification
     const notification = {
@@ -147,7 +146,14 @@ class MCPClient {
     }
   }
 
-  async callTool(toolName: string, args: unknown): Promise<any> {
+  async callTool(
+    toolName: string,
+    args: unknown
+  ): Promise<{
+    success: boolean;
+    content: Array<{ type: string; text: string }>;
+    isError: boolean;
+  }> {
     const response = await this.sendRequest('tools/call', {
       name: toolName,
       arguments: args
@@ -155,10 +161,11 @@ class MCPClient {
 
     if (response.result) {
       // Check if the tool returned an error result
-      const isToolError = response.result.isError === true;
+      const result = response.result as any;
+      const isToolError = result.isError === true;
       return {
         success: !isToolError,
-        content: response.result.content,
+        content: result.content,
         isError: isToolError
       };
     } else {
@@ -544,11 +551,11 @@ describe('Note Type Management', () => {
       const types = JSON.parse(listResult.content[0].text);
       assert.ok(Array.isArray(types), 'Should return array of types');
       assert.ok(
-        types.some((t: any) => t.name === 'books'),
+        types.some((t: { name: string }) => t.name === 'books'),
         'Should include books type'
       );
       assert.ok(
-        types.some((t: any) => t.name === 'articles'),
+        types.some((t: { name: string }) => t.name === 'articles'),
         'Should include articles type'
       );
     });

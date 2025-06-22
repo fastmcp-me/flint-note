@@ -96,7 +96,6 @@ class MCPClient {
     // Notifications would be handled here if needed
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async sendRequest(method: string, params?: unknown): Promise<any> {
     const id = this.#requestId++;
     const request: MCPRequest = {
