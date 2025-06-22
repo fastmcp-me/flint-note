@@ -20,6 +20,8 @@ import { Workspace } from './core/workspace.ts';
 import { NoteManager } from './core/notes.ts';
 import { NoteTypeManager } from './core/note-types.ts';
 import { SearchManager } from './core/search.ts';
+import { LinkManager } from './core/links.ts';
+import { LinkRelationship } from './types/index.ts';
 
 interface CreateNoteTypeArgs {
   type_name: string;
@@ -53,12 +55,21 @@ interface ListNoteTypesArgs {
   [key: string]: never;
 }
 
+interface LinkNotesArgs {
+  source: string;
+  target: string;
+  relationship?: LinkRelationship;
+  bidirectional?: boolean;
+  context?: string;
+}
+
 class JadeNoteServer {
   #server: Server;
   #workspace: Workspace | null = null;
   #noteManager: NoteManager | null = null;
   #noteTypeManager: NoteTypeManager | null = null;
   #searchManager: SearchManager | null = null;
+  #linkManager: LinkManager | null = null;
 
   constructor() {
     this.#server = new Server(
@@ -85,6 +96,7 @@ class JadeNoteServer {
       this.#noteManager = new NoteManager(this.#workspace);
       this.#noteTypeManager = new NoteTypeManager(this.#workspace);
       this.#searchManager = new SearchManager(this.#workspace);
+      this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
 
       console.error('jade-note server initialized successfully');
     } catch (error) {
@@ -205,6 +217,49 @@ class JadeNoteServer {
               type: 'object',
               properties: {}
             }
+          },
+          {
+            name: 'link_notes',
+            description:
+              'Create explicit links between notes with optional relationship types',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                source: {
+                  type: 'string',
+                  description: 'Source note identifier (type/filename or title)'
+                },
+                target: {
+                  type: 'string',
+                  description: 'Target note identifier (type/filename or title)'
+                },
+                relationship: {
+                  type: 'string',
+                  description: 'Type of relationship between notes',
+                  enum: [
+                    'references',
+                    'follows-up',
+                    'contradicts',
+                    'supports',
+                    'mentions',
+                    'depends-on',
+                    'blocks',
+                    'related-to'
+                  ],
+                  default: 'references'
+                },
+                bidirectional: {
+                  type: 'boolean',
+                  description: 'Create reverse link from target to source',
+                  default: true
+                },
+                context: {
+                  type: 'string',
+                  description: 'Optional context about the relationship'
+                }
+              },
+              required: ['source', 'target']
+            }
           }
         ]
       };
@@ -230,6 +285,8 @@ class JadeNoteServer {
             return await this.#handleSearchNotes(args as unknown as SearchNotesArgs);
           case 'list_note_types':
             return await this.#handleListNoteTypes(args as unknown as ListNoteTypesArgs);
+          case 'link_notes':
+            return await this.#handleLinkNotes(args as unknown as LinkNotesArgs);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -407,6 +464,22 @@ class JadeNoteServer {
         {
           type: 'text',
           text: JSON.stringify(types, null, 2)
+        }
+      ]
+    };
+  };
+
+  #handleLinkNotes = async (args: LinkNotesArgs) => {
+    if (!this.#linkManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const result = await this.#linkManager.linkNotes(args);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result, null, 2)
         }
       ]
     };

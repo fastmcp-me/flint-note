@@ -7,7 +7,9 @@
 
 import path from 'path';
 import fs from 'fs/promises';
+import yaml from 'js-yaml';
 import { Workspace } from './workspace.ts';
+import { NoteLink } from '../types/index.ts';
 
 interface NoteMetadata {
   title?: string;
@@ -15,7 +17,8 @@ interface NoteMetadata {
   created?: string;
   updated?: string;
   tags?: string[];
-  [key: string]: string | string[] | undefined;
+  links?: NoteLink[];
+  [key: string]: string | string[] | NoteLink[] | undefined;
 }
 
 interface ParsedNote {
@@ -290,37 +293,41 @@ export class NoteManager {
    * Parse YAML frontmatter
    */
   parseFrontmatter(frontmatter: string): NoteMetadata {
-    const metadata: NoteMetadata = {};
-    const lines = frontmatter.split('\n');
+    try {
+      const parsed = yaml.load(frontmatter) as Record<string, unknown>;
 
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (trimmedLine && trimmedLine.includes(':')) {
-        const colonIndex = trimmedLine.indexOf(':');
-        const key = trimmedLine.substring(0, colonIndex).trim();
-        let value: string | string[] = trimmedLine.substring(colonIndex + 1).trim();
-
-        // Handle quoted strings
-        if (
-          (value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))
-        ) {
-          value = value.slice(1, -1);
-        }
-
-        // Handle arrays
-        if (value.startsWith('[') && value.endsWith(']')) {
-          value = value
-            .slice(1, -1)
-            .split(',')
-            .map((item: string) => item.trim());
-        }
-
-        metadata[key] = value;
+      if (!parsed || typeof parsed !== 'object') {
+        return {};
       }
-    }
 
-    return metadata;
+      // Convert to NoteMetadata format
+      const metadata: NoteMetadata = {};
+
+      for (const [key, value] of Object.entries(parsed)) {
+        if (key === 'links' && Array.isArray(value)) {
+          // Parse links array with proper typing
+          metadata.links = value.map(
+            (link: Record<string, unknown>) =>
+              ({
+                target: (link.target as string) || '',
+                relationship: (link.relationship as string) || 'references',
+                created: (link.created as string) || new Date().toISOString(),
+                context: link.context as string | undefined
+              }) as NoteLink
+          );
+        } else {
+          // Type guard for allowed metadata values
+          if (typeof value === 'string' || Array.isArray(value) || value === undefined) {
+            metadata[key] = value;
+          }
+        }
+      }
+
+      return metadata;
+    } catch (error) {
+      console.error('Failed to parse YAML frontmatter:', error);
+      return {};
+    }
   }
 
   /**
