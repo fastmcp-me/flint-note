@@ -8,9 +8,9 @@ import assert from 'node:assert';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { Workspace } from '../src/core/workspace.ts';
-import { SearchManager } from '../src/core/search.ts';
-import { NoteManager } from '../src/core/notes.ts';
+import { Workspace } from '../../src/core/workspace.ts';
+import { SearchManager } from '../../src/core/search.ts';
+import { NoteManager } from '../../src/core/notes.ts';
 
 interface TestContext {
   tempDir: string;

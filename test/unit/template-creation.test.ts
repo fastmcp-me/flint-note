@@ -10,9 +10,9 @@ import assert from 'node:assert';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Workspace } from '../src/core/workspace.ts';
-import { NoteManager } from '../src/core/notes.ts';
-import { NoteTypeManager } from '../src/core/note-types.ts';
+import { Workspace } from '../../src/core/workspace.ts';
+import { NoteManager } from '../../src/core/notes.ts';
+import { NoteTypeManager } from '../../src/core/note-types.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

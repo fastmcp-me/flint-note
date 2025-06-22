@@ -9,10 +9,10 @@ import assert from 'node:assert';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { Workspace } from '../src/core/workspace.ts';
-import { NoteManager } from '../src/core/notes.ts';
-import { LinkManager } from '../src/core/links.ts';
-import type { LinkRelationship } from '../src/types/index.ts';
+import { Workspace } from '../../src/core/workspace.ts';
+import { NoteManager } from '../../src/core/notes.ts';
+import { LinkManager } from '../../src/core/links.ts';
+import type { LinkRelationship } from '../../src/types/index.ts';
 
 let tempDir: string;
 let workspace: Workspace;

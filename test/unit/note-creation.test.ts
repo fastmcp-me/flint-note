@@ -10,9 +10,9 @@ import assert from 'node:assert';
 import fs from 'fs/promises';
 import path from 'path';
 import { tmpdir } from 'os';
-import { Workspace } from '../src/core/workspace.ts';
-import { NoteManager } from '../src/core/notes.ts';
-import { NoteTypeManager } from '../src/core/note-types.ts';
+import { Workspace } from '../../src/core/workspace.ts';
+import { NoteManager } from '../../src/core/notes.ts';
+import { NoteTypeManager } from '../../src/core/note-types.ts';
 
 describe('Note Creation', () => {
   let testWorkspaceRoot: string;

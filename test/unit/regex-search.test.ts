@@ -9,9 +9,9 @@ import assert from 'node:assert';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { Workspace } from '../src/core/workspace.ts';
-import { SearchManager } from '../src/core/search.ts';
-import { NoteManager } from '../src/core/notes.ts';
+import { Workspace } from '../../src/core/workspace.ts';
+import { SearchManager } from '../../src/core/search.ts';
+import { NoteManager } from '../../src/core/notes.ts';
 
 // Test workspace setup
 let testWorkspace: Workspace;

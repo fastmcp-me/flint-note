@@ -10,10 +10,13 @@ import assert from 'node:assert';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
-import { MetadataSchemaParser, MetadataValidator } from '../src/core/metadata-schema.ts';
-import { NoteTypeManager } from '../src/core/note-types.ts';
-import { NoteManager } from '../src/core/notes.ts';
-import { Workspace } from '../src/core/workspace.ts';
+import {
+  MetadataSchemaParser,
+  MetadataValidator
+} from '../../src/core/metadata-schema.ts';
+import { NoteTypeManager } from '../../src/core/note-types.ts';
+import { NoteManager } from '../../src/core/notes.ts';
+import { Workspace } from '../../src/core/workspace.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
