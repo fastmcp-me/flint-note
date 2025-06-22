@@ -36,7 +36,7 @@ Before you begin, make sure you have:
    ```
 
 3. **Configure your AI client:**
-   
+
    For **Claude Desktop**, add this to your `claude_desktop_config.json`:
    ```json
    {
@@ -65,9 +65,19 @@ Before you begin, make sure you have:
 Traditional note apps organize by folders or tags. jade-note organizes by **note types** - categories that carry semantic meaning. Each note type defines:
 
 - **Purpose**: What kind of information belongs here
-- **Agent Instructions**: How AI should behave with these notes
+- **Agent Instructions**: Specific behaviors AI should exhibit with these notes
 - **Templates**: Default structure for new notes
-- **Behaviors**: Special actions (like extracting action items)
+- **Behaviors**: Special actions (like extracting action items, asking for ratings, tracking deadlines)
+
+#### Agent Instructions: Your Personal AI Assistant
+
+A key innovation in jade-note is **agent instructions** - customizable guidelines that tell AI assistants exactly how to behave with each note type. For example:
+
+- **Meeting notes**: "Always extract action items with owners and deadlines"
+- **Reading notes**: "Ask for key insights and personal rating"
+- **Project notes**: "Track milestones and identify potential blockers"
+
+These instructions make your AI assistant increasingly intelligent and personalized to your workflow.
 
 ### Your First Conversation
 
@@ -94,14 +104,14 @@ Let's walk through managing meeting notes from start to finish.
 
 **You:** "Create a note type for meeting notes. It should include attendees, date, main topics discussed, decisions made, and action items with owners."
 
-**AI:** "I've created a 'meetings' note type with a template that includes:
+**AI:** "I'll create a 'meetings' note type for you with a template that includes:
 - Meeting date and attendees
-- Agenda/topics discussed  
+- Agenda/topics discussed
 - Key decisions made
 - Action items with assigned owners
 - Next steps and follow-ups
 
-The AI instructions include automatically extracting action items and suggesting follow-up reminders."
+I've also set up agent instructions so I'll automatically extract action items with owners, suggest follow-up reminders, and ask about meeting outcomes. These instructions help me provide better assistance specifically for your meeting notes."
 
 **Taking Meeting Notes:**
 
@@ -115,7 +125,7 @@ The AI instructions include automatically extracting action items and suggesting
 - [ ] Sarah: Lead mobile app redesign project
 - [ ] Mike: Create user story tickets (Due: Friday)
 
-I've also linked this note to any existing notes about mobile app or Q4 planning."
+Following your meeting note agent instructions, I should also ask: What was the reasoning behind prioritizing mobile over analytics? And should I schedule a follow-up to check on progress next week? I've also linked this note to any existing notes about mobile app or Q4 planning."
 
 ### Workflow 2: Research and Learning Notes
 
@@ -132,18 +142,24 @@ I've also linked this note to any existing notes about mobile app or Q4 planning
 - Personal reflections
 - Rating and recommendation
 
+I've set up agent instructions to always ask for key insights, your personal rating, and suggest connections to related books or your current projects.
+
 **articles** for web articles and papers with:
 - Source URL and author
 - Main arguments
 - Key takeaways
 - Related topics
-- My thoughts and reactions"
+- My thoughts and reactions
+
+For articles, the agent instructions include extracting the main argument, asking how it relates to your work, and suggesting follow-up research topics."
 
 **Capturing Learning:**
 
 **You:** "Add a reading note for 'Atomic Habits' by James Clear. The key insight is that small changes compound over time through the power of habit stacking."
 
-**AI:** "I've created a reading note for 'Atomic Habits'. I've captured the compound change insight you mentioned. Based on the content, I suggest linking this to any existing notes about:
+**AI:** "I've created a reading note for 'Atomic Habits'. I've captured the compound change insight you mentioned. Following your reading notes agent instructions, I should also ask: What's your rating for this book so far, and how might you apply habit stacking in your current projects?
+
+Based on the content, I suggest linking this to any existing notes about:
 - Productivity systems
 - Personal development
 - Behavior change
@@ -154,7 +170,7 @@ Would you like me to add more details about specific habit strategies from the b
 
 **You:** "Create a note type for tracking projects. Include status, timeline, stakeholders, and key milestones."
 
-**AI:** "I've created a 'projects' note type with comprehensive project tracking. The template includes status tracking, timeline management, stakeholder information, and milestone tracking. I've also set up automatic linking to related meeting notes and task extraction."
+**AI:** "I've created a 'projects' note type with comprehensive project tracking. The template includes status tracking, timeline management, stakeholder information, and milestone tracking. I've set up agent instructions to always ask about project goals and success criteria, extract action items with deadlines, identify potential blockers, and automatically link to related meeting notes and documents."
 
 **You:** "Add a project note for the website redesign. Status is in progress, timeline is 6 weeks, stakeholders are the marketing team and design team."
 
@@ -170,7 +186,7 @@ jade-note automatically suggests connections between your notes:
 
 **AI:** "I found 3 notes related to habit formation:
 1. **Atomic Habits** (reading-notes) - about compound changes
-2. **Morning Routine Project** (projects) - implementing daily habits  
+2. **Morning Routine Project** (projects) - implementing daily habits
 3. **Productivity Meeting** (meetings) - discussed team habits
 
 I notice these could be linked together. Would you like me to create explicit connections between them?"
@@ -191,11 +207,26 @@ AI agents can enhance your notes automatically:
 
 Would you like me to update these notes with the missing information?"
 
-### Template Customization
+### Customizing Agent Instructions and Templates
 
 **You:** "Update my meeting notes template to include a 'parking lot' section for off-topic items"
 
 **AI:** "I've updated the meetings note type template to include a 'Parking Lot' section at the bottom for capturing off-topic items that come up during meetings. This will help keep meetings focused while ensuring important side topics aren't lost."
+
+**You:** "Make sure agents always ask about next steps when I create project notes"
+
+**AI:** "I've updated your project notes agent instructions to include next steps tracking. Now whenever you create or update project notes, I'll automatically ask about immediate next steps, upcoming milestones, and any blockers that need attention."
+
+**You:** "What agent instructions do I have for reading notes?"
+
+**AI:** "Let me check your reading notes configuration... Your current agent instructions are:
+- Always ask for key insights and takeaways
+- Request your personal rating and recommendation
+- Suggest connections to related books and topics
+- Ask how the content applies to your current projects
+- Extract notable quotes automatically
+
+Would you like me to modify any of these behaviors?"
 
 ## Organization Strategies
 
@@ -204,7 +235,7 @@ Would you like me to update these notes with the missing information?"
 Rather than organizing by topic, organize by how you'll use the information:
 
 - **daily-logs**: What happened each day
-- **decisions**: Important choices and their reasoning  
+- **decisions**: Important choices and their reasoning
 - **learnings**: Insights from books, courses, conversations
 - **ideas**: Creative thoughts and brainstorms
 - **reviews**: Retrospectives on projects, experiences
@@ -229,10 +260,12 @@ Begin with 2-3 note types that match your most common note-taking needs. Add mor
 ### Let AI Do the Heavy Lifting
 
 Don't manually organize or link notes. Let the AI assistant:
-- Extract action items automatically
-- Suggest relevant connections
+- Extract action items automatically based on agent instructions
+- Suggest relevant connections using contextual understanding
 - Fill in template fields when possible
-- Identify missing information
+- Identify missing information according to note type requirements
+- Follow agent instructions to provide contextually appropriate assistance
+- Evolve and improve note type behaviors based on your patterns
 
 ### Use Natural Language
 
@@ -240,6 +273,9 @@ Talk to your AI assistant like a human colleague:
 - "What did we decide about the API architecture?"
 - "Show me all my notes about machine learning from this month"
 - "Create a summary of my project status for the team meeting"
+- "Make sure agents ask about deadlines when I create project notes"
+- "Update my reading notes to always ask for book recommendations"
+- "What behaviors do agents have for my meeting notes?"
 
 ### Keep Templates Flexible
 
@@ -259,7 +295,7 @@ Remember that all your notes are just Markdown files in folders. You can:
 
 **Problem**: Assistant says it can't locate specific notes.
 
-**Solution**: 
+**Solution**:
 - Check that jade-note server is running (`npm start`)
 - Verify your workspace directory contains the notes
 - Try searching with different keywords
@@ -286,11 +322,11 @@ Remember that all your notes are just Markdown files in folders. You can:
 
 As you use jade-note, you'll discover your own patterns and preferences:
 
-1. **Week 1**: Focus on creating 2-3 core note types
-2. **Week 2**: Let AI start suggesting connections and improvements
-3. **Month 1**: Refine templates based on actual usage
-4. **Month 2**: Add specialized note types for unique workflows
-5. **Ongoing**: Let the system evolve with your needs
+1. **Week 1**: Focus on creating 2-3 core note types with basic agent instructions
+2. **Week 2**: Let AI start suggesting connections and improvements, refine agent instructions based on your workflow
+3. **Month 1**: Customize agent instructions and templates based on actual usage patterns
+4. **Month 2**: Add specialized note types for unique workflows with sophisticated agent behaviors
+5. **Ongoing**: Let the system evolve with your needs, continuously improving agent instructions for better personalization
 
 ### Advanced Integrations
 
@@ -304,13 +340,14 @@ Consider integrating jade-note with:
 
 jade-note treats notes as living, evolving documents rather than static captures. Your AI assistant helps notes grow more valuable over time by:
 
-- Adding context and connections
-- Extracting actionable information  
-- Suggesting related content
-- Identifying knowledge gaps
-- Facilitating review and reflection
+- Adding context and connections based on agent instructions
+- Extracting actionable information according to note type behaviors
+- Suggesting related content using semantic understanding
+- Identifying knowledge gaps and missing information
+- Facilitating review and reflection through intelligent prompts
+- **Learning your preferences** and evolving agent instructions to become increasingly personalized
 
-This creates a knowledge base that becomes more useful the more you use it - a true second brain that actively helps you think and work better.
+This creates a knowledge base that becomes more useful the more you use it - a true second brain that actively helps you think and work better, with AI that understands your specific workflow and adapts to your needs.
 
 ---
 
