@@ -567,7 +567,7 @@ export class SearchManager {
       }
 
       return metadata;
-    } catch (error) {
+    } catch {
       // If YAML parsing fails, return empty metadata
       return {};
     }
