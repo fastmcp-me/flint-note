@@ -56,11 +56,7 @@ describe('Search Index Update Tests', () => {
       const uniqueTitle = `Test Note ${Date.now()}`;
       const uniqueContent = `This is unique content ${Math.random()}`;
 
-      const noteInfo = await context.noteManager.createNote(
-        'general',
-        uniqueTitle,
-        uniqueContent
-      );
+      await context.noteManager.createNote('general', uniqueTitle, uniqueContent);
 
       // Search for the note immediately after creation
       const results = await context.searchManager.searchNotes('unique content');
@@ -275,9 +271,9 @@ describe('Search Index Update Tests', () => {
       assert.ok(Object.keys(index.notes).length > 0, 'Index should contain notes');
 
       // Find our note in the index
-      const noteInIndex = Object.values(index.notes).find(
-        (note: any) => note.title === testTitle
-      );
+      const noteInIndex = Object.values(
+        index.notes as Record<string, { title: string }>
+      ).find((note: { title: string }) => note.title === testTitle);
       assert.ok(noteInIndex, 'Created note should be in search index');
     });
 

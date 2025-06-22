@@ -273,7 +273,9 @@ describe('MCP Search Tool Integration Tests', () => {
       });
 
       const results = JSON.parse(response.content[0].text);
-      const foundNote = results.find((note: any) => note.title === uniqueTitle);
+      const foundNote = results.find(
+        (note: { title: string }) => note.title === uniqueTitle
+      );
       assert.ok(foundNote, 'Should find newly created note');
     });
 
@@ -287,7 +289,7 @@ describe('MCP Search Tool Integration Tests', () => {
       assert.ok(Array.isArray(results));
 
       // Should find notes from multiple types
-      const types = new Set(results.map((note: any) => note.type));
+      const types = new Set(results.map((note: { type: string }) => note.type));
       assert.ok(types.size > 0, 'Should find notes from at least one type');
 
       // Verify all results contain the search term
