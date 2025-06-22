@@ -8,6 +8,8 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { Workspace } from './workspace.ts';
+import { MetadataSchemaParser } from './metadata-schema.ts';
+import type { MetadataSchema } from './metadata-schema.ts';
 
 interface NoteTypeInfo {
   name: string;
@@ -21,6 +23,7 @@ interface ParsedNoteTypeDescription {
   agentInstructions: string[];
   template: string;
   metadataSchema: string[];
+  parsedMetadataSchema: MetadataSchema;
 }
 
 interface NoteTypeDescription {
@@ -30,6 +33,7 @@ interface NoteTypeDescription {
   template: string | null;
   parsed: ParsedNoteTypeDescription;
   hasTemplate: boolean;
+  metadataSchema: MetadataSchema;
 }
 
 interface NoteTypeListItem {
@@ -67,7 +71,8 @@ export class NoteTypeManager {
     name: string,
     description: string,
     template: string | null = null,
-    agentInstructions: string[] | null = null
+    agentInstructions: string[] | null = null,
+    metadataSchema: MetadataSchema | null = null
   ): Promise<NoteTypeInfo> {
     try {
       // Validate note type name
@@ -84,7 +89,8 @@ export class NoteTypeManager {
         name,
         description,
         template,
-        agentInstructions
+        agentInstructions,
+        metadataSchema
       );
       await fs.writeFile(descriptionPath, descriptionContent, 'utf-8');
 
@@ -113,7 +119,8 @@ export class NoteTypeManager {
     name: string,
     description: string,
     template: string | null = null,
-    agentInstructions: string[] | null = null
+    agentInstructions: string[] | null = null,
+    metadataSchema: MetadataSchema | null = null
   ): string {
     const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
@@ -169,12 +176,16 @@ export class NoteTypeManager {
       content += `## Template\n${template}\n\n`;
     }
 
-    content += '## Metadata Schema\n';
-    content += 'Expected frontmatter or metadata fields for this note type:\n';
-    content += `- type: ${name}\n`;
-    content += '- created: Creation timestamp\n';
-    content += '- updated: Last modification timestamp\n';
-    content += '- tags: Relevant tags for categorization\n';
+    if (metadataSchema && metadataSchema.fields.length > 0) {
+      content += MetadataSchemaParser.generateSchemaSection(metadataSchema);
+    } else {
+      content += '## Metadata Schema\n';
+      content += 'Expected frontmatter or metadata fields for this note type:\n';
+      content += `- type: ${name}\n`;
+      content += '- created: Creation timestamp\n';
+      content += '- updated: Last modification timestamp\n';
+      content += '- tags: Relevant tags for categorization\n';
+    }
 
     return content;
   }
@@ -218,13 +229,17 @@ export class NoteTypeManager {
       // Parse description content
       const parsed = this.parseNoteTypeDescription(description);
 
+      // Parse metadata schema
+      const metadataSchema = MetadataSchemaParser.parseFromDescription(description);
+
       return {
         name: typeName,
         path: typePath,
         description,
         template,
         parsed,
-        hasTemplate: !!template
+        hasTemplate: !!template,
+        metadataSchema
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -242,7 +257,8 @@ export class NoteTypeManager {
       purpose: '',
       agentInstructions: [],
       template: '',
-      metadataSchema: []
+      metadataSchema: [],
+      parsedMetadataSchema: MetadataSchemaParser.parseFromDescription(content)
     };
 
     const lines = content.split('\n');
@@ -492,6 +508,48 @@ export class NoteTypeManager {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
         `Failed to get template for note type '${typeName}': ${errorMessage}`
+      );
+    }
+  }
+
+  /**
+   * Get metadata schema for a note type
+   */
+  async getMetadataSchema(typeName: string): Promise<MetadataSchema> {
+    try {
+      const noteType = await this.getNoteTypeDescription(typeName);
+      return noteType.metadataSchema;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(
+        `Failed to get metadata schema for note type '${typeName}': ${errorMessage}`
+      );
+    }
+  }
+
+  /**
+   * Update metadata schema for a note type
+   */
+  async updateMetadataSchema(typeName: string, schema: MetadataSchema): Promise<void> {
+    try {
+      const noteType = await this.getNoteTypeDescription(typeName);
+
+      // Generate new description with updated schema
+      const newDescription = this.formatNoteTypeDescription(
+        typeName,
+        noteType.parsed.purpose,
+        noteType.template,
+        noteType.parsed.agentInstructions,
+        schema
+      );
+
+      // Write updated description
+      const descriptionPath = path.join(noteType.path, '.description.md');
+      await fs.writeFile(descriptionPath, newDescription, 'utf-8');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(
+        `Failed to update metadata schema for note type '${typeName}': ${errorMessage}`
       );
     }
   }

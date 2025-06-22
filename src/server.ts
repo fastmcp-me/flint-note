@@ -37,6 +37,7 @@ interface CreateNoteArgs {
   title: string;
   content: string;
   use_template?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 interface GetNoteArgs {
@@ -181,6 +182,12 @@ class JadeNoteServer {
                   type: 'boolean',
                   description: 'Whether to use the note type template for structure',
                   default: false
+                },
+                metadata: {
+                  type: 'object',
+                  description:
+                    'Additional metadata fields for the note (validated against note type schema)',
+                  additionalProperties: true
                 }
               },
               required: ['type', 'title', 'content']
@@ -493,7 +500,8 @@ class JadeNoteServer {
       args.type,
       args.title,
       args.content,
-      args.use_template || false
+      args.use_template || false,
+      args.metadata || {}
     );
 
     // Get agent instructions for this note type

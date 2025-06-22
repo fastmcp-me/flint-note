@@ -11,6 +11,8 @@ import yaml from 'js-yaml';
 import { Workspace } from './workspace.ts';
 import { NoteTypeManager } from './note-types.ts';
 import { SearchManager } from './search.ts';
+import { MetadataValidator } from './metadata-schema.ts';
+import type { ValidationResult } from './metadata-schema.ts';
 import type { NoteLink } from '../types/index.ts';
 
 interface NoteMetadata {
@@ -96,7 +98,8 @@ export class NoteManager {
     typeName: string,
     title: string,
     content: string,
-    useTemplate: boolean = false
+    useTemplate: boolean = false,
+    metadata: Record<string, unknown> = {}
   ): Promise<NoteInfo> {
     try {
       // Validate note type exists
@@ -128,12 +131,21 @@ export class NoteManager {
         }
       }
 
+      // Validate metadata against schema
+      const validationResult = await this.validateMetadata(typeName, metadata);
+      if (!validationResult.valid) {
+        throw new Error(
+          `Metadata validation failed: ${validationResult.errors.map(e => e.message).join(', ')}`
+        );
+      }
+
       // Prepare note content with metadata and optional template
       const noteContent = await this.formatNoteContent(
         title,
         content,
         typeName,
-        useTemplate
+        useTemplate,
+        metadata
       );
 
       // Write the note file
@@ -195,7 +207,8 @@ export class NoteManager {
     title: string,
     content: string,
     typeName: string,
-    useTemplate: boolean = false
+    useTemplate: boolean = false,
+    metadata: Record<string, unknown> = {}
   ): Promise<string> {
     const timestamp = new Date().toISOString();
 
@@ -204,7 +217,25 @@ export class NoteManager {
     formattedContent += `type: ${typeName}\n`;
     formattedContent += `created: ${timestamp}\n`;
     formattedContent += `updated: ${timestamp}\n`;
-    formattedContent += 'tags: []\n';
+
+    // Add custom metadata fields
+    for (const [key, value] of Object.entries(metadata)) {
+      if (key !== 'title' && key !== 'type' && key !== 'created' && key !== 'updated') {
+        if (Array.isArray(value)) {
+          formattedContent += `${key}: [${value.map(v => (typeof v === 'string' ? `"${v}"` : v)).join(', ')}]\n`;
+        } else if (typeof value === 'string') {
+          formattedContent += `${key}: "${value}"\n`;
+        } else {
+          formattedContent += `${key}: ${value}\n`;
+        }
+      }
+    }
+
+    // Add default tags if not specified
+    if (!metadata.tags) {
+      formattedContent += 'tags: []\n';
+    }
+
     formattedContent += '---\n\n';
 
     if (useTemplate) {
@@ -212,15 +243,18 @@ export class NoteManager {
         const template = await this.#noteTypeManager.getNoteTypeTemplate(typeName);
         const hasContentPlaceholder = template.includes('{{content}}');
 
-        const processedTemplate = this.processTemplate(template, {
+        const templateVars = {
           title,
           type: typeName,
           created: timestamp,
           updated: timestamp,
           date: new Date().toLocaleDateString(),
           time: new Date().toLocaleTimeString(),
-          content: hasContentPlaceholder ? content : ''
-        });
+          content: hasContentPlaceholder ? content : '',
+          ...metadata
+        };
+
+        const processedTemplate = this.processTemplate(template, templateVars);
 
         // If template doesn't include title header, add it
         if (!processedTemplate.includes(`# ${title}`)) {
@@ -385,7 +419,13 @@ export class NoteManager {
           );
         } else {
           // Type guard for allowed metadata values
-          if (typeof value === 'string' || Array.isArray(value) || value === undefined) {
+          if (
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean' ||
+            Array.isArray(value) ||
+            value === undefined
+          ) {
             metadata[key] = value;
           }
         }
@@ -693,6 +733,26 @@ export class NoteManager {
         'Failed to remove from search index:',
         error instanceof Error ? error.message : 'Unknown error'
       );
+    }
+  }
+
+  /**
+   * Validate metadata against note type schema
+   */
+  async validateMetadata(
+    typeName: string,
+    metadata: Record<string, unknown>
+  ): Promise<ValidationResult> {
+    try {
+      const schema = await this.#noteTypeManager.getMetadataSchema(typeName);
+      return MetadataValidator.validate(metadata, schema);
+    } catch (error) {
+      // If schema retrieval fails, allow the operation but log warning
+      console.warn(
+        `Failed to get metadata schema for type '${typeName}':`,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+      return { valid: true, errors: [], warnings: [] };
     }
   }
 }
