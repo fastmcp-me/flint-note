@@ -22,6 +22,8 @@ import { NoteTypeManager } from './core/note-types.ts';
 import { SearchManager } from './core/search.ts';
 import { LinkManager } from './core/links.ts';
 import type { LinkRelationship } from './types/index.ts';
+import fs from 'fs/promises';
+import path from 'path';
 
 interface CreateNoteTypeArgs {
   type_name: string;
@@ -66,6 +68,16 @@ interface LinkNotesArgs {
 }
 
 interface GetNoteTypeTemplateArgs {
+  type_name: string;
+}
+
+interface UpdateNoteTypeArgs {
+  type_name: string;
+  field: 'instructions' | 'description' | 'template' | 'metadata_schema';
+  value: string;
+}
+
+interface GetNoteTypeInfoArgs {
   type_name: string;
 }
 
@@ -292,6 +304,44 @@ class JadeNoteServer {
               },
               required: ['type_name']
             }
+          },
+          {
+            name: 'update_note_type',
+            description: 'Update a specific field of an existing note type',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type_name: {
+                  type: 'string',
+                  description: 'Name of the note type to update'
+                },
+                field: {
+                  type: 'string',
+                  description: 'Field to update',
+                  enum: ['instructions', 'description', 'template', 'metadata_schema']
+                },
+                value: {
+                  type: 'string',
+                  description: 'New value for the field'
+                }
+              },
+              required: ['type_name', 'field', 'value']
+            }
+          },
+          {
+            name: 'get_note_type_info',
+            description:
+              'Get comprehensive information about a note type including instructions, description, and template',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type_name: {
+                  type: 'string',
+                  description: 'Name of the note type to get information for'
+                }
+              },
+              required: ['type_name']
+            }
           }
         ]
       };
@@ -322,6 +372,14 @@ class JadeNoteServer {
           case 'get_note_type_template':
             return await this.#handleGetNoteTypeTemplate(
               args as unknown as GetNoteTypeTemplateArgs
+            );
+          case 'update_note_type':
+            return await this.#handleUpdateNoteType(
+              args as unknown as UpdateNoteTypeArgs
+            );
+          case 'get_note_type_info':
+            return await this.#handleGetNoteTypeInfo(
+              args as unknown as GetNoteTypeInfoArgs
             );
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -418,7 +476,7 @@ class JadeNoteServer {
   };
 
   #handleCreateNote = async (args: CreateNoteArgs) => {
-    if (!this.#noteManager) {
+    if (!this.#noteManager || !this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
 
@@ -428,11 +486,33 @@ class JadeNoteServer {
       args.content,
       args.use_template || false
     );
+
+    // Get agent instructions for this note type
+    let agentInstructions: string[] = [];
+    let nextSuggestions = '';
+    try {
+      const typeInfo = await this.#noteTypeManager.getNoteTypeDescription(args.type);
+      agentInstructions = typeInfo.parsed.agentInstructions;
+      if (agentInstructions.length > 0) {
+        nextSuggestions = `Consider following these guidelines for ${args.type} notes: ${agentInstructions.join(', ')}`;
+      }
+    } catch {
+      // Ignore errors getting type info, continue without instructions
+    }
+
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(noteInfo, null, 2)
+          text: JSON.stringify(
+            {
+              ...noteInfo,
+              agent_instructions: agentInstructions,
+              next_suggestions: nextSuggestions
+            },
+            null,
+            2
+          )
         }
       ]
     };
@@ -546,6 +626,145 @@ class JadeNoteServer {
                 '{{time}}',
                 '{{content}}'
               ]
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  };
+
+  #handleUpdateNoteType = async (args: UpdateNoteTypeArgs) => {
+    if (!this.#noteTypeManager) {
+      throw new Error('Server not initialized');
+    }
+
+    // Get current note type info
+    const currentInfo = await this.#noteTypeManager.getNoteTypeDescription(
+      args.type_name
+    );
+
+    // Update based on field type
+    let updatedDescription: string;
+    let updatedTemplate: string | null = currentInfo.template;
+
+    switch (args.field) {
+      case 'instructions': {
+        // Parse instructions from value (can be newline-separated or bullet points)
+        const instructions = args.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .map(line => (line.startsWith('-') ? line.substring(1).trim() : line))
+          .map(line => `- ${line}`)
+          .join('\n');
+
+        // Use the current description and replace the agent instructions section
+        updatedDescription = currentInfo.description.replace(
+          /## Agent Instructions\n[\s\S]*?(?=\n## |$)/,
+          `## Agent Instructions\n${instructions}\n`
+        );
+        break;
+      }
+
+      case 'description':
+        updatedDescription = this.#noteTypeManager.formatNoteTypeDescription(
+          args.type_name,
+          args.value,
+          currentInfo.template
+        );
+        break;
+
+      case 'template':
+        updatedTemplate = args.value;
+        updatedDescription = this.#noteTypeManager.formatNoteTypeDescription(
+          args.type_name,
+          currentInfo.parsed.purpose,
+          args.value
+        );
+        break;
+
+      case 'metadata_schema': {
+        // Parse metadata schema from value
+        const schema = args.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .map(line => (line.startsWith('-') ? line.substring(1).trim() : line))
+          .map(line => `- ${line}`)
+          .join('\n');
+
+        updatedDescription = currentInfo.description.replace(
+          /## Metadata Schema\n[\s\S]*$/,
+          `## Metadata Schema\nExpected frontmatter or metadata fields for this note type:\n${schema}\n`
+        );
+        break;
+      }
+
+      default:
+        throw new Error(`Invalid field: ${args.field}`);
+    }
+
+    // Write the updated description to the file
+    const descriptionPath = path.join(currentInfo.path, '.description.md');
+    await fs.writeFile(descriptionPath, updatedDescription, 'utf-8');
+
+    // Update template if needed
+    if (updatedTemplate !== currentInfo.template) {
+      await this.#noteTypeManager.updateNoteType(args.type_name, {
+        template: updatedTemplate
+      });
+    }
+
+    // Get the updated note type info
+    const result = await this.#noteTypeManager.getNoteTypeDescription(args.type_name);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              success: true,
+              type_name: args.type_name,
+              field_updated: args.field,
+              updated_info: {
+                name: result.name,
+                purpose: result.parsed.purpose,
+                agent_instructions: result.parsed.agentInstructions,
+                has_template: result.hasTemplate,
+                template: result.template
+              }
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  };
+
+  #handleGetNoteTypeInfo = async (args: GetNoteTypeInfoArgs) => {
+    if (!this.#noteTypeManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const info = await this.#noteTypeManager.getNoteTypeDescription(args.type_name);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              type_name: info.name,
+              description: info.parsed.purpose,
+              agent_instructions: info.parsed.agentInstructions,
+              template: info.template,
+              metadata_schema: info.parsed.metadataSchema,
+              has_template: info.hasTemplate,
+              path: info.path
             },
             null,
             2

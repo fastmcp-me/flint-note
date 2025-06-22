@@ -22,6 +22,46 @@ Create a note-taking system where:
 5. **Extensible**: Easy to add new note types and agent behaviors
 6. **Portable**: No vendor lock-in, works with standard file systems and version control
 
+## Agent Instructions System
+
+The agent instructions system is a core feature that enables users to define specific behaviors and guidance for AI agents when working with different note types. This creates a personalized, context-aware experience where agents understand the purpose and conventions of each note category.
+
+### How Agent Instructions Work
+
+1. **Per-Note-Type Guidance**: Each note type can have its own set of agent instructions
+2. **Automatic Context**: When agents work with notes, they automatically receive relevant instructions
+3. **User-Customizable**: Instructions can be easily updated using natural language through the MCP interface
+4. **Contextual Responses**: Note creation responses include agent instructions and helpful suggestions
+
+### Example Agent Instructions
+
+```markdown
+## Reading Notes
+- Always ask about the author's background and credentials
+- Extract key insights and actionable takeaways
+- Ask for the user's personal rating and recommendation
+- Suggest connections to previously read books
+
+## Project Notes  
+- Always ask about project goals and success criteria
+- Extract and track action items with owners and deadlines
+- Suggest next steps and potential blockers
+- Link to related project documentation
+
+## Meeting Notes
+- Extract attendees, decisions made, and action items
+- Identify follow-up meetings or deadlines
+- Suggest creating linked notes for action items
+- Ask about meeting effectiveness and outcomes
+```
+
+### Benefits
+
+- **Consistent Experience**: Agents behave predictably within each note category
+- **Personalized Workflow**: Instructions reflect your specific needs and conventions  
+- **Reduced Cognitive Load**: Agents proactively suggest relevant actions and connections
+- **Scalable Organization**: Easy to maintain consistent practices across large note collections
+
 ## Architecture
 
 ### File System Structure
@@ -93,6 +133,8 @@ The jade-note MCP server exposes the following tools and resources:
 | `list_note_types` | List all available note types | none |
 | `link_notes` | Create explicit links between notes | `source`, `target`, `relationship?` |
 | `get_note_type_template` | Get template for a note type | `type_name` |
+| `update_note_type` | Update specific field of existing note type | `type_name`, `field` (instructions\|description\|template\|metadata_schema), `value` |
+| `get_note_type_info` | Get comprehensive note type information including agent instructions | `type_name` |
 | `analyze_note` | Get AI analysis/suggestions for a note | `identifier` |
 
 #### Resources
@@ -112,8 +154,12 @@ The jade-note MCP server exposes the following tools and resources:
 - [x] Simple search functionality
 - [x] Integration with MCP-compatible clients
 - [x] Template-based note creation with variable substitution
+- [x] Agent instruction management and integration
+- [x] Note type field updates (instructions, description, template, metadata)
 
 ### Phase 2: Agent Intelligence
+- [x] Agent instructions integration with note creation
+- [x] Contextual agent guidance based on note types
 - [ ] Content-based note type suggestions
 - [ ] Automatic note linking based on content similarity
 - [ ] Content enhancement suggestions
@@ -182,25 +228,48 @@ Agent: I'll update the template to include those fields.
 [Updates .description.md with enhanced template]
 ```
 
-#### Adding Notes
+#### Adding Notes with Agent Intelligence
 ```
 User: "Add a reading note for 'Atomic Habits' by James Clear"
 
-Agent: I'll create a new reading note for that book.
-[Creates note with template, fills in known information]
+Agent: I'll create a new reading note for that book. Based on your reading note guidelines, I should also ask about the author's background and your rating.
+[Creates note with template, includes agent instructions: "Always ask about author's background", "Extract key insights", "Ask for user's rating"]
 
 User: "The key insight is that small changes compound over time"
 
-Agent: I'll add that insight to your note.
-[Updates the note with the insight]
+Agent: I'll add that insight to your note. James Clear is a well-known habits researcher - what's your overall rating for this book, and would you recommend it to others?
+[Updates the note with the insight, following agent instructions to ask for rating]
 ```
 
-#### Searching and Connecting
+#### Managing Agent Instructions
+```
+User: "Update my reading notes so agents should always ask about the author's background"
+
+Agent: I'll update the agent instructions for your reading notes.
+[Uses update_note_type("reading", "instructions", "- Always ask about author's background\n- Extract key insights\n- Ask for user's rating")]
+
+User: "What guidance do agents have for project notes?"
+
+Agent: Let me check the agent instructions for project notes.
+[Uses get_note_type_info("project") to retrieve: ["Always ask about project goals", "Extract action items", "Suggest next steps", "Track deadlines"]]
+
+User: "Change the template for meeting notes to include action items"
+
+Agent: I'll update the template for your meeting notes.
+[Uses update_note_type("meetings", "template", "# {{title}}\n\n**Date:** {{date}}\n\n## Action Items\n\n")]
+
+User: "Make sure agents help me track deadlines in project notes"
+
+Agent: I'll add deadline tracking to your project note instructions.
+[Uses update_note_type("projects", "instructions", "- Always ask about project goals\n- Extract action items with deadlines\n- Suggest next steps\n- Track and remind about upcoming deadlines")]
+```
+
+#### Searching and Connecting with Context
 ```
 User: "What notes do I have about habit formation?"
 
 Agent: I found several notes related to habit formation...
-[Searches across all notes, returns relevant results]
+[Searches across all notes, returns relevant results with context from agent instructions]
 
 User: "Find all notes that mention dates in YYYY-MM-DD format"
 
@@ -209,8 +278,13 @@ Agent: I'll search using a regex pattern to find date mentions.
 
 User: "Link my Atomic Habits note to my other productivity notes"
 
-Agent: I'll create connections between your habit and productivity notes.
-[Analyzes content and creates appropriate links]
+Agent: I'll create connections between your habit and productivity notes. Based on your reading note guidelines, I should also suggest rating these books relative to each other.
+[Creates links and follows agent instructions to suggest comparative analysis]
+
+User: "Create a meeting note for tomorrow's team standup"
+
+Agent: I'll create a meeting note for your standup. Based on your meeting note settings, I'll include sections for attendees, decisions, and action items.
+[Creates note following agent instructions: "Extract attendees and decisions", "Track action items", "Identify follow-ups"]
 ```
 
 ## Future Considerations
@@ -235,10 +309,11 @@ Agent: I'll create connections between your habit and productivity notes.
 ## Success Metrics
 
 ### MVP Success Criteria
-- [ ] Successfully create and manage note types through MCP
-- [ ] Seamless integration with at least one MCP client
-- [ ] Basic search and retrieval functionality
-- [ ] File system remains clean and portable
+- [x] Successfully create and manage note types through MCP
+- [x] Agent instruction management and contextual guidance
+- [x] Seamless integration with at least one MCP client
+- [x] Basic search and retrieval functionality
+- [x] File system remains clean and portable
 
 ### Long-term Success Indicators
 - User retention and daily active usage
