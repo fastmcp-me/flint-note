@@ -31,15 +31,17 @@ interface SearchToolResponse {
 async function callSearchTool(
   context: TestContext,
   args: {
-    query: string;
+    query?: string;
     type_filter?: string;
     limit?: number;
+    use_regex?: boolean;
   }
 ): Promise<SearchToolResponse> {
   const results = await context.searchManager.searchNotes(
     args.query,
     args.type_filter || null,
-    args.limit || 10
+    args.limit || 10,
+    args.use_regex || false
   );
 
   return {
@@ -337,6 +339,23 @@ describe('MCP Search Tool Integration Tests', () => {
       const results = JSON.parse(response.content[0].text);
       assert.ok(Array.isArray(results));
       assert.ok(results.length > 0, 'Should return all notes for empty query');
+      // Results should be sorted by last updated (most recent first)
+      for (let i = 0; i < results.length - 1; i++) {
+        const current = new Date(results[i].lastUpdated).getTime();
+        const next = new Date(results[i + 1].lastUpdated).getTime();
+        assert.ok(current >= next, 'Results should be sorted by last updated descending');
+      }
+    });
+
+    test('should handle missing query parameter gracefully', async () => {
+      const response = await callSearchTool(context, {
+        limit: 10,
+        use_regex: false
+      });
+
+      const results = JSON.parse(response.content[0].text);
+      assert.ok(Array.isArray(results));
+      assert.ok(results.length > 0, 'Should return all notes when query is missing');
       // Results should be sorted by last updated (most recent first)
       for (let i = 0; i < results.length - 1; i++) {
         const current = new Date(results[i].lastUpdated).getTime();

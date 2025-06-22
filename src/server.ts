@@ -46,7 +46,7 @@ interface UpdateNoteArgs {
 }
 
 interface SearchNotesArgs {
-  query: string;
+  query?: string;
   type_filter?: string;
   limit?: number;
   use_regex?: boolean;
@@ -208,7 +208,7 @@ class JadeNoteServer {
                 query: {
                   type: 'string',
                   description:
-                    'Search query or regex pattern. Empty string returns all notes.'
+                    'Search query or regex pattern. Empty string or omitted returns all notes.'
                 },
                 type_filter: {
                   type: 'string',
@@ -225,7 +225,7 @@ class JadeNoteServer {
                   default: false
                 }
               },
-              required: ['query']
+              required: []
             }
           },
           {

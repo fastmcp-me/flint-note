@@ -148,6 +148,18 @@ describe('Search Unit Tests', () => {
       }
     });
 
+    test('should handle undefined query parameter', async () => {
+      const results = await context.searchManager.searchNotes(undefined as any, null, 10);
+      assert.ok(Array.isArray(results));
+      assert.ok(results.length > 0, 'Undefined query should return all notes');
+      // Results should be sorted by last updated (most recent first)
+      for (let i = 0; i < results.length - 1; i++) {
+        const current = new Date(results[i].lastUpdated).getTime();
+        const next = new Date(results[i + 1].lastUpdated).getTime();
+        assert.ok(current >= next, 'Results should be sorted by last updated descending');
+      }
+    });
+
     test('should handle query with no matches', async () => {
       const results = await context.searchManager.searchNotes(
         'nonexistentterm12345',

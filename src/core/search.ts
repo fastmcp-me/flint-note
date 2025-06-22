@@ -96,13 +96,16 @@ export class SearchManager {
       const searchIndex = await this.loadSearchIndex();
       const results: SearchResult[] = [];
 
+      // Handle undefined or null query
+      const safeQuery = query ?? '';
+
       // Handle regex search
       if (useRegex) {
-        return this.searchWithRegex(query, typeFilter, limit, searchIndex);
+        return this.searchWithRegex(safeQuery, typeFilter, limit, searchIndex);
       }
 
       // Prepare search terms for regular text search
-      const searchTerms = query
+      const searchTerms = safeQuery
         .toLowerCase()
         .split(/\s+/)
         .filter(term => term.length > 0);
