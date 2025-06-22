@@ -655,7 +655,7 @@ describe('Note Type Management', () => {
       );
       assert.ok(info.agent_instructions.length > 0, 'Should have default instructions');
       assert.ok(
-        info.agent_instructions.some(instruction =>
+        info.agent_instructions.some((instruction: string) =>
           instruction.includes('Ask clarifying questions')
         ),
         'Should include default instruction about asking clarifying questions'
@@ -685,7 +685,7 @@ describe('Note Type Management', () => {
         'Should fall back to default instructions when empty array provided'
       );
       assert.ok(
-        info.agent_instructions.some(instruction =>
+        info.agent_instructions.some((instruction: string) =>
           instruction.includes('Ask clarifying questions')
         ),
         'Should include default instruction about asking clarifying questions'
@@ -732,7 +732,7 @@ describe('Note Type Management', () => {
         'Should include last valid instruction'
       );
       assert.ok(
-        !info.agent_instructions.some(instruction => instruction.trim() === ''),
+        !info.agent_instructions.some((instruction: string) => instruction.trim() === ''),
         'Should not include any empty instructions'
       );
     });
