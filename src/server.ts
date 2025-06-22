@@ -29,6 +29,7 @@ interface CreateNoteTypeArgs {
   type_name: string;
   description: string;
   template?: string;
+  agent_instructions?: string[];
 }
 
 interface CreateNoteArgs {
@@ -146,6 +147,13 @@ class JadeNoteServer {
                 template: {
                   type: 'string',
                   description: 'Optional template content for new notes of this type'
+                },
+                agent_instructions: {
+                  type: 'array',
+                  items: {
+                    type: 'string'
+                  },
+                  description: 'Optional custom agent instructions for this note type'
                 }
               },
               required: ['type_name', 'description']
@@ -455,7 +463,8 @@ class JadeNoteServer {
     await this.#noteTypeManager.createNoteType(
       args.type_name,
       args.description,
-      args.template
+      args.template,
+      args.agent_instructions
     );
     return {
       content: [

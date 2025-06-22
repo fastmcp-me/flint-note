@@ -580,4 +580,161 @@ describe('Note Type Management', () => {
       assert.ok(result.template.includes('Rating'), 'Should return template content');
     });
   });
+
+  describe('Custom Agent Instructions', () => {
+    it('should create note type with custom agent instructions', async () => {
+      // Create note type with custom agent instructions
+      const customInstructions = [
+        'Always ask for the book author and publication year',
+        'Extract key quotes and page numbers',
+        'Ask for personal rating out of 5 stars',
+        'Suggest related books from the same genre'
+      ];
+
+      const createResult = await client.callTool('create_note_type', {
+        type_name: 'book-reviews',
+        description: 'Reviews and notes for books I have read',
+        template:
+          '# {{title}}\n\n**Author:** \n**Rating:** /5\n\n## Summary\n\n## Key Quotes\n\n',
+        agent_instructions: customInstructions
+      });
+
+      assert.ok(createResult.success, 'Note type creation should succeed');
+
+      // Get note type info to verify custom instructions
+      const infoResult = await client.callTool('get_note_type_info', {
+        type_name: 'book-reviews'
+      });
+
+      assert.ok(infoResult.success, 'Should successfully get note type info');
+
+      const info = JSON.parse(infoResult.content[0].text);
+      assert.strictEqual(
+        info.type_name,
+        'book-reviews',
+        'Should return correct type name'
+      );
+      assert.strictEqual(
+        info.agent_instructions.length,
+        4,
+        'Should have 4 custom instructions'
+      );
+      assert.ok(
+        info.agent_instructions.includes(
+          'Always ask for the book author and publication year'
+        ),
+        'Should include first custom instruction'
+      );
+      assert.ok(
+        info.agent_instructions.includes('Suggest related books from the same genre'),
+        'Should include last custom instruction'
+      );
+    });
+
+    it('should use default instructions when none provided', async () => {
+      // Create note type without custom instructions
+      const createResult = await client.callTool('create_note_type', {
+        type_name: 'default-instructions',
+        description: 'Test type with default instructions'
+      });
+
+      assert.ok(createResult.success, 'Note type creation should succeed');
+
+      // Get note type info to verify default instructions
+      const infoResult = await client.callTool('get_note_type_info', {
+        type_name: 'default-instructions'
+      });
+
+      assert.ok(infoResult.success, 'Should successfully get note type info');
+
+      const info = JSON.parse(infoResult.content[0].text);
+      assert.strictEqual(
+        info.type_name,
+        'default-instructions',
+        'Should return correct type name'
+      );
+      assert.ok(info.agent_instructions.length > 0, 'Should have default instructions');
+      assert.ok(
+        info.agent_instructions.some(instruction =>
+          instruction.includes('Ask clarifying questions')
+        ),
+        'Should include default instruction about asking clarifying questions'
+      );
+    });
+
+    it('should handle empty agent instructions array', async () => {
+      // Create note type with empty agent instructions
+      const createResult = await client.callTool('create_note_type', {
+        type_name: 'empty-instructions',
+        description: 'Test type with empty instructions array',
+        agent_instructions: []
+      });
+
+      assert.ok(createResult.success, 'Note type creation should succeed');
+
+      // Get note type info to verify default instructions are used
+      const infoResult = await client.callTool('get_note_type_info', {
+        type_name: 'empty-instructions'
+      });
+
+      assert.ok(infoResult.success, 'Should successfully get note type info');
+
+      const info = JSON.parse(infoResult.content[0].text);
+      assert.ok(
+        info.agent_instructions.length > 0,
+        'Should fall back to default instructions when empty array provided'
+      );
+      assert.ok(
+        info.agent_instructions.some(instruction =>
+          instruction.includes('Ask clarifying questions')
+        ),
+        'Should include default instruction about asking clarifying questions'
+      );
+    });
+
+    it('should filter out empty instruction strings', async () => {
+      // Create note type with some empty strings in instructions
+      const instructionsWithEmpties = [
+        'Valid instruction 1',
+        '',
+        'Valid instruction 2',
+        '   ',
+        'Valid instruction 3'
+      ];
+
+      const createResult = await client.callTool('create_note_type', {
+        type_name: 'filtered-instructions',
+        description: 'Test type with empty instruction strings',
+        agent_instructions: instructionsWithEmpties
+      });
+
+      assert.ok(createResult.success, 'Note type creation should succeed');
+
+      // Get note type info to verify empty strings are filtered
+      const infoResult = await client.callTool('get_note_type_info', {
+        type_name: 'filtered-instructions'
+      });
+
+      assert.ok(infoResult.success, 'Should successfully get note type info');
+
+      const info = JSON.parse(infoResult.content[0].text);
+      assert.strictEqual(
+        info.agent_instructions.length,
+        3,
+        'Should have 3 valid instructions (empty ones filtered out)'
+      );
+      assert.ok(
+        info.agent_instructions.includes('Valid instruction 1'),
+        'Should include first valid instruction'
+      );
+      assert.ok(
+        info.agent_instructions.includes('Valid instruction 3'),
+        'Should include last valid instruction'
+      );
+      assert.ok(
+        !info.agent_instructions.some(instruction => instruction.trim() === ''),
+        'Should not include any empty instructions'
+      );
+    });
+  });
 });

@@ -66,7 +66,8 @@ export class NoteTypeManager {
   async createNoteType(
     name: string,
     description: string,
-    template: string | null = null
+    template: string | null = null,
+    agentInstructions: string[] | null = null
   ): Promise<NoteTypeInfo> {
     try {
       // Validate note type name
@@ -82,7 +83,8 @@ export class NoteTypeManager {
       const descriptionContent = this.formatNoteTypeDescription(
         name,
         description,
-        template
+        template,
+        agentInstructions
       );
       await fs.writeFile(descriptionPath, descriptionContent, 'utf-8');
 
@@ -110,17 +112,58 @@ export class NoteTypeManager {
   formatNoteTypeDescription(
     name: string,
     description: string,
-    template: string | null = null
+    template: string | null = null,
+    agentInstructions: string[] | null = null
   ): string {
     const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
     let content = `# ${formattedName}\n\n`;
     content += `## Purpose\n${description}\n\n`;
     content += '## Agent Instructions\n';
-    content += `- Handle notes of type '${name}' with specific behaviors\n`;
-    content += '- Apply appropriate formatting and structure\n';
-    content += '- Extract relevant metadata and relationships\n';
-    content += '- Suggest improvements and connections\n\n';
+
+    if (agentInstructions && agentInstructions.length > 0) {
+      // Use custom agent instructions, filtering out empty strings
+      const validInstructions = agentInstructions.filter(
+        instruction => instruction && instruction.trim().length > 0
+      );
+
+      if (validInstructions.length > 0) {
+        for (const instruction of validInstructions) {
+          content += `- ${instruction}\n`;
+        }
+      } else {
+        // All instructions were empty, use defaults
+        content +=
+          '- Ask clarifying questions to understand the context and purpose of this note\n';
+        content +=
+          '- Suggest relevant tags and connections to existing notes in the knowledge base\n';
+        content += '- Help organize content with clear headings and logical structure\n';
+        content +=
+          '- Identify and extract actionable items, deadlines, or follow-up tasks\n';
+        content +=
+          '- Recommend when this note might benefit from linking to other note types\n';
+        content +=
+          '- Offer to enhance content with additional context, examples, or details\n';
+        content += '- Suggest follow-up questions or areas that could be expanded upon\n';
+        content += '- Help maintain consistency with similar notes of this type\n';
+      }
+    } else {
+      // Use default agent instructions
+      content +=
+        '- Ask clarifying questions to understand the context and purpose of this note\n';
+      content +=
+        '- Suggest relevant tags and connections to existing notes in the knowledge base\n';
+      content += '- Help organize content with clear headings and logical structure\n';
+      content +=
+        '- Identify and extract actionable items, deadlines, or follow-up tasks\n';
+      content +=
+        '- Recommend when this note might benefit from linking to other note types\n';
+      content +=
+        '- Offer to enhance content with additional context, examples, or details\n';
+      content += '- Suggest follow-up questions or areas that could be expanded upon\n';
+      content += '- Help maintain consistency with similar notes of this type\n';
+    }
+    content += '\n';
 
     if (template) {
       content += `## Template\n${template}\n\n`;

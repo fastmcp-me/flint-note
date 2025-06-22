@@ -125,7 +125,7 @@ The jade-note MCP server exposes the following tools and resources:
 
 | Tool Name | Purpose | Parameters |
 |:----------|:--------|:-----------|
-| `create_note_type` | Create new note type with description | `type_name`, `description`, `template?` |
+| `create_note_type` | Create new note type with description | `type_name`, `description`, `template?`, `agent_instructions?` |
 | `create_note` | Create new note of specified type | `type`, `title`, `content`, `use_template?` |
 | `get_note` | Retrieve specific note | `identifier` |
 | `update_note` | Update existing note | `identifier`, `content` |
@@ -226,6 +226,23 @@ User: "Make sure it includes fields for author, key insights, and my rating"
 
 Agent: I'll update the template to include those fields.
 [Updates .description.md with enhanced template]
+```
+
+#### Creating Note Type with Custom Agent Instructions
+```
+User: "Create a book review note type with specific agent guidance"
+
+Agent: I'll create a book review note type. What specific guidance should agents follow?
+
+User: "Always ask for the author's credentials, extract key quotes with page numbers, ask for my rating out of 5 stars, and suggest related books"
+
+Agent: Perfect! I'll create the note type with those custom agent instructions.
+[Uses create_note_type with agent_instructions: ["Always ask for the author's credentials and background", "Extract key quotes with specific page numbers", "Ask for personal rating out of 5 stars", "Suggest related books from the same genre or author"]]
+
+User: "Add a book review for 'Atomic Habits'"
+
+Agent: I'll create your book review. Can you tell me about James Clear's background and credentials as an author? Also, what would you rate this book out of 5 stars?
+[Creates note following the custom agent instructions automatically]
 ```
 
 #### Adding Notes with Agent Intelligence
