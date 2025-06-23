@@ -5,8 +5,6 @@
 
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
 import {
   createIntegrationWorkspace,
   cleanupIntegrationWorkspace,
