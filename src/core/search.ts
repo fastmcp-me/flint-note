@@ -7,8 +7,9 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import yaml from 'js-yaml';
 import { Workspace } from './workspace.ts';
+import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.ts';
+import type { NoteMetadata } from '../types/index.ts';
 
 interface SearchIndex {
   version: string;
@@ -59,15 +60,6 @@ interface SimilarNoteResult {
 interface ParsedNote {
   metadata: NoteMetadata;
   content: string;
-}
-
-interface NoteMetadata {
-  title?: string;
-  type?: string;
-  created?: string;
-  updated?: string;
-  tags?: string[];
-  [key: string]: string | string[] | undefined;
 }
 
 interface RebuildResult {
@@ -893,45 +885,14 @@ export class SearchManager {
    * Parse note content (simplified version)
    */
   parseNoteContent(content: string): ParsedNote {
-    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
-    const match = content.match(frontmatterRegex);
-
-    if (match) {
-      const frontmatter = match[1];
-      const body = match[2];
-      const metadata = this.parseFrontmatter(frontmatter);
-      return { metadata, content: body.trim() };
-    } else {
-      return { metadata: {}, content: content.trim() };
-    }
+    return parseNoteContent(content, false);
   }
 
   /**
    * Parse YAML frontmatter using js-yaml
    */
   parseFrontmatter(frontmatter: string): NoteMetadata {
-    try {
-      const parsed = yaml.load(frontmatter) as Record<string, unknown>;
-
-      if (!parsed || typeof parsed !== 'object') {
-        return {};
-      }
-
-      // Convert to NoteMetadata format
-      const metadata: NoteMetadata = {};
-
-      for (const [key, value] of Object.entries(parsed)) {
-        // Type guard for allowed metadata values
-        if (typeof value === 'string' || Array.isArray(value) || value === undefined) {
-          metadata[key] = value;
-        }
-      }
-
-      return metadata;
-    } catch {
-      // If YAML parsing fails, return empty metadata
-      return {};
-    }
+    return parseFrontmatter(frontmatter, false);
   }
 
   /**

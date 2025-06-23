@@ -30,6 +30,16 @@ export interface NoteLink {
   context?: string;
 }
 
+export interface NoteMetadata {
+  title?: string;
+  type?: string;
+  created?: string;
+  updated?: string;
+  tags?: string[];
+  links?: NoteLink[];
+  [key: string]: string | string[] | number | boolean | NoteLink[] | undefined;
+}
+
 export interface LinkResult {
   success: boolean;
   link_created: {
