@@ -530,6 +530,115 @@ The structured metadata system provides a foundation for advanced AI capabilitie
 - Reduction in data entry errors through validation
 - User satisfaction with structured data features
 
+## Development Roadmap
+
+### Current Status (June 2025)
+The project has a comprehensive design document and core implementation with MCP server, note management, and metadata systems. However, several integration tests are failing and need immediate attention.
+
+### Immediate Priorities (Fix Foundation) 🔴
+
+#### **1. Resolve Test Failures**
+- **Issue**: Integration tests showing 27+ compilation errors in metadata system
+- **Action**: Fix TypeScript compilation issues, imports, and runtime errors
+- **Timeline**: 1-2 weeks
+- **Success Criteria**: All tests passing, CI/CD pipeline green
+
+#### **2. Verify Core Functionality** 
+- **Action**: Manual testing of all MVP features through MCP interface
+- **Verify**: Note CRUD operations, note type management, search, metadata validation
+- **Timeline**: 1 week
+- **Success Criteria**: All core features work reliably
+
+### Short-term Development (Next 2-4 weeks)
+
+#### **3. Complete Phase 1 MVP Features**
+- ✅ Basic note creation/reading/updating (implemented)
+- ✅ Note type system (implemented) 
+- ✅ File-based storage (implemented)
+- ✅ MCP server interface (implemented)
+- ❓ **Verify** metadata validation works correctly
+- ❓ **Verify** search indexing functions properly
+
+#### **4. Improve Documentation with Real Examples**
+- Add working copy-paste example commands
+- Create troubleshooting guide with actual error messages
+- Include screenshots/GIFs of system in action
+- Test setup guide with fresh user
+
+#### **5. Add Error Handling & Validation**
+- Implement robust error messages for common mistakes
+- Add validation for note type schemas  
+- Ensure graceful handling of malformed files
+- Create user-friendly error reporting
+
+### Medium-term Goals (1-2 months)
+
+#### **6. Agent Instructions System Enhancement**
+- Implement dynamic agent instruction loading
+- Create template library for common note types (meetings, books, projects)
+- Test agent instruction effectiveness with multiple AI assistants
+- Add instruction versioning and rollback
+
+#### **7. Search & Discovery Improvements**
+- Implement full-text search with relevance ranking
+- Add tag-based filtering and faceted search
+- Create smart suggestions for note connections
+- Optimize search index performance
+
+#### **8. User Experience Polish**
+- Add progress feedback for long operations
+- Improve error messages with actionable suggestions
+- Create guided onboarding flow for new users
+- Implement keyboard shortcuts and power-user features
+
+### Long-term Vision (3+ months)
+
+#### **9. Phase 2 & 3 Features**
+From the original roadmap:
+- Advanced metadata schemas with custom validation rules
+- Automatic note linking and relationship detection
+- Export/import functionality for portability
+- Plugin system for extensibility
+
+#### **10. Community & Adoption**
+- Create example workspaces for different use cases
+- Build integrations with popular AI tools beyond MCP
+- Develop community template and schema library
+- Establish contribution guidelines and developer documentation
+
+### Development Priorities by Impact
+
+| Priority | Feature | Impact | Effort | Timeline |
+|----------|---------|---------|--------|----------|
+| P0 | Fix failing tests | High | Medium | 1-2 weeks |
+| P0 | Verify core functionality | High | Low | 1 week |
+| P1 | Error handling improvements | High | Medium | 2-3 weeks |
+| P1 | Documentation with examples | Medium | Low | 1 week |
+| P2 | Agent instructions enhancement | High | High | 1-2 months |
+| P2 | Search improvements | Medium | Medium | 3-4 weeks |
+| P3 | Advanced metadata features | Medium | High | 2-3 months |
+
+### Quality Gates
+
+Before moving to next phase:
+- [ ] All tests passing consistently
+- [ ] Manual testing of all MVP features complete
+- [ ] Documentation validated by external user
+- [ ] Error handling covers common failure modes
+- [ ] Performance acceptable for typical use cases (100-1000 notes)
+
+### Risk Mitigation
+
+**Technical Risks:**
+- **Test failures blocking development** → Prioritize test fixes above new features
+- **Performance degradation** → Implement benchmarking early
+- **Complex metadata validation** → Start with simple validation, iterate
+
+**Adoption Risks:**
+- **Poor user experience** → Focus on polish and documentation
+- **Integration complexity** → Create comprehensive setup guides
+- **Learning curve** → Develop onboarding materials and examples
+
 ---
 
-*This design document is a living document and will evolve as the project develops.*
+*This design document and roadmap are living documents that evolve as the project develops.*
