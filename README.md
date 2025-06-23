@@ -4,6 +4,8 @@
 
 **jade-note** is an agent-first note-taking application designed to help users maintain and interact with their personal knowledge base through natural language interfaces. Unlike traditional note-taking apps that add AI features as an afterthought, jade-note is architected from the ground up to be agent-native.
 
+> 🤖 **AI Integration**: Ready-to-use prompts for all AI models are available in the [`prompts/`](./prompts/) directory. See [`prompts/README.md`](./prompts/README.md) for setup instructions.
+
 ## Vision
 
 Create a note-taking system where:

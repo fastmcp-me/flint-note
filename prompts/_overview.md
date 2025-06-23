@@ -4,7 +4,7 @@ This document explains how the jade-note prompt files work together to provide c
 
 ## File Structure and Purpose
 
-### 1. `SYSTEM_PROMPT.md` - Core System Prompt
+### 1. `system_core.md` - Core System Prompt
 **Purpose**: The main, concise system prompt for AI assistants interacting with jade-note.
 **Use**: Primary prompt for most integrations and general-purpose jade-note assistance.
 **Key Features**:
@@ -13,7 +13,7 @@ This document explains how the jade-note prompt files work together to provide c
 - Essential tool usage
 - Success metrics
 
-### 2. `AI_AGENT_INSTRUCTIONS.md` - Comprehensive Behavioral Guide
+### 2. `instructions_comprehensive.md` - Comprehensive Behavioral Guide
 **Purpose**: Detailed instructions for AI behavior, covering all aspects of jade-note interaction.
 **Use**: Reference guide for complex scenarios, training, and advanced integrations.
 **Key Features**:
@@ -22,7 +22,7 @@ This document explains how the jade-note prompt files work together to provide c
 - Error handling strategies
 - Pattern recognition and workflow optimization
 
-### 3. `CLIENT_PROMPTS.md` - Platform-Specific Integration Prompts
+### 3. `clients_platform_specific.md` - Platform-Specific Integration Prompts
 **Purpose**: Ready-to-use prompts tailored for specific platforms and domains.
 **Use**: Quick setup for Claude Desktop, VS Code, Obsidian, Slack, and custom applications.
 **Key Features**:
@@ -35,17 +35,17 @@ This document explains how the jade-note prompt files work together to provide c
 
 ### Hierarchical Structure
 ```
-SYSTEM_PROMPT.md (Core principles and behaviors)
+system_core.md (Core principles and behaviors)
     ↓
-AI_AGENT_INSTRUCTIONS.md (Detailed implementation)
+instructions_comprehensive.md (Detailed implementation)
     ↓
-CLIENT_PROMPTS.md (Platform-specific adaptations)
+clients_platform_specific.md (Platform-specific adaptations)
 ```
 
 ### Information Flow
-1. **Start with SYSTEM_PROMPT.md** for basic jade-note behavior
-2. **Reference AI_AGENT_INSTRUCTIONS.md** for detailed guidance on complex scenarios
-3. **Use CLIENT_PROMPTS.md** for platform-specific modifications and examples
+1. **Start with system_core.md** for basic jade-note behavior
+2. **Reference instructions_comprehensive.md** for detailed guidance on complex scenarios
+3. **Use clients_platform_specific.md** for platform-specific modifications and examples
 
 ## Key Concepts Across All Files
 
@@ -71,20 +71,20 @@ The foundation of jade-note's intelligence:
 ## Implementation Guide
 
 ### For Simple Integrations
-Use `SYSTEM_PROMPT.md` directly:
+Use `system_core.md` directly:
 ```
 You have access to jade-note, an intelligent note-taking system...
 [Include the core behaviors and essential tools section]
 ```
 
 ### For Advanced Integrations
-Combine `SYSTEM_PROMPT.md` with relevant sections from `AI_AGENT_INSTRUCTIONS.md`:
+Combine `system_core.md` with relevant sections from `instructions_comprehensive.md`:
 - Add specific tool usage patterns
 - Include error handling strategies
 - Implement advanced behavioral patterns
 
 ### For Platform-Specific Integrations
-Start with appropriate template from `CLIENT_PROMPTS.md`:
+Start with appropriate template from `clients_platform_specific.md`:
 - Modify for your specific platform requirements
 - Add domain-specific note types and agent instructions
 - Test with provided validation scenarios
@@ -92,40 +92,40 @@ Start with appropriate template from `CLIENT_PROMPTS.md`:
 ## Common Integration Patterns
 
 ### 1. General Purpose Assistant
-**Files**: `SYSTEM_PROMPT.md`
+**Files**: `system_core.md`
 **Features**: Core jade-note functionality, conversational interface
 **Best for**: Personal knowledge management, general note-taking
 
 ### 2. Professional/Team Environment
-**Files**: `SYSTEM_PROMPT.md` + `AI_AGENT_INSTRUCTIONS.md` (workflow optimization sections)
+**Files**: `system_core.md` + `instructions_comprehensive.md` (workflow optimization sections)
 **Features**: Advanced pattern recognition, team collaboration features
 **Best for**: Business environments, team knowledge bases
 
 ### 3. Domain-Specific Application
-**Files**: All three, with heavy customization from `CLIENT_PROMPTS.md`
+**Files**: All three, with heavy customization from `clients_platform_specific.md`
 **Features**: Specialized note types, domain-specific agent instructions
 **Best for**: Healthcare, legal, technical documentation, education
 
 ### 4. Platform Integration
-**Files**: `CLIENT_PROMPTS.md` template + `SYSTEM_PROMPT.md` core behaviors
+**Files**: `clients_platform_specific.md` template + `system_core.md` core behaviors
 **Features**: Platform-specific adaptations while maintaining core intelligence
 **Best for**: Obsidian, Notion, Slack, VS Code integrations
 
 ## Customization Guidelines
 
 ### Modifying Core Behaviors
-1. **Start with SYSTEM_PROMPT.md** as your base
-2. **Add specific behaviors** from AI_AGENT_INSTRUCTIONS.md as needed
-3. **Test thoroughly** with validation scenarios from CLIENT_PROMPTS.md
+1. **Start with system_core.md** as your base
+2. **Add specific behaviors** from instructions_comprehensive.md as needed
+3. **Test thoroughly** with validation scenarios from clients_platform_specific.md
 
 ### Adding Domain Expertise
-1. **Use CLIENT_PROMPTS.md examples** as templates
+1. **Use clients_platform_specific.md examples** as templates
 2. **Define domain-specific note types** with appropriate agent instructions
 3. **Create metadata schemas** that support your domain's needs
 4. **Test with domain-specific scenarios**
 
 ### Platform Adaptations
-1. **Choose appropriate CLIENT_PROMPTS.md template**
+1. **Choose appropriate clients_platform_specific.md template**
 2. **Modify for your platform's specific requirements**
 3. **Maintain jade-note core intelligence**
 4. **Test cross-platform compatibility**
@@ -177,6 +177,7 @@ Start with appropriate template from `CLIENT_PROMPTS.md`:
 2. **Test with real scenarios** from your target domain
 3. **Maintain conversational tone** in all interactions
 4. **Focus on user value** over technical features
+5. **Use the organized prompts directory** for consistent file management
 
 ### For Integration Developers
 1. **Start with existing templates** rather than building from scratch
@@ -185,10 +186,11 @@ Start with appropriate template from `CLIENT_PROMPTS.md`:
 4. **Contribute improvements** back to the community
 
 ### For End Users
-1. **Start with SYSTEM_PROMPT.md** for general understanding
-2. **Use CLIENT_PROMPTS.md** for platform-specific setup
-3. **Refer to AI_AGENT_INSTRUCTIONS.md** for advanced features
-4. **Provide feedback** to improve the system over time
+1. **Start with system_core.md** for general understanding
+2. **Use clients_platform_specific.md** for platform-specific setup
+3. **Refer to instructions_comprehensive.md** for advanced features
+4. **Check the prompts directory README** for the latest organization
+5. **Provide feedback** to improve the system over time
 
 ## Conclusion
 
@@ -200,4 +202,6 @@ The jade-note prompt system is designed to be:
 
 By understanding how these files work together, you can create intelligent, personalized note-taking experiences that truly augment human thinking and knowledge work.
 
-The key to success is starting with the core principles in SYSTEM_PROMPT.md, understanding the detailed behaviors in AI_AGENT_INSTRUCTIONS.md, and adapting appropriately using CLIENT_PROMPTS.md templates - all while maintaining the agent-first, conversational approach that makes jade-note unique.
+The key to success is starting with the core principles in system_core.md, understanding the detailed behaviors in instructions_comprehensive.md, and adapting appropriately using clients_platform_specific.md templates - all while maintaining the agent-first, conversational approach that makes jade-note unique.
+
+> 📁 **Note**: All prompt files have been organized into the `prompts/` directory with consistent naming. See `prompts/README.md` for the complete file organization and quick start guide.

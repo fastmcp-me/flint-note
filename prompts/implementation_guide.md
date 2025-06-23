@@ -5,19 +5,19 @@ This guide provides everything needed to successfully implement jade-note with w
 ## Quick Start for Implementation
 
 ### For Very Weak Models (Simple Pattern Matching)
-Use: `SIMPLE_MODEL_PROMPTS.md`
+Use: `simple_models_basic.md`
 - Ultra-simple 4-step workflow
 - Template-based responses
 - Minimal decision making required
 
 ### For Moderately Weak Models (Can Follow Procedures)
-Use: `EXPLICIT_MODEL_PROMPTS.md`
+Use: `simple_models_detailed.md`
 - Detailed step-by-step instructions
 - Clear decision trees
 - Explicit error handling
 
 ### For Training and Validation
-Use: `MODEL_TRAINING_EXAMPLES.md`
+Use: `training_examples.md`
 - Comprehensive test scenarios
 - Expected response patterns
 - Failure pattern identification
@@ -25,7 +25,7 @@ Use: `MODEL_TRAINING_EXAMPLES.md`
 ## Implementation Strategy
 
 ### Phase 1: Basic Functionality
-1. Start with `SIMPLE_MODEL_PROMPTS.md`
+1. Start with `simple_models_basic.md`
 2. Test with basic scenarios:
    - "log I'm feeling happy"
    - "had a meeting with John"
@@ -34,7 +34,7 @@ Use: `MODEL_TRAINING_EXAMPLES.md`
 4. Move to Phase 2 only after 95%+ success rate
 
 ### Phase 2: Enhanced Behavior
-1. Upgrade to `EXPLICIT_MODEL_PROMPTS.md`
+1. Upgrade to `simple_models_detailed.md`
 2. Add decision tree capabilities
 3. Test with complex scenarios from training examples
 4. Implement error recovery patterns
@@ -88,7 +88,7 @@ NEVER skip step 1. NEVER create note types without user permission. ALWAYS follo
 
 ### Template 3: Enhanced Configuration with Error Handling
 ```
-SYSTEM: [Include full EXPLICIT_MODEL_PROMPTS.md content]
+SYSTEM: [Include full simple_models_detailed.md content]
 
 Additional behaviors:
 - If confused, ask exactly: "Should I create a [type] note for this?"
@@ -106,7 +106,7 @@ Success criteria:
 ## Testing and Validation
 
 ### Required Test Cases
-Every implementation MUST pass these scenarios:
+Every implementation MUST pass these scenarios from `training_examples.md`:
 
 #### Test Case 1: Cold Start Mood Logging
 **Input**: "log I'm feeling happy today"
@@ -198,7 +198,7 @@ Every implementation MUST pass these scenarios:
 ## Deployment Checklist
 
 ### Pre-Deployment Testing
-- [ ] Test all scenarios from `MODEL_TRAINING_EXAMPLES.md`
+- [ ] Test all scenarios from `training_examples.md`
 - [ ] Verify 4-step workflow followed consistently
 - [ ] **Confirm user permission requested before creating new note types**
 - [ ] Confirm agent instructions are followed
@@ -287,8 +287,8 @@ Every implementation MUST pass these scenarios:
 
 If implementation issues persist:
 
-1. **Review Training Examples**: Check `MODEL_TRAINING_EXAMPLES.md` for similar scenarios
-2. **Simplify Prompts**: Try `SIMPLE_MODEL_PROMPTS.md` if current approach too complex
+1. **Review Training Examples**: Check `training_examples.md` for similar scenarios
+2. **Simplify Prompts**: Try `simple_models_basic.md` if current approach too complex
 3. **Test Incrementally**: Implement one feature at a time, validate before adding more
 4. **Monitor Carefully**: Log all interactions during initial deployment
 5. **Iterate Quickly**: Make small adjustments based on real usage patterns
