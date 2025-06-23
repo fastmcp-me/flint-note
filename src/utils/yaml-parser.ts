@@ -48,9 +48,13 @@ export function parseFrontmatter(
         typeof value === 'number' ||
         typeof value === 'boolean' ||
         Array.isArray(value) ||
-        value === undefined
+        value === undefined ||
+        value === null
       ) {
         metadata[key] = value;
+      } else if (value instanceof Date) {
+        // Convert Date objects to ISO strings for consistency
+        metadata[key] = value.toISOString();
       }
     }
   }
@@ -72,7 +76,7 @@ export function parseNoteContent(
   metadata: NoteMetadata;
   content: string;
 } {
-  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
   const match = content.match(frontmatterRegex);
 
   if (match) {

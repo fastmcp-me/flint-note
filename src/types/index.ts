@@ -37,7 +37,7 @@ export interface NoteMetadata {
   updated?: string;
   tags?: string[];
   links?: NoteLink[];
-  [key: string]: string | string[] | number | boolean | NoteLink[] | undefined;
+  [key: string]: string | string[] | number | boolean | NoteLink[] | null | undefined;
 }
 
 export interface LinkResult {

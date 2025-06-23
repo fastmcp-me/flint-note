@@ -248,9 +248,18 @@ export class NoteManager {
     for (const [key, value] of Object.entries(metadata)) {
       if (key !== 'title' && key !== 'type' && key !== 'created' && key !== 'updated') {
         if (Array.isArray(value)) {
-          formattedContent += `${key}: [${value.map(v => (typeof v === 'string' ? `"${v}"` : v)).join(', ')}]\n`;
+          const escapedArray = value.map(v => {
+            if (typeof v === 'string') {
+              const escapedValue = v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+              return `"${escapedValue}"`;
+            }
+            return v;
+          });
+          formattedContent += `${key}: [${escapedArray.join(', ')}]\n`;
         } else if (typeof value === 'string') {
-          formattedContent += `${key}: "${value}"\n`;
+          // Escape quotes and backslashes in string values
+          const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+          formattedContent += `${key}: "${escapedValue}"\n`;
         } else {
           formattedContent += `${key}: ${value}\n`;
         }
@@ -536,12 +545,22 @@ export class NoteManager {
       } else if (Array.isArray(value)) {
         // Handle other arrays (like tags)
         if (value.length > 0) {
-          formattedContent += `${key}: [${value.map(v => `"${v}"`).join(', ')}]\n`;
+          const escapedArray = value.map(v => {
+            if (typeof v === 'string') {
+              const escapedValue = v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+              return `"${escapedValue}"`;
+            }
+            return `"${v}"`;
+          });
+          formattedContent += `${key}: [${escapedArray.join(', ')}]\n`;
         } else {
           formattedContent += `${key}: []\n`;
         }
-      } else if (typeof value === 'string' && value.includes(' ')) {
-        formattedContent += `${key}: "${value}"\n`;
+      } else if (typeof value === 'string') {
+        // Always quote strings to handle special characters properly
+        // Escape quotes and backslashes in string values
+        const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        formattedContent += `${key}: "${escapedValue}"\n`;
       } else {
         formattedContent += `${key}: ${value}\n`;
       }
@@ -575,8 +594,13 @@ export class NoteManager {
         throw new Error(`Note '${identifier}' does not exist`);
       }
 
-      // Add timestamp to metadata
+      // Read current content to preserve existing metadata
+      const currentContent = await fs.readFile(notePath, 'utf-8');
+      const parsed = this.parseNoteContent(currentContent);
+
+      // Merge new metadata with existing metadata
       const updatedMetadata = {
+        ...parsed.metadata,
         ...metadata,
         updated: new Date().toISOString()
       };
