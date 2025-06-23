@@ -39,7 +39,9 @@ export function createTempDirName(prefix = 'jade-note-integration'): string {
 /**
  * Creates a temporary workspace for integration testing
  */
-export async function createIntegrationWorkspace(prefix?: string): Promise<IntegrationTestContext> {
+export async function createIntegrationWorkspace(
+  prefix?: string
+): Promise<IntegrationTestContext> {
   const tempDir = createTempDirName(prefix);
   await fs.mkdir(tempDir, { recursive: true });
 
@@ -53,7 +55,9 @@ export async function createIntegrationWorkspace(prefix?: string): Promise<Integ
 /**
  * Cleans up integration test workspace and kills any running server processes
  */
-export async function cleanupIntegrationWorkspace(context: IntegrationTestContext): Promise<void> {
+export async function cleanupIntegrationWorkspace(
+  context: IntegrationTestContext
+): Promise<void> {
   // Kill server process if it's still running
   if (context.serverProcess && !context.serverProcess.killed) {
     context.serverProcess.kill('SIGTERM');
@@ -101,17 +105,21 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
     const startupTimeout = setTimeout(() => {
       if (!hasStarted) {
         serverProcess.kill('SIGKILL');
-        reject(new Error(`Server failed to start within ${timeout}ms. Stdout: ${startupOutput}, Stderr: ${errorOutput}`));
+        reject(
+          new Error(
+            `Server failed to start within ${timeout}ms. Stdout: ${startupOutput}, Stderr: ${errorOutput}`
+          )
+        );
       }
     }, timeout);
 
     // Listen for server output
-    serverProcess.stdout?.on('data', (data) => {
+    serverProcess.stdout?.on('data', data => {
       startupOutput += data.toString();
     });
 
     // Listen for server startup message
-    serverProcess.stderr?.on('data', (data) => {
+    serverProcess.stderr?.on('data', data => {
       const output = data.toString();
       errorOutput += output;
 
@@ -123,7 +131,7 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
     });
 
     // Handle server errors
-    serverProcess.on('error', (error) => {
+    serverProcess.on('error', error => {
       clearTimeout(startupTimeout);
       reject(new Error(`Failed to start server: ${error.message}`));
     });
@@ -132,7 +140,11 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
     serverProcess.on('exit', (code, signal) => {
       clearTimeout(startupTimeout);
       if (!hasStarted) {
-        reject(new Error(`Server exited unexpectedly with code ${code}, signal ${signal}. Stdout: ${startupOutput}, Stderr: ${errorOutput}`));
+        reject(
+          new Error(
+            `Server exited unexpectedly with code ${code}, signal ${signal}. Stdout: ${startupOutput}, Stderr: ${errorOutput}`
+          )
+        );
       }
     });
   });
@@ -141,7 +153,10 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
 /**
  * Gracefully stops a server process
  */
-export async function stopServer(serverProcess: ChildProcess, timeout = 2000): Promise<void> {
+export async function stopServer(
+  serverProcess: ChildProcess,
+  timeout = 2000
+): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     if (!serverProcess || serverProcess.killed) {
       resolve();
@@ -200,7 +215,11 @@ This note contains metadata for testing purposes.
 - MCP protocol communication
 `;
 
-  await fs.writeFile(join(workspacePath, 'general', 'integration-test-note.md'), testNote2, 'utf8');
+  await fs.writeFile(
+    join(workspacePath, 'general', 'integration-test-note.md'),
+    testNote2,
+    'utf8'
+  );
 
   // Create a note in a different type
   await fs.mkdir(join(workspacePath, 'projects'), { recursive: true });
@@ -214,7 +233,11 @@ This is a project note for testing different note types.
 Test the note type functionality in integration tests.
 `;
 
-  await fs.writeFile(join(workspacePath, 'projects', 'test-project.md'), projectNote, 'utf8');
+  await fs.writeFile(
+    join(workspacePath, 'projects', 'test-project.md'),
+    projectNote,
+    'utf8'
+  );
 }
 
 /**
@@ -228,7 +251,7 @@ export async function createTestNoteType(
   const noteTypePath = join(workspacePath, noteType);
   await fs.mkdir(noteTypePath, { recursive: true });
 
-  const descriptionPath = join(noteTypePath, '.description.md');
+  const descriptionPath = join(noteTypePath, '_description.md');
   await fs.writeFile(descriptionPath, description, 'utf8');
 }
 

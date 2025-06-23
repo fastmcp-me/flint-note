@@ -87,7 +87,7 @@ The metadata schema system provides structured data validation and type safety f
 
 ### Schema Definition Format
 
-Metadata schemas are defined in the note type's `.description.md` file:
+Metadata schemas are defined in the note type's `_description.md` file:
 
 ```markdown
 ## Metadata Schema
@@ -129,21 +129,21 @@ jade-note-workspace/
 │   ├── search-index.json       # Search index cache
 │   └── mcp-server.log         # MCP server logs
 ├── {note-type-1}/
-│   ├── .description.md        # Type definition, agent instructions, and metadata schema
-│   ├── .template.md          # Optional default template
+│   ├── _description.md        # Type definition, agent instructions, and metadata schema
+│   ├── _template.md          # Optional default template
 │   ├── note-1.md
 │   └── note-2.md
 ├── {note-type-2}/
-│   ├── .description.md
+│   ├── _description.md
 │   └── another-note.md
 └── general/                   # Default note type
-    ├── .description.md
+    ├── _description.md
     └── misc-thoughts.md
 ```
 
 ### Note Type Definition
 
-Each note type directory contains a `.description.md` file that defines:
+Each note type directory contains a `_description.md` file that defines:
 
 ```markdown
 # {Note Type Name}
@@ -244,7 +244,7 @@ The jade-note MCP server exposes the following tools and resources:
 
 ### Phase 1: Core Functionality
 - [x] File-based note storage
-- [x] Note type system with `.description.md`
+- [x] Note type system with `_description.md`
 - [x] Basic MCP server with CRUD operations
 - [x] Simple search functionality
 - [x] Integration with MCP-compatible clients
@@ -330,12 +330,12 @@ metadata:
 User: "I want to create a note type for tracking my reading notes"
 
 Agent: I'll create a new note type for reading notes.
-[Creates directory and .description.md with appropriate template]
+[Creates directory and _description.md with appropriate template]
 
 User: "Make sure it includes fields for author, key insights, and my rating"
 
 Agent: I'll update the template to include those fields.
-[Updates .description.md with enhanced template]
+[Updates _description.md with enhanced template]
 ```
 
 #### Creating Note Type with Custom Agent Instructions

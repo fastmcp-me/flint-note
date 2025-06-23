@@ -781,7 +781,7 @@ class JadeNoteServer {
     }
 
     // Write the updated description to the file
-    const descriptionPath = path.join(currentInfo.path, '.description.md');
+    const descriptionPath = path.join(currentInfo.path, '_description.md');
     await fs.writeFile(descriptionPath, updatedDescription, 'utf-8');
 
     // Update template if needed

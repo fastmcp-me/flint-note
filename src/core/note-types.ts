@@ -85,7 +85,7 @@ export class NoteTypeManager {
       const typePath = await this.workspace.ensureNoteType(name);
 
       // Create the description file
-      const descriptionPath = path.join(typePath, '.description.md');
+      const descriptionPath = path.join(typePath, '_description.md');
       const descriptionContent = this.formatNoteTypeDescription(
         name,
         description,
@@ -97,7 +97,7 @@ export class NoteTypeManager {
 
       // Create template file if provided
       if (template) {
-        const templatePath = path.join(typePath, '.template.md');
+        const templatePath = path.join(typePath, '_template.md');
         await fs.writeFile(templatePath, template, 'utf-8');
       }
 
@@ -197,7 +197,7 @@ export class NoteTypeManager {
   async getNoteTypeDescription(typeName: string): Promise<NoteTypeDescription> {
     try {
       const typePath = this.workspace.getNoteTypePath(typeName);
-      const descriptionPath = path.join(typePath, '.description.md');
+      const descriptionPath = path.join(typePath, '_description.md');
 
       // Check if note type exists
       try {
@@ -219,7 +219,7 @@ export class NoteTypeManager {
       }
 
       // Check for template file
-      const templatePath = path.join(typePath, '.template.md');
+      const templatePath = path.join(typePath, '_template.md');
       let template: string | null = null;
       try {
         template = await fs.readFile(templatePath, 'utf-8');
@@ -353,14 +353,14 @@ export class NoteTypeManager {
           entry.name !== 'node_modules'
         ) {
           const typePath = path.join(workspaceRoot, entry.name);
-          const descriptionPath = path.join(typePath, '.description.md');
+          const descriptionPath = path.join(typePath, '_description.md');
 
           // Check if this is a valid note type (has notes or description)
           const typeEntries = await fs.readdir(typePath);
           const hasNotes = typeEntries.some(
-            file => file.endsWith('.md') && !file.startsWith('.')
+            file => file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_')
           );
-          const hasDescription = typeEntries.includes('.description.md');
+          const hasDescription = typeEntries.includes('_description.md');
 
           if (hasNotes || hasDescription) {
             // Get basic info about the note type
@@ -378,9 +378,10 @@ export class NoteTypeManager {
                 agentInstructions = parsed.agentInstructions;
               }
 
-              hasTemplate = typeEntries.includes('.template.md');
+              hasTemplate = typeEntries.includes('_template.md');
               noteCount = typeEntries.filter(
-                file => file.endsWith('.md') && !file.startsWith('.')
+                file =>
+                  file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_')
               ).length;
             } catch {
               // Continue with default values if there's an error reading details
@@ -422,7 +423,7 @@ export class NoteTypeManager {
 
       // Update description if provided
       if (updates.description) {
-        const descriptionPath = path.join(noteType.path, '.description.md');
+        const descriptionPath = path.join(noteType.path, '_description.md');
         const newDescription = this.formatNoteTypeDescription(
           typeName,
           updates.description,
@@ -433,7 +434,7 @@ export class NoteTypeManager {
 
       // Update template if provided
       if (updates.template !== undefined) {
-        const templatePath = path.join(noteType.path, '.template.md');
+        const templatePath = path.join(noteType.path, '_template.md');
         if (updates.template) {
           await fs.writeFile(templatePath, updates.template, 'utf-8');
         } else {
@@ -549,7 +550,7 @@ export class NoteTypeManager {
       );
 
       // Write updated description
-      const descriptionPath = path.join(noteType.path, '.description.md');
+      const descriptionPath = path.join(noteType.path, '_description.md');
       await fs.writeFile(descriptionPath, newDescription, 'utf-8');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

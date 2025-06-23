@@ -25,7 +25,7 @@ describe('Template-based Note Creation', () => {
 
     // Set up custom template for general note type
     const generalPath = context.workspace.getNoteTypePath('general');
-    const descriptionPath = join(generalPath, '.description.md');
+    const descriptionPath = join(generalPath, '_description.md');
 
     const templateContent = `# General Notes
 

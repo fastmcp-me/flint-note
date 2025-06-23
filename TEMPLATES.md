@@ -8,7 +8,7 @@ jade-note includes a powerful template system that allows you to create structur
 
 ### Template Definition
 
-Templates are defined in the `.description.md` file of each note type under the `## Template (Optional)` section. They use variable substitution syntax with double curly braces: `{{variable_name}}`.
+Templates are defined in the `_description.md` file of each note type under the `## Template (Optional)` section. They use variable substitution syntax with double curly braces: `{{variable_name}}`.
 
 ### Available Variables
 

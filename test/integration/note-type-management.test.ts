@@ -135,7 +135,7 @@ describe('Note Type Management Integration', () => {
       assert.ok(dirExists, 'Note type directory should exist');
 
       // Verify description file was created
-      const descriptionPath = join(typePath, '.description.md');
+      const descriptionPath = join(typePath, '_description.md');
       const descExists = await fs
         .access(descriptionPath)
         .then(() => true)
@@ -176,7 +176,7 @@ Additional thoughts and notes.`
       );
 
       // Verify template file was created
-      const templatePath = join(context.tempDir, 'book-reviews', '.template.md');
+      const templatePath = join(context.tempDir, 'book-reviews', '_template.md');
       const templateExists = await fs
         .access(templatePath)
         .then(() => true)
@@ -218,7 +218,7 @@ Additional thoughts and notes.`
       );
 
       // Verify agent instructions are stored in description file
-      const descriptionPath = join(context.tempDir, 'project-tasks', '.description.md');
+      const descriptionPath = join(context.tempDir, 'project-tasks', '_description.md');
       const descriptionExist = await fs
         .access(descriptionPath)
         .then(() => true)
@@ -280,8 +280,8 @@ My thoughts and analysis.`,
 
       // Verify files were created (agent instructions are stored in description file)
       const typePath = join(context.tempDir, 'research-papers');
-      const descriptionPath = join(typePath, '.description.md');
-      const templatePath = join(typePath, '.template.md');
+      const descriptionPath = join(typePath, '_description.md');
+      const templatePath = join(typePath, '_template.md');
 
       const filesExist = await Promise.all([
         fs
@@ -452,7 +452,7 @@ My thoughts and analysis.`,
       assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
 
       // Verify file was updated
-      const descriptionPath = join(context.tempDir, 'updateable', '.description.md');
+      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
       const descContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descContent.includes('Updated description'),
@@ -487,7 +487,7 @@ This section was added in the update.`;
       assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
 
       // Verify template was updated
-      const templatePath = join(context.tempDir, 'updateable', '.template.md');
+      const templatePath = join(context.tempDir, 'updateable', '_template.md');
       const templateContent = await fs.readFile(templatePath, 'utf8');
       assert.ok(
         templateContent.includes('Updated Template Structure'),
@@ -521,7 +521,7 @@ This section was added in the update.`;
       assert.strictEqual(responseData.field_updated, 'instructions');
 
       // Verify instructions were updated in description file
-      const descriptionPath = join(context.tempDir, 'updateable', '.description.md');
+      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descriptionContent.includes('date and timestamp'),
@@ -813,7 +813,7 @@ reviewed: boolean`
       const files = await fs.readdir(typePath);
 
       // Agent instructions are stored in description file, not separate file
-      const expectedFiles = ['.description.md', '.template.md'];
+      const expectedFiles = ['_description.md', '_template.md'];
       for (const expectedFile of expectedFiles) {
         assert.ok(files.includes(expectedFile), `Should contain ${expectedFile}`);
       }

@@ -121,11 +121,11 @@ my-notes/
 │   ├── search-index.json       # Search index
 │   └── mcp-server.log         # Server logs
 ├── general/                    # Default note type
-│   ├── .description.md        # Type definition
+│   ├── _description.md        # Type definition
 │   └── welcome.md             # Sample note
 └── [your-note-types]/         # Custom note types
-    ├── .description.md
-    ├── .template.md           # Optional template
+    ├── _description.md
+    ├── _template.md           # Optional template
     └── your-notes.md
 ```
 

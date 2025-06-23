@@ -206,7 +206,7 @@ Expected frontmatter or metadata fields for this note type:
 `;
 
   const bookReviewPath = workspace.getNoteTypePath('book-reviews');
-  const descriptionPath = join(bookReviewPath, '.description.md');
+  const descriptionPath = join(bookReviewPath, '_description.md');
   await fs.writeFile(descriptionPath, bookReviewDescription, 'utf8');
 }
 

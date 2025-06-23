@@ -158,8 +158,8 @@ export class Workspace {
 
     await this.ensureDirectory(defaultTypePath);
 
-    // Create .description.md if it doesn't exist
-    const descriptionPath = path.join(defaultTypePath, '.description.md');
+    // Create _description.md if it doesn't exist
+    const descriptionPath = path.join(defaultTypePath, '_description.md');
     try {
       await fs.access(descriptionPath);
     } catch (error) {
@@ -243,9 +243,9 @@ Expected frontmatter fields:
     const typePath = path.join(this.rootPath, typeName);
     await this.ensureDirectory(typePath);
 
-    // Create .description.md if required and doesn't exist
+    // Create _description.md if required and doesn't exist
     if (this.config?.note_types.require_descriptions) {
-      const descriptionPath = path.join(typePath, '.description.md');
+      const descriptionPath = path.join(typePath, '_description.md');
       try {
         await fs.access(descriptionPath);
       } catch (error) {
@@ -317,7 +317,7 @@ Expected frontmatter fields:
         const typePath = path.join(this.rootPath, noteType.name);
         const typeEntries = await fs.readdir(typePath);
         const notes = typeEntries.filter(
-          file => file.endsWith('.md') && !file.startsWith('.')
+          file => file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_')
         );
         totalNotes += notes.length;
       }

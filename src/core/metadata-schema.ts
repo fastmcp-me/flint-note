@@ -5,7 +5,13 @@
  * for note types in jade-note.
  */
 
-export type MetadataFieldType = 'string' | 'number' | 'boolean' | 'date' | 'array' | 'select';
+export type MetadataFieldType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'array'
+  | 'select';
 
 export interface MetadataFieldConstraints {
   min?: number;
@@ -101,7 +107,10 @@ export class MetadataSchemaParser {
   /**
    * Parse field details from description text
    */
-  private static parseFieldDetails(field: Partial<MetadataFieldDefinition>, description: string): void {
+  private static parseFieldDetails(
+    field: Partial<MetadataFieldDefinition>,
+    description: string
+  ): void {
     // Check if required
     if (description.includes('(required)') || description.includes('required')) {
       field.required = true;
@@ -157,7 +166,7 @@ export class MetadataSchemaParser {
   }
 
   /**
-   * Generate metadata schema section for description.md
+   * Generate metadata schema section for _description.md
    */
   static generateSchemaSection(schema: MetadataSchema): string {
     if (schema.fields.length === 0) {
@@ -177,13 +186,20 @@ Expected frontmatter or metadata fields for this note type:
       const constraintTexts: string[] = [];
 
       if (field.constraints) {
-        if (field.constraints.min !== undefined) constraintTexts.push(`min: ${field.constraints.min}`);
-        if (field.constraints.max !== undefined) constraintTexts.push(`max: ${field.constraints.max}`);
-        if (field.constraints.pattern) constraintTexts.push(`pattern: "${field.constraints.pattern}"`);
-        if (field.constraints.options) constraintTexts.push(`options: [${field.constraints.options.map(o => `"${o}"`).join(', ')}]`);
+        if (field.constraints.min !== undefined)
+          constraintTexts.push(`min: ${field.constraints.min}`);
+        if (field.constraints.max !== undefined)
+          constraintTexts.push(`max: ${field.constraints.max}`);
+        if (field.constraints.pattern)
+          constraintTexts.push(`pattern: "${field.constraints.pattern}"`);
+        if (field.constraints.options)
+          constraintTexts.push(
+            `options: [${field.constraints.options.map(o => `"${o}"`).join(', ')}]`
+          );
       }
 
-      const constraintText = constraintTexts.length > 0 ? `, ${constraintTexts.join(', ')}` : '';
+      const constraintText =
+        constraintTexts.length > 0 ? `, ${constraintTexts.join(', ')}` : '';
       const fullTypeInfo = `(${requiredText}${typeText}${constraintText})`;
 
       content += `- ${field.name}: ${field.description || 'Field description'} ${fullTypeInfo}\n`;
@@ -197,13 +213,19 @@ export class MetadataValidator {
   /**
    * Validate note metadata against schema
    */
-  static validate(metadata: Record<string, unknown>, schema: MetadataSchema): ValidationResult {
+  static validate(
+    metadata: Record<string, unknown>,
+    schema: MetadataSchema
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationError[] = [];
 
     // Check required fields
     for (const field of schema.fields) {
-      if (field.required && (metadata[field.name] === undefined || metadata[field.name] === null)) {
+      if (
+        field.required &&
+        (metadata[field.name] === undefined || metadata[field.name] === null)
+      ) {
         errors.push({
           field: field.name,
           message: `Required field '${field.name}' is missing`,
@@ -336,7 +358,11 @@ export class MetadataValidator {
       }
 
       // Pattern for strings
-      if (fieldDef.type === 'string' && typeof value === 'string' && constraints.pattern) {
+      if (
+        fieldDef.type === 'string' &&
+        typeof value === 'string' &&
+        constraints.pattern
+      ) {
         const regex = new RegExp(constraints.pattern);
         if (!regex.test(value)) {
           return {
