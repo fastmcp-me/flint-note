@@ -162,7 +162,7 @@ Planning notes for the jade-note project development.
  * Creates test note types with descriptions and schemas
  */
 export async function createTestNoteTypes(context: TestContext): Promise<void> {
-  const { workspace, noteTypeManager } = context;
+  const { workspace } = context;
 
   // Ensure additional note types exist
   await workspace.ensureNoteType('projects');
@@ -218,7 +218,14 @@ export class TestAssertions {
    * Assert that all core classes can be imported and instantiated
    */
   static assertCoreClassesImportable(context: TestContext): void {
-    const { workspace, noteManager, noteTypeManager, searchManager, linkManager, configManager } = context;
+    const {
+      workspace,
+      noteManager,
+      noteTypeManager,
+      searchManager,
+      linkManager,
+      configManager
+    } = context;
 
     if (!(workspace instanceof Workspace)) {
       throw new Error('Workspace should be importable and instantiable');
