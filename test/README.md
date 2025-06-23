@@ -34,14 +34,20 @@ Unit tests focus on testing individual classes and functions in isolation. They:
 **Shared Helpers:**
 - `helpers/test-utils.ts` - Common test setup, teardown, and utility functions
 
-## Integration Tests (`test/integration/`)
+## End to end integration Tests (`test/integration/`)
 
-Integration tests focus on testing complete workflows and system interactions. They:
+E2E integration tests focus on testing complete workflows and system interactions. They:
 
 - Test full end-to-end functionality
-- Often spawn MCP server processes
+- Spawn MCP server processes
 - Use real file system operations with temporary directories
 - Test the full stack including MCP protocol communication
+
+**Files:**
+- `server-basic.test.ts` - Basic server startup, shutdown, and error handling tests
+
+**Shared Helpers:**
+- `helpers/integration-utils.ts` - Common integration test utilities for server management
 
 ## Running Tests
 
@@ -73,7 +79,14 @@ node --test test/unit/search-*.test.ts
 
 ### Integration Test Guidelines
 
-TODO
+- Use child process spawning to test the MCP server
+- Create temporary workspaces for each test
+- Test real file system operations and server communication
+- Include proper cleanup of processes and temporary directories
+- Test error conditions and graceful shutdown
+- Use realistic timeouts for server operations
+- Verify server startup messages and process states
+- Handle cross-platform differences in process management
 
 ## Style Guidelines
 
@@ -97,5 +110,15 @@ Following the project's style guide (`STYLE.md`):
 - `createTestNoteTypes()` - Sets up test note types with schemas
 - `TestAssertions` - Common assertion helpers
 - `TEST_CONSTANTS` - Shared test constants and data
+
+### Integration Test Helpers (`helpers/integration-utils.ts`)
+- `createIntegrationWorkspace()` - Creates temporary workspace for integration tests
+- `cleanupIntegrationWorkspace()` - Cleans up workspace and server processes
+- `startServer()` - Spawns MCP server process with proper configuration
+- `stopServer()` - Gracefully shuts down server processes
+- `createIntegrationTestNotes()` - Creates test notes in workspace
+- `createTestNoteType()` - Creates note types with descriptions
+- `waitFor()` - Utility for waiting on conditions with timeout
+- `INTEGRATION_CONSTANTS` - Integration test constants and timeouts
 
 Use these helpers to reduce duplication and ensure consistency across tests.

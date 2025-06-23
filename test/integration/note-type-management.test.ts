@@ -1,0 +1,783 @@
+/**
+ * Integration tests for note type management through MCP protocol
+ * Tests note type creation, updates, and information retrieval via the jade-note MCP server
+ */
+
+import { test, describe, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert';
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+import {
+  createIntegrationWorkspace,
+  cleanupIntegrationWorkspace,
+  startServer,
+  type IntegrationTestContext,
+  INTEGRATION_CONSTANTS
+} from './helpers/integration-utils.ts';
+
+/**
+ * MCP client simulation for sending requests to the server
+ */
+class MCPClient {
+  #serverProcess: any;
+
+  constructor(serverProcess: any) {
+    this.#serverProcess = serverProcess;
+  }
+
+  async sendRequest(method: string, params: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const id = Math.random().toString(36).substring(2);
+      const request = {
+        jsonrpc: '2.0',
+        id,
+        method,
+        params
+      };
+
+      let responseData = '';
+      let hasResponded = false;
+
+      const timeout = setTimeout(() => {
+        if (!hasResponded) {
+          reject(new Error(`Request timeout after 5000ms: ${method}`));
+        }
+      }, 5000);
+
+      // Listen for response on stdout
+      const onData = (data: Buffer) => {
+        responseData += data.toString();
+
+        // Try to parse complete JSON responses
+        const lines = responseData.split('\n');
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const response = JSON.parse(line);
+              if (response.id === id) {
+                hasResponded = true;
+                clearTimeout(timeout);
+                this.#serverProcess.stdout?.off('data', onData);
+
+                if (response.error) {
+                  reject(new Error(`MCP Error: ${response.error.message}`));
+                } else {
+                  resolve(response.result);
+                }
+                return;
+              }
+            } catch {
+              // Continue parsing - might be partial JSON
+            }
+          }
+        }
+      };
+
+      this.#serverProcess.stdout?.on('data', onData);
+
+      // Send the request
+      this.#serverProcess.stdin?.write(JSON.stringify(request) + '\n');
+    });
+  }
+
+  async callTool(name: string, args: any): Promise<any> {
+    return this.sendRequest('tools/call', {
+      name,
+      arguments: args
+    });
+  }
+}
+
+describe('Note Type Management Integration', () => {
+  let context: IntegrationTestContext;
+  let client: MCPClient;
+
+  beforeEach(async () => {
+    context = await createIntegrationWorkspace('note-type-management');
+
+    // Start server
+    context.serverProcess = await startServer({
+      workspacePath: context.tempDir,
+      timeout: INTEGRATION_CONSTANTS.SERVER_STARTUP_TIMEOUT
+    });
+
+    client = new MCPClient(context.serverProcess);
+  });
+
+  afterEach(async () => {
+    await cleanupIntegrationWorkspace(context);
+  });
+
+  describe('Note Type Creation', () => {
+    test('should create note type with description only', async () => {
+      const noteTypeData = {
+        type_name: 'meetings',
+        description:
+          'Meeting notes and agendas for team meetings and important discussions.'
+      };
+
+      const result = await client.callTool('create_note_type', noteTypeData);
+
+      // Verify MCP response
+      assert.ok(result.content, 'Should return content array');
+      assert.strictEqual(result.content[0].type, 'text');
+      assert.ok(
+        result.content[0].text.includes('Created note type'),
+        'Should confirm creation'
+      );
+
+      // Verify directory was created
+      const typePath = join(context.tempDir, 'meetings');
+      const dirExists = await fs
+        .access(typePath)
+        .then(() => true)
+        .catch(() => false);
+      assert.ok(dirExists, 'Note type directory should exist');
+
+      // Verify description file was created
+      const descriptionPath = join(typePath, '.description.md');
+      const descExists = await fs
+        .access(descriptionPath)
+        .then(() => true)
+        .catch(() => false);
+      assert.ok(descExists, 'Description file should exist');
+
+      // Verify description content
+      const descContent = await fs.readFile(descriptionPath, 'utf8');
+      assert.ok(
+        descContent.includes('Meeting notes and agendas'),
+        'Description should contain expected text'
+      );
+    });
+
+    test('should create note type with template', async () => {
+      const noteTypeData = {
+        type_name: 'book-reviews',
+        description: 'Reviews and notes about books I have read.',
+        template: `# {{title}}
+
+## Summary
+Brief summary of the book.
+
+## Key Insights
+- Main insight 1
+- Main insight 2
+
+## My Rating: {{rating}}/5
+
+## Notes
+Additional thoughts and notes.`
+      };
+
+      const result = await client.callTool('create_note_type', noteTypeData);
+      assert.ok(
+        result.content[0].text.includes('Created note type'),
+        'Should confirm creation'
+      );
+
+      // Verify template file was created
+      const templatePath = join(context.tempDir, 'book-reviews', '.template.md');
+      const templateExists = await fs
+        .access(templatePath)
+        .then(() => true)
+        .catch(() => false);
+      assert.ok(templateExists, 'Template file should exist');
+
+      // Verify template content
+      const templateContent = await fs.readFile(templatePath, 'utf8');
+      assert.ok(
+        templateContent.includes('{{title}}'),
+        'Template should contain title placeholder'
+      );
+      assert.ok(
+        templateContent.includes('{{rating}}'),
+        'Template should contain rating placeholder'
+      );
+      assert.ok(
+        templateContent.includes('## Summary'),
+        'Template should contain structure'
+      );
+    });
+
+    test('should create note type with agent instructions', async () => {
+      const noteTypeData = {
+        type_name: 'project-tasks',
+        description: 'Individual tasks and action items for projects.',
+        agent_instructions: [
+          'Always include a priority level (high, medium, low)',
+          'Add estimated time to completion',
+          'Include dependencies if any',
+          'Tag with project name'
+        ]
+      };
+
+      const result = await client.callTool('create_note_type', noteTypeData);
+      assert.ok(
+        result.content[0].text.includes('Created note type'),
+        'Should confirm creation'
+      );
+
+      // Verify agent instructions file was created
+      const instructionsPath = join(
+        context.tempDir,
+        'project-tasks',
+        '.agent-instructions.md'
+      );
+      const instructionsExist = await fs
+        .access(instructionsPath)
+        .then(() => true)
+        .catch(() => false);
+      assert.ok(instructionsExist, 'Agent instructions file should exist');
+
+      // Verify instructions content
+      const instructionsContent = await fs.readFile(instructionsPath, 'utf8');
+      assert.ok(
+        instructionsContent.includes('priority level'),
+        'Instructions should contain priority guidance'
+      );
+      assert.ok(
+        instructionsContent.includes('estimated time'),
+        'Instructions should contain time guidance'
+      );
+      assert.ok(
+        instructionsContent.includes('dependencies'),
+        'Instructions should contain dependency guidance'
+      );
+    });
+
+    test('should create complete note type with all components', async () => {
+      const noteTypeData = {
+        type_name: 'research-papers',
+        description: 'Academic papers and research documents with structured analysis.',
+        template: `# {{title}}
+
+**Authors:** {{authors}}
+**Journal:** {{journal}}
+**Year:** {{year}}
+
+## Abstract
+{{abstract}}
+
+## Key Findings
+- Finding 1
+- Finding 2
+
+## Methodology
+Description of research methodology.
+
+## Personal Notes
+My thoughts and analysis.`,
+        agent_instructions: [
+          'Always include full citation information',
+          'Summarize methodology clearly',
+          'Extract key findings and implications',
+          'Note any limitations or biases',
+          'Connect to related research when possible'
+        ]
+      };
+
+      const result = await client.callTool('create_note_type', noteTypeData);
+      assert.ok(
+        result.content[0].text.includes('Created note type'),
+        'Should confirm creation'
+      );
+
+      // Verify all files were created
+      const typePath = join(context.tempDir, 'research-papers');
+      const descriptionPath = join(typePath, '.description.md');
+      const templatePath = join(typePath, '.template.md');
+      const instructionsPath = join(typePath, '.agent-instructions.md');
+
+      const allExist = await Promise.all([
+        fs
+          .access(descriptionPath)
+          .then(() => true)
+          .catch(() => false),
+        fs
+          .access(templatePath)
+          .then(() => true)
+          .catch(() => false),
+        fs
+          .access(instructionsPath)
+          .then(() => true)
+          .catch(() => false)
+      ]);
+
+      assert.ok(
+        allExist.every(exists => exists),
+        'All note type files should exist'
+      );
+    });
+
+    test('should handle invalid note type names', async () => {
+      const invalidNames = [
+        'invalid/name',
+        'invalid:name',
+        'invalid*name',
+        'invalid?name',
+        'invalid<name>',
+        'invalid|name'
+      ];
+
+      for (const invalidName of invalidNames) {
+        try {
+          await client.callTool('create_note_type', {
+            type_name: invalidName,
+            description: 'Test description'
+          });
+          assert.fail(`Should reject invalid name: ${invalidName}`);
+        } catch (error) {
+          assert.ok(error instanceof Error);
+          assert.ok(error.message.includes('invalid') || error.message.includes('name'));
+        }
+      }
+    });
+
+    test('should prevent duplicate note type creation', async () => {
+      // Create first note type
+      await client.callTool('create_note_type', {
+        type_name: 'duplicates',
+        description: 'First description'
+      });
+
+      // Try to create duplicate
+      try {
+        await client.callTool('create_note_type', {
+          type_name: 'duplicates',
+          description: 'Second description'
+        });
+        assert.fail('Should prevent duplicate note type creation');
+      } catch (error) {
+        assert.ok(error instanceof Error);
+        assert.ok(
+          error.message.includes('exists') || error.message.includes('duplicate')
+        );
+      }
+    });
+  });
+
+  describe('Note Type Updates', () => {
+    beforeEach(async () => {
+      // Create a note type to update
+      await client.callTool('create_note_type', {
+        type_name: 'updateable',
+        description: 'Original description for testing updates.',
+        template: 'Original template content',
+        agent_instructions: ['Original instruction 1', 'Original instruction 2']
+      });
+    });
+
+    test('should update note type description', async () => {
+      const result = await client.callTool('update_note_type', {
+        type_name: 'updateable',
+        field: 'description',
+        value: 'Updated description with new information.'
+      });
+
+      assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
+
+      // Verify file was updated
+      const descriptionPath = join(context.tempDir, 'updateable', '.description.md');
+      const descContent = await fs.readFile(descriptionPath, 'utf8');
+      assert.ok(
+        descContent.includes('Updated description'),
+        'Description should be updated'
+      );
+      assert.ok(
+        !descContent.includes('Original description'),
+        'Old description should be replaced'
+      );
+    });
+
+    test('should update note type template', async () => {
+      const newTemplate = `# {{title}}
+
+## Updated Template Structure
+
+**Date:** {{date}}
+**Category:** {{category}}
+
+## Content
+{{content}}
+
+## Updated Section
+This section was added in the update.`;
+
+      const result = await client.callTool('update_note_type', {
+        type_name: 'updateable',
+        field: 'template',
+        value: newTemplate
+      });
+
+      assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
+
+      // Verify template was updated
+      const templatePath = join(context.tempDir, 'updateable', '.template.md');
+      const templateContent = await fs.readFile(templatePath, 'utf8');
+      assert.ok(
+        templateContent.includes('Updated Template Structure'),
+        'Template should be updated'
+      );
+      assert.ok(
+        templateContent.includes('{{category}}'),
+        'Template should contain new placeholders'
+      );
+      assert.ok(
+        !templateContent.includes('Original template'),
+        'Old template should be replaced'
+      );
+    });
+
+    test('should update agent instructions', async () => {
+      const newInstructions = `- Always include a date and timestamp
+- Use structured formatting for consistency
+- Include relevant tags and categories
+- Cross-reference related notes when applicable
+- Maintain clear and concise language`;
+
+      const result = await client.callTool('update_note_type', {
+        type_name: 'updateable',
+        field: 'instructions',
+        value: newInstructions
+      });
+
+      assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
+
+      // Verify instructions were updated
+      const instructionsPath = join(
+        context.tempDir,
+        'updateable',
+        '.agent-instructions.md'
+      );
+      const instructionsContent = await fs.readFile(instructionsPath, 'utf8');
+      assert.ok(
+        instructionsContent.includes('date and timestamp'),
+        'Instructions should be updated'
+      );
+      assert.ok(
+        instructionsContent.includes('structured formatting'),
+        'Instructions should contain new content'
+      );
+      assert.ok(
+        !instructionsContent.includes('Original instruction'),
+        'Old instructions should be replaced'
+      );
+    });
+
+    test('should update metadata schema', async () => {
+      const metadataSchema = `title: string
+author: string
+priority: enum [high, medium, low]
+tags: array
+created_date: date
+estimated_hours: number
+completed: boolean`;
+
+      const result = await client.callTool('update_note_type', {
+        type_name: 'updateable',
+        field: 'metadata_schema',
+        value: metadataSchema
+      });
+
+      assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
+
+      // Verify metadata schema was created
+      const schemaPath = join(context.tempDir, 'updateable', '.metadata-schema.yaml');
+      const schemaExists = await fs
+        .access(schemaPath)
+        .then(() => true)
+        .catch(() => false);
+      assert.ok(schemaExists, 'Metadata schema file should exist');
+
+      const schemaContent = await fs.readFile(schemaPath, 'utf8');
+      assert.ok(
+        schemaContent.includes('priority: enum'),
+        'Schema should contain enum field'
+      );
+      assert.ok(
+        schemaContent.includes('tags: array'),
+        'Schema should contain array field'
+      );
+      assert.ok(
+        schemaContent.includes('completed: boolean'),
+        'Schema should contain boolean field'
+      );
+    });
+
+    test('should handle invalid field names', async () => {
+      try {
+        await client.callTool('update_note_type', {
+          type_name: 'updateable',
+          field: 'invalid_field',
+          value: 'some value'
+        });
+        assert.fail('Should reject invalid field name');
+      } catch (error) {
+        assert.ok(error instanceof Error);
+        assert.ok(error.message.includes('field') || error.message.includes('invalid'));
+      }
+    });
+
+    test('should handle non-existent note type', async () => {
+      try {
+        await client.callTool('update_note_type', {
+          type_name: 'non-existent',
+          field: 'description',
+          value: 'New description'
+        });
+        assert.fail('Should reject non-existent note type');
+      } catch (error) {
+        assert.ok(error instanceof Error);
+        assert.ok(
+          error.message.includes('not found') || error.message.includes('does not exist')
+        );
+      }
+    });
+  });
+
+  describe('Note Type Information Retrieval', () => {
+    beforeEach(async () => {
+      // Create comprehensive note types for testing
+      await client.callTool('create_note_type', {
+        type_name: 'comprehensive',
+        description: 'A comprehensive note type with all components for testing.',
+        template: `# {{title}}
+
+## Overview
+{{overview}}
+
+## Details
+{{details}}
+
+## Conclusion
+{{conclusion}}`,
+        agent_instructions: [
+          'Always start with a clear overview',
+          'Provide detailed analysis in the details section',
+          'Summarize key points in the conclusion',
+          'Use consistent formatting throughout'
+        ]
+      });
+
+      // Add metadata schema
+      await client.callTool('update_note_type', {
+        type_name: 'comprehensive',
+        field: 'metadata_schema',
+        value: `title: string
+category: enum [analysis, summary, reference]
+tags: array
+priority: enum [high, medium, low]
+created: date
+reviewed: boolean`
+      });
+    });
+
+    test('should retrieve complete note type information', async () => {
+      const result = await client.callTool('get_note_type_info', {
+        type_name: 'comprehensive'
+      });
+
+      assert.ok(result.content, 'Should return content array');
+      const info = JSON.parse(result.content[0].text);
+
+      // Verify all components are present
+      assert.strictEqual(info.name || info.type_name, 'comprehensive');
+      assert.ok(
+        info.description.includes('comprehensive note type'),
+        'Should include description'
+      );
+      assert.ok(info.template.includes('{{title}}'), 'Should include template');
+      assert.ok(info.template.includes('## Overview'), 'Template should have structure');
+      assert.ok(
+        Array.isArray(info.agent_instructions),
+        'Should include agent instructions'
+      );
+      assert.ok(
+        info.agent_instructions.some((inst: string) => inst.includes('clear overview')),
+        'Instructions should be included'
+      );
+      assert.ok(info.metadata_schema, 'Should include metadata schema');
+      assert.ok(
+        info.metadata_schema.includes('category: enum'),
+        'Schema should be included'
+      );
+    });
+
+    test('should retrieve note type template separately', async () => {
+      const result = await client.callTool('get_note_type_template', {
+        type_name: 'comprehensive'
+      });
+
+      assert.ok(result.content, 'Should return content array');
+      const template = result.content[0].text;
+
+      assert.ok(template.includes('# {{title}}'), 'Should return template content');
+      assert.ok(template.includes('## Overview'), 'Should include template structure');
+      assert.ok(template.includes('{{overview}}'), 'Should include placeholders');
+      assert.ok(template.includes('{{conclusion}}'), 'Should include all placeholders');
+    });
+
+    test('should handle non-existent note type info request', async () => {
+      try {
+        await client.callTool('get_note_type_info', {
+          type_name: 'non-existent'
+        });
+        assert.fail('Should throw error for non-existent note type');
+      } catch (error) {
+        assert.ok(error instanceof Error);
+        assert.ok(
+          error.message.includes('not found') || error.message.includes('does not exist')
+        );
+      }
+    });
+
+    test('should handle non-existent template request', async () => {
+      try {
+        await client.callTool('get_note_type_template', {
+          type_name: 'non-existent'
+        });
+        assert.fail('Should throw error for non-existent note type');
+      } catch (error) {
+        assert.ok(error instanceof Error);
+        assert.ok(
+          error.message.includes('not found') || error.message.includes('does not exist')
+        );
+      }
+    });
+  });
+
+  describe('Note Type Listing', () => {
+    beforeEach(async () => {
+      // Create multiple note types
+      await client.callTool('create_note_type', {
+        type_name: 'meetings',
+        description: 'Meeting notes and agendas.'
+      });
+
+      await client.callTool('create_note_type', {
+        type_name: 'projects',
+        description: 'Project planning and tracking notes.'
+      });
+
+      await client.callTool('create_note_type', {
+        type_name: 'research',
+        description: 'Research notes and findings.'
+      });
+    });
+
+    test('should list all note types', async () => {
+      const result = await client.callTool('list_note_types', {});
+
+      assert.ok(result.content, 'Should return content array');
+      const types = JSON.parse(result.content[0].text);
+
+      assert.ok(Array.isArray(types), 'Should return array of note types');
+      assert.ok(types.length >= 3, 'Should include all created note types');
+
+      // Verify each note type has required fields
+      const typeNames = types.map((type: any) => type.name);
+      assert.ok(typeNames.includes('meetings'), 'Should include meetings type');
+      assert.ok(typeNames.includes('projects'), 'Should include projects type');
+      assert.ok(typeNames.includes('research'), 'Should include research type');
+
+      // Verify structure of note type objects
+      const meetingsType = types.find((type: any) => type.name === 'meetings');
+      assert.ok(meetingsType.description, 'Note type should have description');
+      assert.ok(
+        meetingsType.description.includes('Meeting notes'),
+        'Description should be correct'
+      );
+    });
+
+    test('should handle empty workspace', async () => {
+      // Create fresh workspace with no note types
+      const emptyContext = await createIntegrationWorkspace('empty-types');
+
+      try {
+        const emptyServerProcess = await startServer({
+          workspacePath: emptyContext.tempDir,
+          timeout: INTEGRATION_CONSTANTS.SERVER_STARTUP_TIMEOUT
+        });
+
+        const emptyClient = new MCPClient(emptyServerProcess);
+        const result = await emptyClient.callTool('list_note_types', {});
+
+        const types = JSON.parse(result.content[0].text);
+        assert.ok(Array.isArray(types), 'Should return empty array');
+        assert.strictEqual(types.length, 0, 'Should have no note types');
+
+        // Cleanup
+        emptyServerProcess.kill('SIGTERM');
+        await cleanupIntegrationWorkspace(emptyContext);
+      } catch (error) {
+        await cleanupIntegrationWorkspace(emptyContext);
+        throw error;
+      }
+    });
+  });
+
+  describe('File System Integration', () => {
+    test('should maintain consistent file system structure', async () => {
+      await client.callTool('create_note_type', {
+        type_name: 'structured',
+        description: 'Testing file system structure.',
+        template: 'Template content',
+        agent_instructions: ['Instruction 1', 'Instruction 2']
+      });
+
+      // Verify directory structure
+      const typePath = join(context.tempDir, 'structured');
+      const files = await fs.readdir(typePath);
+
+      const expectedFiles = ['.description.md', '.template.md', '.agent-instructions.md'];
+      for (const expectedFile of expectedFiles) {
+        assert.ok(files.includes(expectedFile), `Should contain ${expectedFile}`);
+      }
+
+      // Verify no unexpected files
+      const unexpectedFiles = files.filter(file => !expectedFiles.includes(file));
+      assert.strictEqual(
+        unexpectedFiles.length,
+        0,
+        'Should not contain unexpected files'
+      );
+    });
+
+    test('should handle concurrent note type operations', async () => {
+      // Create multiple note types concurrently
+      const promises = Array.from({ length: 3 }, (_, i) =>
+        client.callTool('create_note_type', {
+          type_name: `concurrent-${i + 1}`,
+          description: `Concurrent note type ${i + 1} for testing.`
+        })
+      );
+
+      const results = await Promise.all(promises);
+
+      // Verify all operations completed successfully
+      assert.strictEqual(results.length, 3, 'All concurrent operations should complete');
+
+      // Verify all directories were created
+      for (let i = 1; i <= 3; i++) {
+        const typePath = join(context.tempDir, `concurrent-${i}`);
+        const dirExists = await fs
+          .access(typePath)
+          .then(() => true)
+          .catch(() => false);
+        assert.ok(dirExists, `Concurrent note type ${i} directory should exist`);
+      }
+
+      // Verify listing includes all types
+      const listResult = await client.callTool('list_note_types', {});
+      const types = JSON.parse(listResult.content[0].text);
+      const concurrentTypes = types.filter((type: any) =>
+        type.name.startsWith('concurrent-')
+      );
+      assert.strictEqual(
+        concurrentTypes.length,
+        3,
+        'Should list all concurrent note types'
+      );
+    });
+  });
+});
