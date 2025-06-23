@@ -43,15 +43,6 @@ Integration tests focus on testing complete workflows and system interactions. T
 - Use real file system operations with temporary directories
 - Test the full stack including MCP protocol communication
 
-**Consolidated Files:**
-- `search-consolidated.test.ts` - Comprehensive search functionality testing (direct manager + MCP)
-- `mcp-consolidated.test.ts` - Core MCP server protocol and operations
-- `links-consolidated.test.ts` - Link functionality, storage, and debugging
-- `metadata-streamlined.test.ts` - Metadata schema validation and integration
-- `helpers/integration-utils.ts` - Shared utilities, MCP client, and test setup
-
-**Note:** Integration tests have been consolidated to reduce duplication and improve maintainability. See `CONSOLIDATION.md` for details on the restructuring.
-
 ## Running Tests
 
 ```bash
@@ -64,15 +55,8 @@ npm run test:unit
 # Run only integration tests (slower)
 npm run test:integration
 
-# Run specific integration test categories
-node --test test/integration/search-consolidated.test.ts
-node --test test/integration/mcp-consolidated.test.ts
-node --test test/integration/links-consolidated.test.ts
-node --test test/integration/metadata-streamlined.test.ts
-
 # Run tests with specific pattern
 node --test test/unit/search-*.test.ts
-node --test test/integration/*consolidated*.test.ts
 ```
 
 ## Writing Tests
@@ -89,14 +73,7 @@ node --test test/integration/*consolidated*.test.ts
 
 ### Integration Test Guidelines
 
-- Use shared helpers from `helpers/integration-utils.ts` for consistent setup
-- Use `createIntegrationTestContext()` for workspace and manager initialization
-- Use `MCPIntegrationClient` for MCP protocol testing
-- Clean up resources with `cleanupIntegrationTestContext()` in `afterEach` hooks
-- Test complete user workflows and end-to-end functionality
-- Include both direct manager calls and MCP protocol communication
-- Test error conditions, edge cases, and concurrent operations
-- Follow consolidated test patterns for consistency
+TODO
 
 ## Style Guidelines
 
@@ -120,15 +97,5 @@ Following the project's style guide (`STYLE.md`):
 - `createTestNoteTypes()` - Sets up test note types with schemas
 - `TestAssertions` - Common assertion helpers
 - `TEST_CONSTANTS` - Shared test constants and data
-
-### Integration Test Helpers (`integration/helpers/integration-utils.ts`)
-- `createIntegrationTestContext()` - Creates comprehensive integration test setup
-- `cleanupIntegrationTestContext()` - Cleans up integration test resources
-- `MCPIntegrationClient` - Unified MCP client for protocol testing
-- `createIntegrationTestNotes()` - Creates notes for integration testing
-- `createIntegrationTestNotesWithMetadata()` - Creates notes with comprehensive metadata
-- `createIntegrationTestNoteTypes()` - Creates note types with schemas and templates
-- `IntegrationTestAssertions` - Assertions for MCP responses and integration scenarios
-- `INTEGRATION_TEST_CONSTANTS` - Constants for integration testing
 
 Use these helpers to reduce duplication and ensure consistency across tests.
