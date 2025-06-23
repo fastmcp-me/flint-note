@@ -13,7 +13,7 @@ import { SearchManager } from './search.ts';
 import { MetadataValidator } from './metadata-schema.ts';
 import type { ValidationResult } from './metadata-schema.ts';
 import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.ts';
-import type { NoteLink, NoteMetadata } from '../types/index.ts';
+import type { NoteLink, NoteMetadata, JadeNoteError } from '../types/index.ts';
 
 interface ParsedNote {
   metadata: NoteMetadata;
@@ -108,9 +108,10 @@ export class NoteManager {
 
       const typePath = await this.#workspace.ensureNoteType(typeName);
 
-      // Generate unique filename from title
+      // Generate filename from title and check availability
       const baseFilename = this.generateFilename(trimmedTitle);
-      const filename = await this.generateUniqueFilename(typePath, baseFilename);
+      await this.checkFilenameAvailability(typePath, baseFilename);
+      const filename = baseFilename;
       const notePath = path.join(typePath, filename);
 
       // Prepare metadata with title for validation
@@ -151,8 +152,17 @@ export class NoteManager {
         created: new Date().toISOString()
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to create note '${title}': ${errorMessage}`);
+      if (error instanceof Error) {
+        // Preserve custom error properties if they exist
+        const jadeError = error as JadeNoteError;
+        if (jadeError.code === 'NOTE_ALREADY_EXISTS') {
+          // Re-throw the original error for duplicate notes to preserve error details
+          throw error;
+        }
+        // For other errors, wrap with context
+        throw new Error(`Failed to create note '${title}': ${error.message}`);
+      }
+      throw new Error(`Failed to create note '${title}': Unknown error`);
     }
   }
 
@@ -182,27 +192,29 @@ export class NoteManager {
   }
 
   /**
-   * Generate a unique filename by appending numbers if file already exists
+   * Check if a filename is available, throwing an error if it already exists
    */
-  async generateUniqueFilename(typePath: string, baseFilename: string): Promise<string> {
-    let filename = baseFilename;
-    let counter = 1;
-
-    while (true) {
-      const filePath = path.join(typePath, filename);
-      try {
-        await fs.access(filePath);
-        // File exists, try next number
-        const nameWithoutExt = baseFilename.replace(/\.md$/, '');
-        filename = `${nameWithoutExt}-${counter}.md`;
-        counter++;
-      } catch (error) {
-        // File doesn't exist, we can use this filename
-        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-          return filename;
-        } else {
-          throw error;
-        }
+  async checkFilenameAvailability(typePath: string, filename: string): Promise<void> {
+    const filePath = path.join(typePath, filename);
+    try {
+      await fs.access(filePath);
+      // File exists, throw an error
+      const error = new Error(
+        `A note with the filename '${filename}' already exists in the '${path.basename(typePath)}' note type`
+      ) as JadeNoteError;
+      error.code = 'NOTE_ALREADY_EXISTS';
+      error.details = {
+        filename,
+        typePath,
+        filePath
+      };
+      throw error;
+    } catch (error) {
+      // File doesn't exist, filename is available
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        return; // Filename is available
+      } else {
+        throw error; // Re-throw if it's not a "file not found" error
       }
     }
   }

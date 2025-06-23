@@ -80,36 +80,37 @@ describe('Note Creation', () => {
       assert.ok(noteContent.includes(content), 'File should contain content');
     });
 
-    test('should generate unique filenames for notes with same title', async () => {
+    test('should throw error when creating notes with duplicate titles', async () => {
       const title = 'Duplicate Title';
       const content1 = 'First note content.';
       const content2 = 'Second note content.';
 
+      // First note should be created successfully
       const note1 = await context.noteManager.createNote(
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         content1
       );
-      const note2 = await context.noteManager.createNote(
-        TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
-        title,
-        content2
+
+      assert.ok(note1.id, 'First note should be created successfully');
+
+      // Second note with same title should throw an error
+      await assert.rejects(
+        () =>
+          context.noteManager.createNote(
+            TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
+            title,
+            content2
+          ),
+        /NOTE_ALREADY_EXISTS|already exists/i,
+        'Should throw error when creating note with duplicate title'
       );
 
-      assert.notStrictEqual(note1.path, note2.path, 'Should generate different paths');
-      assert.notStrictEqual(note1.id, note2.id, 'Should generate different IDs');
-
-      // Verify both files exist with correct content
+      // Verify only the first file exists with correct content
       const content1Read = await fs.readFile(note1.path, 'utf8');
-      const content2Read = await fs.readFile(note2.path, 'utf8');
-
       assert.ok(
         content1Read.includes(content1),
         'First note should have correct content'
-      );
-      assert.ok(
-        content2Read.includes(content2),
-        'Second note should have correct content'
       );
     });
 
