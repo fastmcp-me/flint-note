@@ -5,8 +5,7 @@
 
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
+
 import {
   createIntegrationWorkspace,
   cleanupIntegrationWorkspace,
@@ -403,8 +402,10 @@ A combination of Layer 1 and Layer 2 solutions is necessary for blockchain mass 
       assert.ok(searchResults.length > 0, 'Should find matching notes');
 
       // Should find the machine learning note
-      const mlNote = searchResults.find((note: any) =>
-        note.title.includes('Machine Learning') || note.content.includes('machine learning')
+      const mlNote = searchResults.find(
+        (note: any) =>
+          note.title.includes('Machine Learning') ||
+          note.snippet.includes('machine learning')
       );
       assert.ok(mlNote, 'Should find machine learning note');
     });
@@ -417,8 +418,9 @@ A combination of Layer 1 and Layer 2 solutions is necessary for blockchain mass 
       const searchResults = JSON.parse(result.content[0].text);
       assert.ok(searchResults.length > 0, 'Should find JavaScript-related notes');
 
-      const jsNote = searchResults.find((note: any) =>
-        note.title.includes('JavaScript') || note.content.includes('JavaScript')
+      const jsNote = searchResults.find(
+        (note: any) =>
+          note.title.includes('JavaScript') || note.snippet.includes('JavaScript')
       );
       assert.ok(jsNote, 'Should find JavaScript note');
       assert.strictEqual(jsNote.type, 'general', 'Should return correct note type');
@@ -449,8 +451,8 @@ A combination of Layer 1 and Layer 2 solutions is necessary for blockchain mass 
       });
 
       const searchResults = JSON.parse(result.content[0].text);
-      const algorithmNote = searchResults.find((note: any) =>
-        note.metadata && note.metadata.tags && note.metadata.tags.includes('algorithms')
+      const algorithmNote = searchResults.find(
+        (note: any) => note.tags && note.tags.includes('algorithms')
       );
       assert.ok(algorithmNote, 'Should find note with algorithms tag in metadata');
     });
@@ -490,8 +492,8 @@ A combination of Layer 1 and Layer 2 solutions is necessary for blockchain mass 
       const searchResults = JSON.parse(result.content[0].text);
       assert.ok(searchResults.length > 0, 'Should find meeting notes');
 
-      const meetingNote = searchResults.find((note: any) =>
-        note.title.includes('Standup') && note.type === 'meetings'
+      const meetingNote = searchResults.find(
+        (note: any) => note.title.includes('Standup') && note.type === 'meetings'
       );
       assert.ok(meetingNote, 'Should find standup meeting note');
     });
@@ -503,7 +505,11 @@ A combination of Layer 1 and Layer 2 solutions is necessary for blockchain mass 
       });
 
       const searchResults = JSON.parse(result.content[0].text);
-      assert.strictEqual(searchResults.length, 0, 'Should return empty results for invalid type');
+      assert.strictEqual(
+        searchResults.length,
+        0,
+        'Should return empty results for invalid type'
+      );
     });
 
     test('should search all types when no filter specified', async () => {
@@ -519,8 +525,10 @@ A combination of Layer 1 and Layer 2 solutions is necessary for blockchain mass 
       const allResults = JSON.parse(allTypesResult.content[0].text);
       const filteredResults = JSON.parse(filteredResult.content[0].text);
 
-      assert.ok(allResults.length >= filteredResults.length,
-        'All-types search should return at least as many results as filtered search');
+      assert.ok(
+        allResults.length >= filteredResults.length,
+        'All-types search should return at least as many results as filtered search'
+      );
     });
   });
 
@@ -534,8 +542,10 @@ A combination of Layer 1 and Layer 2 solutions is necessary for blockchain mass 
       const searchResults = JSON.parse(result.content[0].text);
       assert.ok(searchResults.length > 0, 'Should find results with regex pattern');
 
-      const jsNote = searchResults.find((note: any) =>
-        /\b[Jj]ava[Ss]cript\b/.test(note.content) || /\b[Jj]ava[Ss]cript\b/.test(note.title)
+      const jsNote = searchResults.find(
+        (note: any) =>
+          /\b[Jj]ava[Ss]cript\b/.test(note.snippet) ||
+          /\b[Jj]ava[Ss]cript\b/.test(note.title)
       );
       assert.ok(jsNote, 'Should find JavaScript note with regex');
     });
@@ -563,8 +573,8 @@ External contacts:
       });
 
       const searchResults = JSON.parse(result.content[0].text);
-      const emailNote = searchResults.find((note: any) =>
-        note.title === 'Contact Information'
+      const emailNote = searchResults.find(
+        (note: any) => note.title === 'Contact Information'
       );
       assert.ok(emailNote, 'Should find note containing email addresses');
     });
@@ -577,7 +587,7 @@ External contacts:
 
       const searchResults = JSON.parse(result.content[0].text);
       const budgetNote = searchResults.find((note: any) =>
-        note.content.includes('$150,000')
+        note.snippet.includes('$150,000')
       );
       assert.ok(budgetNote, 'Should find note with budget amount');
     });
@@ -614,7 +624,11 @@ External contacts:
       });
 
       const searchResults = JSON.parse(result.content[0].text);
-      assert.strictEqual(searchResults.length, 0, 'Should return empty results for zero limit');
+      assert.strictEqual(
+        searchResults.length,
+        0,
+        'Should return empty results for zero limit'
+      );
     });
 
     test('should handle large limit values', async () => {
@@ -678,7 +692,8 @@ Updated content with new timestamp.
       // The updated JavaScript note should appear first (most recently updated)
       const firstResult = searchResults[0];
       assert.ok(
-        firstResult.title.includes('JavaScript') || firstResult.content.includes('Updated'),
+        firstResult.title.includes('JavaScript') ||
+          firstResult.snippet.includes('Updated'),
         'Most recently updated note should appear first'
       );
     });
@@ -708,9 +723,9 @@ Updated content with new timestamp.
       assert.ok(note.id, 'Note should have ID');
       assert.ok(note.title, 'Note should have title');
       assert.ok(note.type, 'Note should have type');
-      assert.ok(note.content, 'Note should have content');
-      assert.ok(note.created, 'Note should have created timestamp');
-      assert.ok(note.updated, 'Note should have updated timestamp');
+      assert.ok(note.snippet, 'Note should have snippet');
+      assert.ok(typeof note.score === 'number', 'Note should have score');
+      assert.ok(note.lastUpdated, 'Note should have lastUpdated timestamp');
     });
 
     test('should include metadata in search results', async () => {
@@ -724,9 +739,8 @@ Updated content with new timestamp.
       );
 
       assert.ok(mlNote, 'Should find ML note');
-      assert.ok(mlNote.metadata, 'Note should include metadata');
-      assert.ok(mlNote.metadata.tags, 'Metadata should include tags');
-      assert.ok(mlNote.metadata.difficulty, 'Metadata should include difficulty');
+      assert.ok(Array.isArray(mlNote.tags), 'Note should include tags array');
+      assert.ok(mlNote.tags.length > 0, 'Tags array should not be empty');
     });
 
     test('should handle notes without metadata', async () => {
@@ -742,17 +756,15 @@ Updated content with new timestamp.
       });
 
       const searchResults = JSON.parse(result.content[0].text);
-      const simpleNote = searchResults.find((note: any) =>
-        note.title === 'Note Without Metadata'
+      const simpleNote = searchResults.find(
+        (note: any) => note.title === 'Note Without Metadata'
       );
 
       assert.ok(simpleNote, 'Should find simple note');
-      // Metadata should be null or empty object
+      // Tags should be empty array for notes without metadata
       assert.ok(
-        simpleNote.metadata === null ||
-        simpleNote.metadata === undefined ||
-        Object.keys(simpleNote.metadata).length === 0,
-        'Note without metadata should have null/empty metadata'
+        Array.isArray(simpleNote.tags) && simpleNote.tags.length === 0,
+        'Note without metadata should have empty tags array'
       );
     });
   });
