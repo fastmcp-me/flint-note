@@ -257,7 +257,8 @@ class JadeNoteServer {
           },
           {
             name: 'list_note_types',
-            description: 'List all available note types',
+            description:
+              'List all available note types with their purposes and agent instructions',
             inputSchema: {
               type: 'object',
               properties: {}

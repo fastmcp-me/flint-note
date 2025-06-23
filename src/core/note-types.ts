@@ -40,6 +40,7 @@ interface NoteTypeListItem {
   name: string;
   path: string;
   purpose: string;
+  agentInstructions: string[];
   hasDescription: boolean;
   hasTemplate: boolean;
   noteCount: number;
@@ -367,11 +368,14 @@ export class NoteTypeManager {
             let hasTemplate = false;
             let noteCount = 0;
 
+            let agentInstructions: string[] = [];
+
             try {
               if (hasDescription) {
                 const description = await fs.readFile(descriptionPath, 'utf-8');
                 const parsed = this.parseNoteTypeDescription(description);
                 purpose = parsed.purpose;
+                agentInstructions = parsed.agentInstructions;
               }
 
               hasTemplate = typeEntries.includes('.template.md');
@@ -386,6 +390,7 @@ export class NoteTypeManager {
               name: entry.name,
               path: typePath,
               purpose: purpose || `Notes of type '${entry.name}'`,
+              agentInstructions,
               hasDescription,
               hasTemplate,
               noteCount,

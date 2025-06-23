@@ -668,6 +668,25 @@ reviewed: boolean`
         meetingsType.purpose.includes('Meeting notes'),
         'Purpose should be correct'
       );
+
+      // Verify agent instructions are included
+      assert.ok(
+        meetingsType.agentInstructions,
+        'Note type should have agentInstructions'
+      );
+      assert.ok(
+        Array.isArray(meetingsType.agentInstructions),
+        'agentInstructions should be an array'
+      );
+
+      // Check if a note type with agent instructions has them populated
+      const researchType = types.find((type: any) => type.name === 'research');
+      if (researchType && researchType.hasDescription) {
+        assert.ok(
+          Array.isArray(researchType.agentInstructions),
+          'Research type should have agentInstructions array'
+        );
+      }
     });
 
     test('should handle empty workspace', async () => {
