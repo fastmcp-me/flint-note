@@ -43,15 +43,14 @@ Integration tests focus on testing complete workflows and system interactions. T
 - Use real file system operations with temporary directories
 - Test the full stack including MCP protocol communication
 
-**Files:**
-- `integration.test.ts` - Main MCP server integration tests
-- `link-debug.test.ts` - Link debugging and troubleshooting
-- `link-notes-integration.test.ts` - Note linking integration
-- `metadata-integration.test.ts` - Metadata system integration
-- `note-type-management.test.ts` - Note type management via MCP
-- `search-index-update.test.ts` - Search index update integration
-- `search-integration.test.ts` - Search functionality via MCP
-- `search-notes.test.ts` - Comprehensive search tests
+**Consolidated Files:**
+- `search-consolidated.test.ts` - Comprehensive search functionality testing (direct manager + MCP)
+- `mcp-consolidated.test.ts` - Core MCP server protocol and operations
+- `links-consolidated.test.ts` - Link functionality, storage, and debugging
+- `metadata-streamlined.test.ts` - Metadata schema validation and integration
+- `helpers/integration-utils.ts` - Shared utilities, MCP client, and test setup
+
+**Note:** Integration tests have been consolidated to reduce duplication and improve maintainability. See `CONSOLIDATION.md` for details on the restructuring.
 
 ## Running Tests
 
@@ -65,8 +64,15 @@ npm run test:unit
 # Run only integration tests (slower)
 npm run test:integration
 
+# Run specific integration test categories
+node --test test/integration/search-consolidated.test.ts
+node --test test/integration/mcp-consolidated.test.ts
+node --test test/integration/links-consolidated.test.ts
+node --test test/integration/metadata-streamlined.test.ts
+
 # Run tests with specific pattern
 node --test test/unit/search-*.test.ts
+node --test test/integration/*consolidated*.test.ts
 ```
 
 ## Writing Tests
@@ -83,11 +89,14 @@ node --test test/unit/search-*.test.ts
 
 ### Integration Test Guidelines
 
-- Use temporary directories for file operations
-- Clean up resources in `afterEach`/`after` hooks
-- Test complete user workflows
-- Include MCP protocol communication when relevant
-- Test error conditions and edge cases
+- Use shared helpers from `helpers/integration-utils.ts` for consistent setup
+- Use `createIntegrationTestContext()` for workspace and manager initialization
+- Use `MCPIntegrationClient` for MCP protocol testing
+- Clean up resources with `cleanupIntegrationTestContext()` in `afterEach` hooks
+- Test complete user workflows and end-to-end functionality
+- Include both direct manager calls and MCP protocol communication
+- Test error conditions, edge cases, and concurrent operations
+- Follow consolidated test patterns for consistency
 
 ## Style Guidelines
 
@@ -103,8 +112,7 @@ Following the project's style guide (`STYLE.md`):
 
 ## Shared Test Utilities
 
-The `helpers/test-utils.ts` module provides:
-
+### Unit Test Helpers (`helpers/test-utils.ts`)
 - `createTestWorkspace()` - Creates a temporary workspace with all managers
 - `cleanupTestWorkspace()` - Cleans up temporary directories
 - `createTestNotes()` - Creates standard test notes
@@ -112,5 +120,15 @@ The `helpers/test-utils.ts` module provides:
 - `createTestNoteTypes()` - Sets up test note types with schemas
 - `TestAssertions` - Common assertion helpers
 - `TEST_CONSTANTS` - Shared test constants and data
+
+### Integration Test Helpers (`integration/helpers/integration-utils.ts`)
+- `createIntegrationTestContext()` - Creates comprehensive integration test setup
+- `cleanupIntegrationTestContext()` - Cleans up integration test resources
+- `MCPIntegrationClient` - Unified MCP client for protocol testing
+- `createIntegrationTestNotes()` - Creates notes for integration testing
+- `createIntegrationTestNotesWithMetadata()` - Creates notes with comprehensive metadata
+- `createIntegrationTestNoteTypes()` - Creates note types with schemas and templates
+- `IntegrationTestAssertions` - Assertions for MCP responses and integration scenarios
+- `INTEGRATION_TEST_CONSTANTS` - Constants for integration testing
 
 Use these helpers to reduce duplication and ensure consistency across tests.
