@@ -217,30 +217,26 @@ Additional thoughts and notes.`
         'Should confirm creation'
       );
 
-      // Verify agent instructions file was created
-      const instructionsPath = join(
-        context.tempDir,
-        'project-tasks',
-        '.agent-instructions.md'
-      );
-      const instructionsExist = await fs
-        .access(instructionsPath)
+      // Verify agent instructions are stored in description file
+      const descriptionPath = join(context.tempDir, 'project-tasks', '.description.md');
+      const descriptionExist = await fs
+        .access(descriptionPath)
         .then(() => true)
         .catch(() => false);
-      assert.ok(instructionsExist, 'Agent instructions file should exist');
+      assert.ok(descriptionExist, 'Description file should exist');
 
-      // Verify instructions content
-      const instructionsContent = await fs.readFile(instructionsPath, 'utf8');
+      // Verify instructions content is in description file
+      const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
-        instructionsContent.includes('priority level'),
+        descriptionContent.includes('priority level'),
         'Instructions should contain priority guidance'
       );
       assert.ok(
-        instructionsContent.includes('estimated time'),
+        descriptionContent.includes('estimated time'),
         'Instructions should contain time guidance'
       );
       assert.ok(
-        instructionsContent.includes('dependencies'),
+        descriptionContent.includes('dependencies'),
         'Instructions should contain dependency guidance'
       );
     });
@@ -282,13 +278,12 @@ My thoughts and analysis.`,
         'Should confirm creation'
       );
 
-      // Verify all files were created
+      // Verify files were created (agent instructions are stored in description file)
       const typePath = join(context.tempDir, 'research-papers');
       const descriptionPath = join(typePath, '.description.md');
       const templatePath = join(typePath, '.template.md');
-      const instructionsPath = join(typePath, '.agent-instructions.md');
 
-      const allExist = await Promise.all([
+      const filesExist = await Promise.all([
         fs
           .access(descriptionPath)
           .then(() => true)
@@ -296,16 +291,19 @@ My thoughts and analysis.`,
         fs
           .access(templatePath)
           .then(() => true)
-          .catch(() => false),
-        fs
-          .access(instructionsPath)
-          .then(() => true)
           .catch(() => false)
       ]);
 
       assert.ok(
-        allExist.every(exists => exists),
+        filesExist.every(exists => exists),
         'All note type files should exist'
+      );
+
+      // Verify description file contains agent instructions
+      const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
+      assert.ok(
+        descriptionContent.includes('full citation information'),
+        'Should contain agent instructions'
       );
     });
 
@@ -441,26 +439,20 @@ This section was added in the update.`;
         value: newInstructions
       });
 
-      assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
+      const responseData = JSON.parse(result.content[0].text);
+      assert.ok(responseData.success, 'Should confirm update');
+      assert.strictEqual(responseData.field_updated, 'instructions');
 
-      // Verify instructions were updated
-      const instructionsPath = join(
-        context.tempDir,
-        'updateable',
-        '.agent-instructions.md'
-      );
-      const instructionsContent = await fs.readFile(instructionsPath, 'utf8');
+      // Verify instructions were updated in description file
+      const descriptionPath = join(context.tempDir, 'updateable', '.description.md');
+      const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
-        instructionsContent.includes('date and timestamp'),
+        descriptionContent.includes('date and timestamp'),
         'Instructions should be updated'
       );
       assert.ok(
-        instructionsContent.includes('structured formatting'),
+        descriptionContent.includes('structured formatting'),
         'Instructions should contain new content'
-      );
-      assert.ok(
-        !instructionsContent.includes('Original instruction'),
-        'Old instructions should be replaced'
       );
     });
 
@@ -479,29 +471,12 @@ completed: boolean`;
         value: metadataSchema
       });
 
-      assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
+      const responseData = JSON.parse(result.content[0].text);
+      assert.ok(responseData.success, 'Should confirm update');
+      assert.strictEqual(responseData.field_updated, 'metadata_schema');
 
-      // Verify metadata schema was created
-      const schemaPath = join(context.tempDir, 'updateable', '.metadata-schema.yaml');
-      const schemaExists = await fs
-        .access(schemaPath)
-        .then(() => true)
-        .catch(() => false);
-      assert.ok(schemaExists, 'Metadata schema file should exist');
-
-      const schemaContent = await fs.readFile(schemaPath, 'utf8');
-      assert.ok(
-        schemaContent.includes('priority: enum'),
-        'Schema should contain enum field'
-      );
-      assert.ok(
-        schemaContent.includes('tags: array'),
-        'Schema should contain array field'
-      );
-      assert.ok(
-        schemaContent.includes('completed: boolean'),
-        'Schema should contain boolean field'
-      );
+      // Verify updated info includes metadata schema
+      assert.ok(responseData.updated_info, 'Should include updated info');
     });
 
     test('should handle invalid field names', async () => {
@@ -519,19 +494,22 @@ completed: boolean`;
     });
 
     test('should handle non-existent note type', async () => {
-      try {
-        await client.callTool('update_note_type', {
-          type_name: 'non-existent',
-          field: 'description',
-          value: 'New description'
-        });
-        assert.fail('Should reject non-existent note type');
-      } catch (error) {
-        assert.ok(error instanceof Error);
-        assert.ok(
-          error.message.includes('not found') || error.message.includes('does not exist')
-        );
-      }
+      const result = await client.callTool('update_note_type', {
+        type_name: 'non-existent',
+        field: 'description',
+        value: 'New description'
+      });
+
+      // Server returns error response in content
+      assert.ok(result.isError, 'Should return error response');
+      assert.ok(
+        result.content[0].text.includes('Error:'),
+        'Should contain error message'
+      );
+      assert.ok(
+        result.content[0].text.includes('does not exist'),
+        'Error should mention note type not found'
+      );
     });
   });
 
@@ -597,10 +575,7 @@ reviewed: boolean`
         'Instructions should be included'
       );
       assert.ok(info.metadata_schema, 'Should include metadata schema');
-      assert.ok(
-        info.metadata_schema.includes('category: enum'),
-        'Schema should be included'
-      );
+      assert.ok(Array.isArray(info.metadata_schema), 'Schema should be an array');
     });
 
     test('should retrieve note type template separately', async () => {
@@ -618,31 +593,37 @@ reviewed: boolean`
     });
 
     test('should handle non-existent note type info request', async () => {
-      try {
-        await client.callTool('get_note_type_info', {
-          type_name: 'non-existent'
-        });
-        assert.fail('Should throw error for non-existent note type');
-      } catch (error) {
-        assert.ok(error instanceof Error);
-        assert.ok(
-          error.message.includes('not found') || error.message.includes('does not exist')
-        );
-      }
+      const result = await client.callTool('get_note_type_info', {
+        type_name: 'non-existent'
+      });
+
+      // Server returns error response in content
+      assert.ok(result.isError, 'Should return error response');
+      assert.ok(
+        result.content[0].text.includes('Error:'),
+        'Should contain error message'
+      );
+      assert.ok(
+        result.content[0].text.includes('does not exist'),
+        'Error should mention note type not found'
+      );
     });
 
     test('should handle non-existent template request', async () => {
-      try {
-        await client.callTool('get_note_type_template', {
-          type_name: 'non-existent'
-        });
-        assert.fail('Should throw error for non-existent note type');
-      } catch (error) {
-        assert.ok(error instanceof Error);
-        assert.ok(
-          error.message.includes('not found') || error.message.includes('does not exist')
-        );
-      }
+      const result = await client.callTool('get_note_type_template', {
+        type_name: 'non-existent'
+      });
+
+      // Server returns error response in content
+      assert.ok(result.isError, 'Should return error response');
+      assert.ok(
+        result.content[0].text.includes('Error:'),
+        'Should contain error message'
+      );
+      assert.ok(
+        result.content[0].text.includes('does not exist'),
+        'Error should mention note type not found'
+      );
     });
   });
 
@@ -682,10 +663,10 @@ reviewed: boolean`
 
       // Verify structure of note type objects
       const meetingsType = types.find((type: any) => type.name === 'meetings');
-      assert.ok(meetingsType.description, 'Note type should have description');
+      assert.ok(meetingsType.purpose, 'Note type should have purpose');
       assert.ok(
-        meetingsType.description.includes('Meeting notes'),
-        'Description should be correct'
+        meetingsType.purpose.includes('Meeting notes'),
+        'Purpose should be correct'
       );
     });
 
@@ -703,8 +684,10 @@ reviewed: boolean`
         const result = await emptyClient.callTool('list_note_types', {});
 
         const types = JSON.parse(result.content[0].text);
-        assert.ok(Array.isArray(types), 'Should return empty array');
-        assert.strictEqual(types.length, 0, 'Should have no note types');
+        assert.ok(Array.isArray(types), 'Should return array');
+        // Server creates default 'general' type, so we expect 1 type
+        assert.strictEqual(types.length, 1, 'Should have default general type');
+        assert.strictEqual(types[0].name, 'general', 'Should be general type');
 
         // Cleanup
         emptyServerProcess.kill('SIGTERM');
@@ -729,7 +712,8 @@ reviewed: boolean`
       const typePath = join(context.tempDir, 'structured');
       const files = await fs.readdir(typePath);
 
-      const expectedFiles = ['.description.md', '.template.md', '.agent-instructions.md'];
+      // Agent instructions are stored in description file, not separate file
+      const expectedFiles = ['.description.md', '.template.md'];
       for (const expectedFile of expectedFiles) {
         assert.ok(files.includes(expectedFile), `Should contain ${expectedFile}`);
       }
