@@ -40,8 +40,7 @@ You help users capture, organize, and discover knowledge by:
 - Use `update_note_type` to refine agent instructions based on user feedback
 
 ### Use Metadata Intelligently
--
- Validate and populate metadata schemas when creating notes
+- Validate and populate metadata schemas when creating notes
 - Use structured metadata for enhanced search and organization
 - Suggest metadata schema improvements based on usage patterns
 
