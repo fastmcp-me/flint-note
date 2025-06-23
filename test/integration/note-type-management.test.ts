@@ -307,6 +307,83 @@ My thoughts and analysis.`,
       );
     });
 
+    test('should create note type with metadata schema', async () => {
+      const metadataSchema = {
+        fields: [
+          {
+            name: 'author',
+            type: 'string',
+            required: true,
+            description: 'Book author'
+          },
+          {
+            name: 'rating',
+            type: 'number',
+            constraints: { min: 1, max: 5 },
+            description: 'Rating from 1 to 5'
+          },
+          {
+            name: 'genre',
+            type: 'select',
+            constraints: { options: ['fiction', 'non-fiction', 'biography', 'sci-fi'] },
+            description: 'Book genre'
+          },
+          {
+            name: 'completed',
+            type: 'boolean',
+            default: false,
+            description: 'Whether the book has been read'
+          }
+        ],
+        version: '1.0'
+      };
+
+      const result = await client.callTool('create_note_type', {
+        type_name: 'book-reviews',
+        description: 'Reviews and notes about books I have read',
+        template:
+          '# {{title}}\n\n## Summary\n\n## Key Insights\n\n## My Rating: {{rating}}/5',
+        agent_instructions: [
+          'Always include a brief summary of the book',
+          'Highlight the most important insights or takeaways',
+          'Include a personal rating and justify it'
+        ],
+        metadata_schema: metadataSchema
+      });
+
+      const responseData = JSON.parse(result.content[0].text);
+      assert.ok(responseData.success, 'Should create note type successfully');
+      assert.strictEqual(responseData.type_name, 'book-reviews');
+
+      // Verify the metadata schema was stored correctly
+      const infoResult = await client.callTool('get_note_type_info', {
+        type_name: 'book-reviews'
+      });
+
+      const info = JSON.parse(infoResult.content[0].text);
+      assert.ok(info.metadata_schema, 'Should include metadata schema in info');
+      assert.ok(info.metadata_schema.fields, 'Should have fields array');
+      assert.strictEqual(info.metadata_schema.fields.length, 4, 'Should have 4 fields');
+      // Note: version is not preserved in current implementation due to markdown roundtrip
+
+      // Verify specific field properties
+      const authorField = info.metadata_schema.fields.find(
+        (f: any) => f.name === 'author'
+      );
+      assert.ok(authorField, 'Should have author field');
+      assert.strictEqual(authorField.type, 'string', 'Author should be string type');
+      assert.strictEqual(authorField.required, true, 'Author should be required');
+
+      const ratingField = info.metadata_schema.fields.find(
+        (f: any) => f.name === 'rating'
+      );
+      assert.ok(ratingField, 'Should have rating field');
+      assert.strictEqual(ratingField.type, 'number', 'Rating should be number type');
+      assert.ok(ratingField.constraints, 'Rating should have constraints');
+      assert.strictEqual(ratingField.constraints.min, 1, 'Rating min should be 1');
+      assert.strictEqual(ratingField.constraints.max, 5, 'Rating max should be 5');
+    });
+
     test('should handle invalid note type names', async () => {
       const invalidNames = [
         'invalid/name',
@@ -575,7 +652,11 @@ reviewed: boolean`
         'Instructions should be included'
       );
       assert.ok(info.metadata_schema, 'Should include metadata schema');
-      assert.ok(Array.isArray(info.metadata_schema), 'Schema should be an array');
+      assert.ok(info.metadata_schema.fields, 'Should have fields array');
+      assert.ok(
+        Array.isArray(info.metadata_schema.fields),
+        'Schema fields should be an array'
+      );
     });
 
     test('should retrieve note type template separately', async () => {

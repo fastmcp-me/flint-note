@@ -22,6 +22,7 @@ import { NoteTypeManager } from './core/note-types.ts';
 import { SearchManager } from './core/search.ts';
 import { LinkManager } from './core/links.ts';
 import type { LinkRelationship } from './types/index.ts';
+import type { MetadataSchema } from './core/metadata-schema.ts';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -30,6 +31,7 @@ interface CreateNoteTypeArgs {
   description: string;
   template?: string;
   agent_instructions?: string[];
+  metadata_schema?: MetadataSchema;
 }
 
 interface CreateNoteArgs {
@@ -133,7 +135,8 @@ class JadeNoteServer {
         tools: [
           {
             name: 'create_note_type',
-            description: 'Create a new note type with description and optional template',
+            description:
+              'Create a new note type with description, optional template, agent instructions, and metadata schema',
             inputSchema: {
               type: 'object',
               properties: {
@@ -155,6 +158,58 @@ class JadeNoteServer {
                     type: 'string'
                   },
                   description: 'Optional custom agent instructions for this note type'
+                },
+                metadata_schema: {
+                  type: 'object',
+                  properties: {
+                    fields: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          name: {
+                            type: 'string',
+                            description: 'Name of the metadata field'
+                          },
+                          type: {
+                            type: 'string',
+                            enum: [
+                              'string',
+                              'number',
+                              'boolean',
+                              'date',
+                              'array',
+                              'select'
+                            ],
+                            description: 'Type of the metadata field'
+                          },
+                          description: {
+                            type: 'string',
+                            description: 'Optional description of the field'
+                          },
+                          required: {
+                            type: 'boolean',
+                            description: 'Whether this field is required'
+                          },
+                          constraints: {
+                            type: 'object',
+                            description:
+                              'Optional field constraints (min, max, options, etc.)'
+                          },
+                          default: {
+                            description: 'Optional default value for the field'
+                          }
+                        },
+                        required: ['name', 'type']
+                      }
+                    },
+                    version: {
+                      type: 'string',
+                      description: 'Optional schema version'
+                    }
+                  },
+                  required: ['fields'],
+                  description: 'Optional metadata schema definition for this note type'
                 }
               },
               required: ['type_name', 'description']
@@ -472,7 +527,8 @@ class JadeNoteServer {
       args.type_name,
       args.description,
       args.template,
-      args.agent_instructions
+      args.agent_instructions,
+      args.metadata_schema
     );
     return {
       content: [
@@ -780,7 +836,7 @@ class JadeNoteServer {
               description: info.parsed.purpose,
               agent_instructions: info.parsed.agentInstructions,
               template: info.template,
-              metadata_schema: info.parsed.metadataSchema,
+              metadata_schema: info.parsed.parsedMetadataSchema,
               has_template: info.hasTemplate,
               path: info.path
             },
