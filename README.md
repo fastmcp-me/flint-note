@@ -254,6 +254,7 @@ The jade-note MCP server exposes the following tools and resources:
 - [x] Structured metadata schema system with validation
 - [x] Rich field types (string, number, boolean, date, array, select)
 - [x] Constraint validation and error handling
+- [x] Vault initialization with default note types (daily, reading, todos, projects, goals, games, movies)
 
 ### Phase 2: Agent Intelligence
 - [x] Agent instructions integration with note creation
@@ -271,6 +272,295 @@ The jade-note MCP server exposes the following tools and resources:
 - [ ] Batch operations on note collections
 - [ ] Export/import functionality
 - [ ] Plugin system for custom note types
+
+## Vault Initialization
+
+When jade-note initializes a new vault, it automatically creates several default note types to provide a comprehensive foundation for knowledge management. These pre-configured note types come with optimized agent instructions, templates, and metadata schemas.
+
+### Default Note Types
+
+#### Daily Notes
+**Purpose**: Track daily events, reflections, and activities  
+**Directory**: `daily/`  
+**Template**:
+```markdown
+# {{date}}
+
+## Today's Events
+
+
+## Reflections
+
+
+## Tomorrow's Focus
+
+```
+**Agent Instructions**:
+- Ask about key events and accomplishments from the day
+- Encourage reflection on lessons learned or insights gained
+- Help identify priorities for the next day
+- Suggest connections to previous daily entries when relevant
+
+**Metadata Schema**:
+- `date`: Date of entry (required, date, format: YYYY-MM-DD)
+- `mood`: Daily mood rating (optional, select, options: ["excellent", "good", "neutral", "challenging", "difficult"])
+- `energy_level`: Energy level (optional, number, min: 1, max: 10)
+- `tags`: Topics or themes (optional, array)
+
+#### Reading Notes
+**Purpose**: Track articles, papers, books, and other reading material  
+**Directory**: `reading/`  
+**Template**:
+```markdown
+# {{title}}
+
+**Author**: {{author}}  
+**Type**: {{type}}  
+**Status**: {{status}}
+
+## Summary
+
+
+## Key Insights
+
+
+## Personal Rating: {{rating}}/5
+
+## Notes
+
+```
+**Agent Instructions**:
+- Always ask for author information and publication context
+- Extract and organize key insights and takeaways
+- Request a personal rating and ask what made it memorable
+- Suggest connections to other readings or note types
+- Encourage noting specific quotes with page/section references
+
+**Metadata Schema**:
+- `title`: Title of the material (required, string)
+- `author`: Author or creator (required, string)
+- `type`: Type of reading (required, select, options: ["book", "article", "paper", "blog_post", "documentation"])
+- `status`: Reading status (required, select, options: ["to_read", "reading", "completed", "abandoned"])
+- `rating`: Personal rating (required, number, min: 1, max: 5)
+- `tags`: Categories or topics (optional, array)
+- `isbn`: ISBN for books (optional, string)
+- `url`: Web link for online content (optional, string)
+- `published_date`: Publication date (optional, date)
+
+#### Todo Lists
+**Purpose**: Track tasks, action items, and things that need to be done  
+**Directory**: `todos/`  
+**Template**:
+```markdown
+# {{title}}
+
+**Priority**: {{priority}}  
+**Due Date**: {{due_date}}  
+**Status**: {{status}}
+
+## Description
+
+
+## Action Items
+
+- [ ] 
+
+## Notes
+
+```
+**Agent Instructions**:
+- Help break down large tasks into smaller, actionable items
+- Ask about priorities and deadlines
+- Suggest realistic timeframes and dependencies
+- Encourage regular status updates and progress tracking
+- Connect related todos and identify recurring patterns
+
+**Metadata Schema**:
+- `title`: Task or todo list name (required, string)
+- `priority`: Priority level (required, select, options: ["low", "medium", "high", "urgent"])
+- `status`: Current status (required, select, options: ["not_started", "in_progress", "completed", "on_hold", "cancelled"])
+- `due_date`: Target completion date (optional, date)
+- `tags`: Categories or contexts (optional, array)
+- `estimated_time`: Time estimate in minutes (optional, number, min: 1)
+
+#### Project Tracking
+**Purpose**: Track ongoing projects, goals, and long-term initiatives  
+**Directory**: `projects/`  
+**Template**:
+```markdown
+# {{title}}
+
+**Status**: {{status}}  
+**Priority**: {{priority}}  
+**Start Date**: {{start_date}}  
+**Target Date**: {{target_date}}
+
+## Project Goals
+
+
+## Current Status
+
+
+## Action Items
+
+- [ ] 
+
+## Resources & Links
+
+
+## Notes
+
+```
+**Agent Instructions**:
+- Ask about project scope, goals, and success criteria
+- Help identify key milestones and deadlines
+- Encourage breaking projects into manageable phases
+- Suggest resource gathering and stakeholder identification
+- Track progress and help identify blockers or risks
+
+**Metadata Schema**:
+- `title`: Project name (required, string)
+- `status`: Current status (required, select, options: ["planning", "active", "on_hold", "completed", "cancelled"])
+- `priority`: Priority level (optional, select, options: ["low", "medium", "high"])
+- `start_date`: Project start date (optional, date)
+- `target_date`: Target completion date (optional, date)
+- `team_members`: People involved (optional, array)
+- `tags`: Project categories or skills (optional, array)
+
+#### Goals Tracking
+**Purpose**: Track long-term personal and professional goals  
+**Directory**: `goals/`  
+**Template**:
+```markdown
+# {{title}}
+
+**Category**: {{category}}  
+**Timeline**: {{timeline}}  
+**Status**: {{status}}
+
+## Goal Description
+
+
+## Why This Matters
+
+
+## Success Criteria
+
+
+## Action Plan
+
+
+## Progress Updates
+
+```
+**Agent Instructions**:
+- Help define specific, measurable, achievable goals
+- Ask about motivation and personal significance
+- Encourage breaking goals into smaller milestones
+- Suggest regular check-ins and progress reviews
+- Help identify potential obstacles and mitigation strategies
+- Connect goals to daily actions and habits
+
+**Metadata Schema**:
+- `title`: Goal name (required, string)
+- `category`: Goal category (required, select, options: ["personal", "professional", "health", "financial", "learning", "relationships"])
+- `timeline`: Target timeframe (required, select, options: ["short_term", "medium_term", "long_term"])
+- `status`: Current status (required, select, options: ["not_started", "in_progress", "achieved", "on_hold", "abandoned"])
+- `target_date`: Target achievement date (optional, date)
+- `progress`: Progress percentage (optional, number, min: 0, max: 100)
+- `tags`: Related themes or skills (optional, array)
+
+#### Games Tracking
+**Purpose**: Track video games played, progress, and experiences  
+**Directory**: `games/`  
+**Template**:
+```markdown
+# {{title}}
+
+**Platform**: {{platform}}  
+**Genre**: {{genre}}  
+**Status**: {{status}}  
+**Rating**: {{rating}}/5
+
+## Game Info
+
+
+## My Experience
+
+
+## Highlights & Memorable Moments
+
+
+## Final Thoughts
+
+```
+**Agent Instructions**:
+- Ask about platform, genre, and gameplay style preferences
+- Encourage documenting memorable moments and achievements
+- Help track completion status and playtime
+- Suggest connections to similar games or genres
+- Ask about what made the experience unique or noteworthy
+
+**Metadata Schema**:
+- `title`: Game title (required, string)
+- `platform`: Gaming platform (required, select, options: ["PC", "PlayStation", "Xbox", "Nintendo_Switch", "Mobile", "Other"])
+- `genre`: Game genre (optional, array, suggestions: ["RPG", "Action", "Strategy", "Puzzle", "Adventure", "Simulation", "Sports"])
+- `status`: Play status (required, select, options: ["wishlist", "playing", "completed", "dropped", "on_hold"])
+- `rating`: Personal rating (optional, number, min: 1, max: 5)
+- `playtime_hours`: Hours played (optional, number, min: 0)
+- `tags`: Themes or characteristics (optional, array)
+- `release_year`: Year released (optional, number)
+
+#### Movies Tracking
+**Purpose**: Track movies watched, reviews, and recommendations  
+**Directory**: `movies/`  
+**Template**:
+```markdown
+# {{title}}
+
+**Director**: {{director}}  
+**Year**: {{year}}  
+**Genre**: {{genre}}  
+**Rating**: {{rating}}/5
+
+## Plot Summary
+
+
+## My Thoughts
+
+
+## Memorable Scenes
+
+
+## Would I Recommend?
+
+```
+**Agent Instructions**:
+- Ask about what drew them to watch this particular movie
+- Encourage discussing themes, cinematography, and performances
+- Help identify what made the movie memorable or forgettable
+- Suggest similar movies or directors they might enjoy
+- Ask about emotional impact and lasting impressions
+
+**Metadata Schema**:
+- `title`: Movie title (required, string)
+- `director`: Director name (optional, string)
+- `year`: Release year (optional, number, min: 1900, max: 2030)
+- `genre`: Movie genre (optional, array, suggestions: ["Drama", "Comedy", "Action", "Thriller", "Horror", "Romance", "Sci-Fi", "Documentary"])
+- `rating`: Personal rating (required, number, min: 1, max: 5)
+- `watched_date`: Date watched (optional, date)
+- `runtime_minutes`: Movie length in minutes (optional, number, min: 1)
+- `tags`: Themes or characteristics (optional, array)
+
+### Vault Initialization Process
+
+1. **Create vault structure**: Initialize `.jade-note/` directory with configuration
+2. **Generate default config**: Create `config.yml` with optimal defaults
+3. **Create note type directories**: Set up folders for all default note types
+4. **Generate description files**: Create `_description.md` for each note type with templates, instructions, and schemas
+5. **Create welcome note**: Generate an introductory note explaining the vault structure and how to get started
+
+The initialization ensures users have a rich, immediately usable knowledge management system while maintaining full flexibility to customize or add additional note types.
 
 ## Technical Specifications
 
@@ -324,6 +614,30 @@ metadata:
 ## User Experience
 
 ### Typical Workflows
+
+#### Initializing a New Vault
+```
+User: "Set up a new jade-note vault in my documents folder"
+
+Agent: I'll initialize a new jade-note vault for you with all the default note types.
+[Creates .jade-note directory structure, config.yml, and default note types]
+
+Vault initialized successfully! I've created the following note types for you:
+- **daily**: For tracking daily events and reflections
+- **reading**: For books, articles, and papers you read
+- **todos**: For tasks and action items
+- **projects**: For ongoing projects and initiatives
+- **goals**: For long-term personal and professional goals
+- **games**: For video games you play
+- **movies**: For movies you watch
+
+Each note type comes with optimized templates, agent instructions, and metadata schemas. You can start creating notes right away or customize any of these note types to better fit your needs.
+
+User: "Create my first daily note for today"
+
+Agent: I'll create today's daily note for you. What were the key events from your day?
+[Creates daily note using the pre-configured template and agent instructions]
+```
 
 #### Creating a New Note Type
 ```
