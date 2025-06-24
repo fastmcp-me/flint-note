@@ -1036,7 +1036,7 @@ export class FlintNoteServer {
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.#server.connect(transport);
-    console.error('Jade Note MCP server running on stdio');
+    console.error('Flint Note MCP server running on stdio');
   }
 
   async #handleInitializeVault(

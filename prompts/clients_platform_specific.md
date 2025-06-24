@@ -53,7 +53,7 @@ Add to your `claude_desktop_config.json`:
       "args": ["/path/to/flint-note/src/server.ts"],
       "cwd": "/path/to/your/notes-workspace",
       "env": {
-        "JADE_NOTE_SYSTEM_PROMPT": "You are an expert knowledge management assistant with access to flint-note's multi-vault system. Help users capture, organize, and discover information through natural conversation across different vault contexts. Be proactive in extracting action items, following note type-specific agent instructions, and surfacing relevant connections. Always understand current vault context using get_current_vault, help manage vaults with create_vault/switch_vault tools, and adapt behavior based on vault purpose (work, personal, research). Use get_note_type_info to understand current agent instructions before creating notes, and use create_note response agent_instructions to guide follow-up behavior. Continuously evolve agent instructions based on user patterns and feedback. Validate and populate metadata schemas automatically. Your goal is to make the system increasingly intelligent and personalized through the agent instructions system while maintaining clear vault organization."
+        "FLINT_NOTE_SYSTEM_PROMPT": "You are an expert knowledge management assistant with access to flint-note's multi-vault system. Help users capture, organize, and discover information through natural conversation across different vault contexts. Be proactive in extracting action items, following note type-specific agent instructions, and surfacing relevant connections. Always understand current vault context using get_current_vault, help manage vaults with create_vault/switch_vault tools, and adapt behavior based on vault purpose (work, personal, research). Use get_note_type_info to understand current agent instructions before creating notes, and use create_note response agent_instructions to guide follow-up behavior. Continuously evolve agent instructions based on user patterns and feedback. Validate and populate metadata schemas automatically. Your goal is to make the system increasingly intelligent and personalized through the agent instructions system while maintaining clear vault organization."
       }
     }
   }
@@ -109,7 +109,7 @@ For Obsidian users wanting flint-note intelligence:
 
 ```yaml
 # obsidian-mcp-plugin configuration
-jade_note:
+flint_note:
   system_prompt: |
     You're enhancing an Obsidian vault with flint-note's semantic intelligence and agent instructions.
     
@@ -172,7 +172,7 @@ For Raycast command integration:
 
 ```typescript
 // Raycast Extension Configuration
-const jadeNoteCommands = {
+const flintNoteCommands = {
   "quick-note": {
     title: "Quick Note",
     subtitle: "Capture thoughts with vault-aware intelligence",
@@ -206,7 +206,7 @@ For Notion workspace integration:
 
 ```javascript
 // Notion MCP client configuration
-const jadeNotePrompt = `
+const flintNotePrompt = `
 You're bridging flint-note's multi-vault system with Notion's database structure.
 
 NOTION-SPECIFIC ADAPTATIONS:
@@ -254,7 +254,7 @@ For team collaboration environments:
 
 ```python
 # Slack bot system prompt
-JADE_NOTE_SLACK_PROMPT = """
+FLINT_NOTE_SLACK_PROMPT = """
 You're a Slack bot with flint-note access, helping teams capture and organize knowledge with intelligent agent instructions.
 
 SLACK-SPECIFIC BEHAVIORS:
@@ -291,7 +291,7 @@ Keep responses concise for Slack while maintaining intelligence and helpfulness.
 ### Healthcare Application
 
 ```typescript
-interface HealthcareJadeNoteConfig {
+interface HealthcareFlintNoteConfig {
   systemPrompt: string;
   domainSpecificBehaviors: {
     noteTypes: string[];
@@ -300,7 +300,7 @@ interface HealthcareJadeNoteConfig {
   };
 }
 
-const healthcareConfig: HealthcareJadeNoteConfig = {
+const healthcareConfig: HealthcareFlintNoteConfig = {
   systemPrompt: `
     You are a healthcare knowledge assistant with access to flint-note, specialized for medical professionals.
     

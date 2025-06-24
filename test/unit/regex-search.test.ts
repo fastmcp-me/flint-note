@@ -1,7 +1,7 @@
 /**
  * Regex Search Tests
  *
- * Tests for regex search functionality in jade-note
+ * Tests for regex search functionality in flint-note
  */
 
 import { test, describe, beforeEach, afterEach } from 'node:test';

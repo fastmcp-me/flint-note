@@ -99,7 +99,7 @@ const COMMANDS: CliCommand[] = [
   }
 ];
 
-class JadeNoteCli {
+class FlintNoteCli {
   #globalConfig: GlobalConfigManager;
 
   constructor() {
@@ -489,7 +489,7 @@ GLOBAL CONFIG:
 
 // Main execution
 async function main(): Promise<void> {
-  const cli = new JadeNoteCli();
+  const cli = new FlintNoteCli();
   const args = process.argv.slice(2);
   await cli.run(args);
 }
@@ -513,4 +513,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { JadeNoteCli };
+export { FlintNoteCli };

@@ -56,7 +56,7 @@ describe('Command Line Arguments Integration', () => {
           const output = data.toString();
           errorOutput += output;
 
-          if (output.includes('Jade Note MCP server running on stdio')) {
+          if (output.includes('Flint Note MCP server running on stdio')) {
             hasStarted = true;
             clearTimeout(startupTimeout);
             resolve();
@@ -121,7 +121,7 @@ describe('Command Line Arguments Integration', () => {
           const output = data.toString();
           errorOutput += output;
 
-          if (output.includes('Jade Note MCP server running on stdio')) {
+          if (output.includes('Flint Note MCP server running on stdio')) {
             hasStarted = true;
             clearTimeout(startupTimeout);
             resolve();
@@ -385,7 +385,7 @@ describe('Command Line Arguments Integration', () => {
           const output = data.toString();
           errorOutput += output;
 
-          if (output.includes('Jade Note MCP server running on stdio')) {
+          if (output.includes('Flint Note MCP server running on stdio')) {
             hasStarted = true;
             clearTimeout(startupTimeout);
             resolve();

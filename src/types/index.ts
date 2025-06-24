@@ -59,7 +59,7 @@ export interface BaseConfig {
 }
 
 // Error types
-export interface JadeNoteError extends Error {
+export interface FlintNoteError extends Error {
   code?: string;
   details?: Record<string, unknown>;
 }

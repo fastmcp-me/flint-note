@@ -13,7 +13,7 @@ import { SearchManager } from './search.ts';
 import { MetadataValidator } from './metadata-schema.ts';
 import type { ValidationResult } from './metadata-schema.ts';
 import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.ts';
-import type { NoteLink, NoteMetadata, JadeNoteError } from '../types/index.ts';
+import type { NoteLink, NoteMetadata, FlintNoteError } from '../types/index.ts';
 
 interface ParsedNote {
   metadata: NoteMetadata;
@@ -152,8 +152,8 @@ export class NoteManager {
     } catch (error) {
       if (error instanceof Error) {
         // Preserve custom error properties if they exist
-        const jadeError = error as JadeNoteError;
-        if (jadeError.code === 'NOTE_ALREADY_EXISTS') {
+        const flintError = error as FlintNoteError;
+        if (flintError.code === 'NOTE_ALREADY_EXISTS') {
           // Re-throw the original error for duplicate notes to preserve error details
           throw error;
         }
@@ -199,7 +199,7 @@ export class NoteManager {
       // File exists, throw an error
       const error = new Error(
         `A note with the filename '${filename}' already exists in the '${path.basename(typePath)}' note type`
-      ) as JadeNoteError;
+      ) as FlintNoteError;
       error.code = 'NOTE_ALREADY_EXISTS';
       error.details = {
         filename,

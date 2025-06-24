@@ -138,8 +138,8 @@ describe('Path Utilities', () => {
     });
 
     it('should handle complex safe paths', () => {
-      assert.strictEqual(isPathSafe('~/Documents/Projects/jade-note/src/utils'), true);
-      assert.strictEqual(isPathSafe('/usr/local/bin/jade-note'), true);
+      assert.strictEqual(isPathSafe('~/Documents/Projects/flint-note/src/utils'), true);
+      assert.strictEqual(isPathSafe('/usr/local/bin/flint-note'), true);
     });
   });
 

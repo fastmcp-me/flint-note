@@ -158,10 +158,10 @@ describe('Server Configuration Edge Cases', () => {
       const { join } = await import('node:path');
       const { mkdir, rm } = await import('node:fs/promises');
 
-      const specialDir = join(tmpdir(), 'jade note test (special)');
+      const specialDir = join(tmpdir(), '.flint-note test (special)');
       await mkdir(specialDir, { recursive: true });
       await mkdir(join(specialDir, 'general'), { recursive: true });
-      await mkdir(join(specialDir, '.jade-note'), { recursive: true });
+      await mkdir(join(specialDir, '.flint-note'), { recursive: true });
 
       try {
         const server = new FlintNoteServer({

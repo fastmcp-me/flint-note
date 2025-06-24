@@ -22,7 +22,7 @@ let linkManager: LinkManager;
 describe('LinkManager', () => {
   beforeEach(async () => {
     // Create temporary workspace
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jade-note-test-'));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'flint-note-test-'));
     workspace = new Workspace(tempDir);
     await workspace.initialize();
 

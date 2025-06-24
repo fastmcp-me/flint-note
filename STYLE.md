@@ -1,4 +1,4 @@
-# Jade Note Style Guide
+# Flint Note Style Guide
 
 ## Code Style Principles
 
