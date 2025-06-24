@@ -283,10 +283,98 @@ Powerful tool for knowledge discovery:
 - Find related notes for linking
 - Help users discover existing knowledge
 
-### Link Management
+### Enhanced Wikilink Management
+
+#### `search_notes_for_links`
+Find notes that can be linked with their filename information:
+
+```json
+{
+  "query": "atomic habits",
+  "type": "reading-notes",
+  "limit": 10
+}
+```
+
+Returns notes with their type and filename for creating stable wikilinks.
+
+#### `get_link_suggestions`
+Get intelligent link suggestions for partial queries:
+
+```json
+{
+  "query": "habit",
+  "context_type": "daily-notes",
+  "limit": 5
+}
+```
+
+Provides formatted wikilink suggestions with relevance scores.
+
+#### `suggest_link_targets`
+Get properly formatted wikilink suggestions:
+
+```json
+{
+  "partial_query": "atomic",
+  "context_type": "reading-notes",
+  "limit": 5
+}
+```
+
+Returns ready-to-use wikilinks: `[[reading-notes/atomic-habits|Atomic Habits]]`
+
+#### `validate_wikilinks`
+Check wikilinks in content and get repair suggestions:
+
+```json
+{
+  "content": "I read [[reading-notes/missing-book|Some Book]] and [[project-notes/website|Website Project]]",
+  "context_type": "daily-notes"
+}
+```
+
+Identifies broken links and suggests replacements.
+
+#### `auto_link_content`
+Automatically enhance content with relevant wikilinks:
+
+```json
+{
+  "content": "I'm reading Atomic Habits and working on my Website Project",
+  "context_type": "daily-notes",
+  "aggressiveness": "moderate"
+}
+```
+
+Intelligently adds wikilinks: `I'm reading [[reading-notes/atomic-habits|Atomic Habits]] and working on my [[project-notes/website-redesign|Website Project]]`
+
+#### `update_note_links_sync`
+Sync wikilinks from content to frontmatter metadata:
+
+```json
+{
+  "identifier": "daily-notes/2024-01-15"
+}
+```
+
+Automatically extracts wikilinks and updates YAML frontmatter.
+
+#### `generate_link_report`
+Analyze note connectivity and linking opportunities:
+
+```json
+{
+  "identifier": "project-notes/website-redesign"
+}
+```
+
+Provides comprehensive analysis of links, broken connections, and improvement suggestions.
+
+### Traditional Link Management
 
 #### `link_notes`
-Create meaningful connections between related information:
+Create explicit bidirectional links between notes:
 
 ```json
 {
@@ -297,11 +385,14 @@ Create meaningful connections between related information:
 }
 ```
 
-**When to Link:**
-- Notes discuss the same project, person, or topic
-- Action items relate to existing plans or projects
-- Decisions reference previous discussions
-- Follow-up meetings connect to original conversations
+**Wikilink vs Traditional Linking:**
+- **Wikilinks**: Natural, inline, Obsidian-compatible `[[type/filename|Display]]`
+- **Traditional Links**: Explicit relationships in frontmatter metadata
+- **Best Practice**: Use wikilinks for natural connections, traditional links for formal relationships
+
+**When to Use Each:**
+- **Wikilinks**: References, mentions, related content, natural flow
+- **Traditional Links**: Formal dependencies, project hierarchies, workflow connections
 
 ### Analysis and Enhancement
 
@@ -316,6 +407,64 @@ Use to extract insights and suggest improvements:
 ```
 
 This helps identify missing information, suggest connections, and recommend structural improvements.
+
+## Enhanced Linking Workflows
+
+### Wikilink Creation Strategy
+
+**Format**: Always use `[[type/filename|Display Name]]` format
+- **type**: Note type directory (reading-notes, project-notes, daily-notes)
+- **filename**: Actual filename without .md extension
+- **Display Name**: Human-readable text (optional, defaults to filename)
+
+**Examples:**
+- `[[reading-notes/atomic-habits|Atomic Habits]]`
+- `[[project-notes/website-redesign|Website Redesign Project]]`
+- `[[daily-notes/2024-01-15]]` (display defaults to filename)
+
+### Intelligent Link Discovery Workflow
+
+1. **Search for Linkable Content**:
+   ```
+   User mentions "atomic habits" → search_notes_for_links("atomic habits")
+   ```
+
+2. **Get Smart Suggestions**:
+   ```
+   User typing "I learned about..." → get_link_suggestions("learned")
+   ```
+
+3. **Validate Existing Links**:
+   ```
+   Before updating content → validate_wikilinks(content)
+   ```
+
+4. **Auto-enhance Content**:
+   ```
+   Plain text → auto_link_content() → Enhanced with wikilinks
+   ```
+
+5. **Sync Metadata**:
+   ```
+   After adding wikilinks → update_note_links_sync()
+   ```
+
+### Link Quality Management
+
+**Always Check Before Linking:**
+- Use `search_notes_for_links` to verify target exists
+- Get filename from search results for stable links
+- Validate display text matches user expectations
+
+**Link Maintenance:**
+- Run `validate_wikilinks` on important notes periodically
+- Use `generate_link_report` to analyze note connectivity
+- Fix broken links using repair suggestions
+
+**Context-Aware Suggestions:**
+- Pass `context_type` to filter relevant suggestions
+- Consider note type when suggesting connections
+- Prioritize recent and frequently accessed notes
 
 ## Content Enhancement Strategies
 

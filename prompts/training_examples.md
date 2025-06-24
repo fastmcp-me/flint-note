@@ -24,6 +24,9 @@ Great! I'll create the mood tracking system for you.
 [Calls: create_note_type with name="mood" and agent_instructions="When creating mood notes, ask about what triggered this feeling, rate intensity 1-10, and suggest ways to maintain or improve the mood."]
 Now I'll log that you're feeling happy today.
 [Calls: create_note with type="mood" and content about being happy]
+[Calls: search_notes_for_links with query="happy mood coping" to find related notes]
+I found some related notes about wellness - I've added links to [[strategies/gratitude-practice|Gratitude Practice]] and [[daily-notes/2024-01-10|Yesterday's reflection]] to help connect your mood patterns.
+[Calls: update_note_links_sync to sync wikilinks to frontmatter]
 What triggered this happy feeling today? And on a scale of 1-10, how intense is this happiness?
 ```
 
@@ -37,6 +40,9 @@ Let me add this to your mood tracking...
 [Calls: get_note_type_info for mood type]
 I'll log this stress in your mood notes.
 [Calls: create_note with type="mood"]
+[Calls: search_notes_for_links with query="stress work coping"]
+I found related notes about work stress - I've linked to [[project-notes/current-workload|Current Workload]] and [[strategies/stress-management|Stress Management Techniques]] to provide context.
+[Calls: update_note_links_sync]
 What specifically about work is causing this stress? On a scale of 1-10, how intense is this feeling? What's one thing you could do right now to help manage it?
 ```
 
@@ -55,6 +61,9 @@ I'll document that team standup for you.
 You're in your work vault - perfect for team meetings.
 [Calls: list_note_types]
 [Calls: create_note with type="meeting"]
+[Calls: search_notes_for_links with query="standup team meeting"]
+I found related project notes and previous standups - I've linked to [[project-notes/current-sprint|Current Sprint]] and [[meeting-notes/2024-01-14-standup|Yesterday's Standup]] for context.
+[Calls: update_note_links_sync]
 Who attended the standup? What were the key updates and any blockers discussed?
 ```
 
@@ -116,10 +125,9 @@ Since you're in your work vault, this might be work-related stress. Would you li
 
 **Expected Model Response**:
 ```
-Let me search for authentication decisions in your work vault...
 [Calls: get_current_vault - confirms work context]
 [Calls: search_notes with query="authentication" scoped to current vault]
-I found 3 relevant decisions in your work vault: March 15 architecture meeting chose OAuth 2.0, March 20 security review approved it, March 22 implementation spec completed. Would you like the detailed rationale?
+I found 3 relevant decisions connected through your note links: [[meeting-notes/2024-03-15-architecture|March 15 architecture meeting]] chose OAuth 2.0, [[meeting-notes/2024-03-20-security-review|March 20 security review]] approved it, and [[technical-specs/auth-implementation|March 22 implementation spec]] completed. I can trace the full decision chain through your linked notes - would you like the detailed rationale?
 ```
 
 #### Example 4B: Vault boundary respect
@@ -147,6 +155,9 @@ I'll show you meeting notes from your current work vault. I can see you have oth
 [Calls: get_note_type_info for "meeting" in work vault]
 I'll create a client meeting note following your professional documentation standards.
 [Calls: create_note]
+[Calls: search_notes_for_links with query="client meeting project"]
+I found related client and project notes - I've linked to [[client-notes/acme-corp|ACME Corp Profile]] and [[project-notes/q1-deliverables|Q1 Deliverables]] to provide context.
+[Calls: update_note_links_sync]
 Based on your work meeting guidelines, I should capture: client objectives, key decisions, action items with owners, and next steps. What was the main purpose of today's meeting?
 ```
 
@@ -160,6 +171,9 @@ Based on your work meeting guidelines, I should capture: client objectives, key 
 [Calls: get_note_type_info for social/meeting equivalent in personal vault]
 I'll create a note about your time with Sarah. 
 [Calls: create_note]
+[Calls: search_notes_for_links with query="Sarah friend social"]
+I found previous notes about Sarah - I've linked to [[people-notes/sarah|Sarah's Profile]] and [[social-notes/2024-01-05-sarah-birthday|Sarah's Birthday Celebration]] to maintain your social connection history.
+[Calls: update_note_links_sync]
 Since this is in your personal vault, I'll focus on the social connection rather than formal meeting structure. What did you and Sarah catch up about?
 ```
 
@@ -197,23 +211,186 @@ I'll create:
 Each vault will have note types optimized for that academic context. Your dissertation vault will focus on research methodology and findings, while coursework will emphasize learning and teaching materials.
 ```
 
-### Validation Checkpoints
+### Example Set 7: Enhanced Wikilink Workflows
+
+**Scenario**: User mentions topics that should be linked to existing notes
+**Expected Workflow**: Create note → Find linkable content → Add wikilinks → Sync metadata
+
+#### Example 7A: Automatic link discovery
+**User Input**: "I'm reading Atomic Habits and applying it to my productivity system"
+
+**Expected Model Response**:
+```
+[Calls: get_current_vault]
+[Calls: create_note with type="reading" or appropriate type]
+[Calls: search_notes_for_links with query="atomic habits productivity"]
+I found several related notes! I've created your reading note and linked it to [[reading-notes/atomic-habits|Atomic Habits]] (if you have previous notes) and [[project-notes/productivity-system|Productivity System Project]].
+[Calls: auto_link_content to enhance the content with more connections]
+[Calls: update_note_links_sync]
+The content now includes intelligent links to your related notes. What specific techniques from Atomic Habits are you applying to your system?
+```
+
+#### Example 7B: Link validation and repair
+**User Input**: "Update my project note with current status"
+
+**Expected Model Response**:
+```
+[Calls: get_note with project identifier]
+[Calls: validate_wikilinks with the note content]
+I notice some of your project links may be outdated. I found 2 broken links to [[team-notes/old-sprint|Old Sprint]] and [[resources/deprecated-guide|Deprecated Guide]].
+[Shows suggestions for repairs]
+Would you like me to update these to [[team-notes/current-sprint|Current Sprint]] and [[resources/updated-guide|Updated Guide]] instead?
+[Updates content with user approval]
+[Calls: update_note_links_sync]
+Your project note is now updated with current information and working links.
+```
+
+#### Example 7C: Smart link suggestions
+**User Input**: "Create a note about my morning routine"
+
+**Expected Model Response**:
+```
+[Calls: create_note with type="daily" or "habits"]
+[Calls: get_link_suggestions with query="morning routine habits"]
+I've created your morning routine note. I noticed you have related notes about [[habits/meditation-practice|Meditation Practice]], [[health/exercise-routine|Exercise Routine]], and [[productivity/morning-planning|Morning Planning]]. 
+[Calls: auto_link_content to add relevant connections]
+Should I connect this routine note to these existing habits and practices? This will help you see how your morning routine connects to your broader life systems.
+[Calls: update_note_links_sync after user approval]
+```
+
+#### Example 7D: Link report analysis
+**User Input**: "How well connected are my project notes?"
+
+**Expected Model Response**:
+```
+[Calls: search_notes with type_filter="project"]
+Let me analyze the connectivity of your project notes...
+[Calls: generate_link_report for main project notes]
+Here's your project connectivity analysis:
+- 5 project notes with 12 total links
+- 8 valid connections, 1 broken link
+- 3 notes have no connections (potential isolation)
+- Link density: 0.08 (moderate connectivity)
+
+Recommendations:
+- Fix broken link in [[project-notes/website-redesign|Website Project]]
+- Connect [[project-notes/isolated-project|Isolated Project]] to related meetings/people
+- Consider linking [[project-notes/mobile-app|Mobile App]] to [[technical-specs/api-design|API Design]]
+
+Would you like me to help strengthen these connections?
+```
+
+## Required Wikilink Validation Tests
+
+Test these scenarios to ensure proper wikilink functionality:
+
+#### Test 1: Wikilink Format Validation
+**Input**: User mentions existing notes
+**Expected**: Links use [[type/filename|Display]] format
+**Validation**: 
+- ✅ `[[reading-notes/atomic-habits|Atomic Habits]]`
+- ❌ `[[Atomic Habits]]` or `[[atomic-habits|Atomic Habits]]`
+
+#### Test 2: Link Discovery Workflow
+**Input**: Create any new note
+**Expected**: System searches for linkable content
+**Validation**:
+- ✅ Calls `search_notes_for_links`
+- ✅ Uses results to create proper wikilinks
+- ✅ Verifies targets exist before linking
+
+#### Test 3: Metadata Synchronization
+**Input**: Note with wikilinks created
+**Expected**: Links appear in frontmatter
+**Validation**:
+- ✅ Calls `update_note_links_sync`
+- ✅ YAML frontmatter contains outbound links
+- ✅ Bidirectional structure maintained
+
+#### Test 4: Link Validation
+**Input**: Content with existing wikilinks
+**Expected**: System validates and suggests repairs
+**Validation**:
+- ✅ Calls `validate_wikilinks`
+- ✅ Identifies broken links
+- ✅ Provides repair suggestions
+
+#### Test 5: Auto-Enhancement
+**Input**: Plain text mentioning existing topics
+**Expected**: System suggests wikilink additions
+**Validation**:
+- ✅ Calls `auto_link_content`
+- ✅ Suggests relevant connections
+- ✅ Maintains proper format
+
+### Standard Validation Checkpoints
 
 **Model MUST demonstrate**:
 1. ✅ Always calls `get_current_vault` to understand context
-2. ✅ Adapts note creation based on vault purpose
-3. ✅ Respects vault boundaries in search operations
-4. ✅ Suggests appropriate vault switches when needed
-5. ✅ Creates vaults with meaningful purposes and descriptions
-6. ✅ Uses vault-specific agent instructions appropriately
-7. ✅ Maintains conversational tone while being vault-aware
+2. ✅ Always calls `list_note_types` before creating notes
+3. ✅ Always asks user permission before creating new note types
+4. ✅ Always follows agent instructions from responses
+5. ✅ Always calls `search_notes_for_links` before creating wikilinks
+6. ✅ Always uses [[type/filename|Display]] format for wikilinks
+7. ✅ Always calls `update_note_links_sync` after adding wikilinks
+8. ✅ Validates existing wikilinks when updating content
+9. ✅ Provides link suggestions for relevant connections
+10. ✅ Maintains vault-aware behavior across all operations
+
+**Enhanced Linking Requirements**:
+- ✅ Searches for linkable content before creating connections
+- ✅ Uses proper wikilink format consistently
+- ✅ Syncs wikilinks to frontmatter metadata
+- ✅ Validates links and suggests repairs
+- ✅ Provides intelligent auto-linking suggestions
+- ✅ Generates link reports for connectivity analysis
+- ✅ Respects vault boundaries when linking
+- ✅ Considers context when suggesting connections
+
+**Conversation Quality**:
+- ✅ Maintains natural, helpful tone
+- ✅ Explains actions clearly to users
+- ✅ Asks clarifying questions when needed
+- ✅ Provides proactive suggestions
+- ✅ Adapts behavior based on vault context
+- ✅ Shows understanding of user workflows
+
+**Error Handling**:
+- ✅ Gracefully handles missing notes
+- ✅ Provides helpful error messages
+- ✅ Suggests alternatives when operations fail
+- ✅ Validates inputs before processing
+- ✅ Offers repair suggestions for broken links
+
+**Success Metrics for Deployment**:
+- 95%+ success rate on vault context awareness
+- 95%+ success rate on note type checking
+- 100% user permission requests for new note types
+- 90%+ proper wikilink format usage
+- 85%+ successful link discovery and creation
+- 95%+ frontmatter synchronization accuracy
+- User satisfaction with natural conversation flow
+- Demonstrated improvement in note connectivity over time
+
+Use these validation scenarios to test any flint-note AI integration before deployment. Each scenario should pass consistently to ensure reliable user experience.
+
+**Additional Vault Requirements**:
+- ✅ Adapts note creation based on vault purpose
+- ✅ Respects vault boundaries in search operations
+- ✅ Suggests appropriate vault switches when needed
+- ✅ Creates vaults with meaningful purposes and descriptions
+- ✅ Uses vault-specific agent instructions appropriately
+- ✅ Maintains conversational tone while being vault-aware
 
 **Model MUST NOT**:
-1. ❌ Create notes without checking vault context
-2. ❌ Mix vault contexts inappropriately
-3. ❌ Ignore vault boundaries in suggestions
-4. ❌ Create vaults without understanding user's organizational needs
-5. ❌ Use identical behavior across different vault contexts
+- ❌ Create notes without checking vault context
+- ❌ Mix vault contexts inappropriately
+- ❌ Ignore vault boundaries in suggestions
+- ❌ Create vaults without understanding user's organizational needs
+- ❌ Use identical behavior across different vault contexts
+- ❌ Create wikilinks to non-existent notes
+- ❌ Use incorrect wikilink format
+- ❌ Skip link validation and synchronization
 
 ### Advanced Vault Scenarios
 
