@@ -21,6 +21,7 @@ import { NoteManager } from './core/notes.ts';
 import { NoteTypeManager } from './core/note-types.ts';
 import { SearchManager } from './core/search.ts';
 import { LinkManager } from './core/links.ts';
+import { GlobalConfigManager, initializeVaultSystem } from './utils/global-config.ts';
 import type { LinkRelationship } from './types/index.ts';
 import type { MetadataSchema } from './core/metadata-schema.ts';
 import fs from 'fs/promises';
@@ -89,6 +90,29 @@ interface InitializeVaultArgs {
   force?: boolean;
 }
 
+interface CreateVaultArgs {
+  id: string;
+  name: string;
+  path: string;
+  description?: string;
+  initialize?: boolean;
+  switch_to?: boolean;
+}
+
+interface SwitchVaultArgs {
+  id: string;
+}
+
+interface RemoveVaultArgs {
+  id: string;
+}
+
+interface UpdateVaultArgs {
+  id: string;
+  name?: string;
+  description?: string;
+}
+
 class JadeNoteServer {
   #server: Server;
   #workspace: Workspace | null = null;
@@ -96,6 +120,7 @@ class JadeNoteServer {
   #noteTypeManager: NoteTypeManager | null = null;
   #searchManager: SearchManager | null = null;
   #linkManager: LinkManager | null = null;
+  #globalConfig: GlobalConfigManager;
 
   constructor() {
     this.#server = new Server(
@@ -111,11 +136,15 @@ class JadeNoteServer {
       }
     );
 
+    this.#globalConfig = new GlobalConfigManager();
     this.#setupHandlers();
   }
 
-  async initialize(workspacePath: string = process.cwd()): Promise<void> {
+  async initialize(): Promise<void> {
     try {
+      // Initialize vault system and get current vault path
+      const workspacePath = await initializeVaultSystem();
+
       this.#workspace = new Workspace(workspacePath);
       await this.#workspace.initialize();
 
@@ -124,7 +153,17 @@ class JadeNoteServer {
       this.#searchManager = new SearchManager(this.#workspace);
       this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
 
-      console.error('jade-note server initialized successfully');
+      // Load global config
+      await this.#globalConfig.load();
+
+      const currentVault = this.#globalConfig.getCurrentVault();
+      if (currentVault) {
+        console.error(
+          `jade-note server initialized successfully with vault: ${currentVault.name}`
+        );
+      } else {
+        console.error('jade-note server initialized successfully (no vault selected)');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to initialize jade-note server:', errorMessage);
@@ -433,6 +472,110 @@ class JadeNoteServer {
               },
               required: []
             }
+          },
+          {
+            name: 'list_vaults',
+            description: 'List all configured vaults with their status and information',
+            inputSchema: {
+              type: 'object',
+              properties: {},
+              required: []
+            }
+          },
+          {
+            name: 'create_vault',
+            description: 'Create a new vault and add it to the vault registry',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'Unique identifier for the vault (filesystem-safe)'
+                },
+                name: {
+                  type: 'string',
+                  description: 'Human-readable name for the vault'
+                },
+                path: {
+                  type: 'string',
+                  description: 'Directory path where the vault should be created'
+                },
+                description: {
+                  type: 'string',
+                  description: 'Optional description of the vault purpose'
+                },
+                initialize: {
+                  type: 'boolean',
+                  description: 'Whether to initialize with default note types',
+                  default: true
+                },
+                switch_to: {
+                  type: 'boolean',
+                  description: 'Whether to switch to the new vault after creation',
+                  default: true
+                }
+              },
+              required: ['id', 'name', 'path']
+            }
+          },
+          {
+            name: 'switch_vault',
+            description: 'Switch to a different vault',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'ID of the vault to switch to'
+                }
+              },
+              required: ['id']
+            }
+          },
+          {
+            name: 'remove_vault',
+            description: 'Remove a vault from the registry (does not delete files)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'ID of the vault to remove'
+                }
+              },
+              required: ['id']
+            }
+          },
+          {
+            name: 'get_current_vault',
+            description: 'Get information about the currently active vault',
+            inputSchema: {
+              type: 'object',
+              properties: {},
+              required: []
+            }
+          },
+          {
+            name: 'update_vault',
+            description: 'Update vault information (name or description)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'ID of the vault to update'
+                },
+                name: {
+                  type: 'string',
+                  description: 'New name for the vault'
+                },
+                description: {
+                  type: 'string',
+                  description: 'New description for the vault'
+                }
+              },
+              required: ['id']
+            }
           }
         ]
       };
@@ -476,6 +619,18 @@ class JadeNoteServer {
             return await this.#handleInitializeVault(
               args as unknown as InitializeVaultArgs
             );
+          case 'list_vaults':
+            return await this.#handleListVaults();
+          case 'create_vault':
+            return await this.#handleCreateVault(args as unknown as CreateVaultArgs);
+          case 'switch_vault':
+            return await this.#handleSwitchVault(args as unknown as SwitchVaultArgs);
+          case 'remove_vault':
+            return await this.#handleRemoveVault(args as unknown as RemoveVaultArgs);
+          case 'get_current_vault':
+            return await this.#handleGetCurrentVault();
+          case 'update_vault':
+            return await this.#handleUpdateVault(args as unknown as UpdateVaultArgs);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -998,13 +1153,302 @@ A welcome note has been created in your vault root directory to help you get sta
       };
     }
   }
+
+  // Vault management handlers
+  #handleListVaults = async (): Promise<{
+    content: Array<{ type: string; text: string }>;
+  }> => {
+    try {
+      const vaults = this.#globalConfig.listVaults();
+
+      if (vaults.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'No vaults configured. Use create_vault to add your first vault.'
+            }
+          ]
+        };
+      }
+
+      const vaultList = vaults
+        .map(({ id, info, is_current }) => {
+          const indicator = is_current ? '🟢 (current)' : '⚪';
+          return `${indicator} **${id}**: ${info.name}\n   Path: ${info.path}\n   Created: ${new Date(info.created).toLocaleDateString()}\n   Last accessed: ${new Date(info.last_accessed).toLocaleDateString()}${info.description ? `\n   Description: ${info.description}` : ''}`;
+        })
+        .join('\n\n');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📁 **Configured Vaults**\n\n${vaultList}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to list vaults: ${errorMessage}`
+          }
+        ]
+      };
+    }
+  };
+
+  #handleCreateVault = async (
+    args: CreateVaultArgs
+  ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> => {
+    try {
+      // Validate vault ID
+      if (!this.#globalConfig.isValidVaultId(args.id)) {
+        throw new Error(
+          `Invalid vault ID '${args.id}'. Must contain only letters, numbers, hyphens, and underscores.`
+        );
+      }
+
+      // Check if vault already exists
+      if (this.#globalConfig.hasVault(args.id)) {
+        throw new Error(`Vault with ID '${args.id}' already exists`);
+      }
+
+      // Ensure directory exists
+      await fs.mkdir(args.path, { recursive: true });
+
+      // Add vault to registry
+      await this.#globalConfig.addVault(args.id, args.name, args.path, args.description);
+
+      let initMessage = '';
+      if (args.initialize !== false) {
+        // Initialize the vault with default note types
+        const workspace = new Workspace(args.path);
+        await workspace.initializeVault();
+        initMessage =
+          '\n\n✅ Vault initialized with default note types (daily, reading, todos, projects, goals, games, movies)';
+      }
+
+      let switchMessage = '';
+      if (args.switch_to !== false) {
+        // Switch to the new vault
+        await this.#globalConfig.switchVault(args.id);
+
+        // Reinitialize server with new vault
+        await this.initialize();
+
+        switchMessage = '\n\n🔄 Switched to new vault';
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Created vault '${args.name}' (${args.id}) at: ${args.path}${initMessage}${switchMessage}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to create vault: ${errorMessage}`
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  #handleSwitchVault = async (
+    args: SwitchVaultArgs
+  ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> => {
+    try {
+      const vault = this.#globalConfig.getVault(args.id);
+      if (!vault) {
+        throw new Error(`Vault with ID '${args.id}' does not exist`);
+      }
+
+      // Switch to the vault
+      await this.#globalConfig.switchVault(args.id);
+
+      // Reinitialize server with new vault
+      await this.initialize();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🔄 Switched to vault: ${vault.name} (${args.id})\nPath: ${vault.path}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to switch vault: ${errorMessage}`
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  #handleRemoveVault = async (
+    args: RemoveVaultArgs
+  ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> => {
+    try {
+      const vault = this.#globalConfig.getVault(args.id);
+      if (!vault) {
+        throw new Error(`Vault with ID '${args.id}' does not exist`);
+      }
+
+      const wasCurrentVault = this.#globalConfig.getCurrentVault()?.path === vault.path;
+
+      // Remove vault from registry
+      await this.#globalConfig.removeVault(args.id);
+
+      let switchMessage = '';
+      if (wasCurrentVault) {
+        // Reinitialize server if we removed the current vault
+        await this.initialize();
+        const newCurrent = this.#globalConfig.getCurrentVault();
+        if (newCurrent) {
+          switchMessage = `\n\n🔄 Switched to vault: ${newCurrent.name}`;
+        } else {
+          switchMessage =
+            '\n\n⚠️  No vaults remaining. You may want to create a new vault.';
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Removed vault '${vault.name}' (${args.id}) from registry.\n\n⚠️  Note: Vault files at '${vault.path}' were not deleted.${switchMessage}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to remove vault: ${errorMessage}`
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  #handleGetCurrentVault = async (): Promise<{
+    content: Array<{ type: string; text: string }>;
+  }> => {
+    try {
+      const currentVault = this.#globalConfig.getCurrentVault();
+
+      if (!currentVault) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: '⚠️  No vault is currently selected. Use list_vaults to see available vaults or create_vault to add a new one.'
+            }
+          ]
+        };
+      }
+
+      // Find the vault ID
+      const vaults = this.#globalConfig.listVaults();
+      const currentVaultEntry = vaults.find(v => v.is_current);
+      const vaultId = currentVaultEntry?.id || 'unknown';
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🟢 **Current Vault**: ${currentVault.name} (${vaultId})
+
+**Path**: ${currentVault.path}
+**Created**: ${new Date(currentVault.created).toLocaleDateString()}
+**Last accessed**: ${new Date(currentVault.last_accessed).toLocaleDateString()}${currentVault.description ? `\n**Description**: ${currentVault.description}` : ''}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to get current vault: ${errorMessage}`
+          }
+        ]
+      };
+    }
+  };
+
+  #handleUpdateVault = async (
+    args: UpdateVaultArgs
+  ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> => {
+    try {
+      const vault = this.#globalConfig.getVault(args.id);
+      if (!vault) {
+        throw new Error(`Vault with ID '${args.id}' does not exist`);
+      }
+
+      const updates: Partial<Pick<typeof vault, 'name' | 'description'>> = {};
+      if (args.name) updates.name = args.name;
+      if (args.description !== undefined) updates.description = args.description;
+
+      if (Object.keys(updates).length === 0) {
+        throw new Error(
+          'No updates provided. Specify name and/or description to update.'
+        );
+      }
+
+      await this.#globalConfig.updateVault(args.id, updates);
+
+      const updatedVault = this.#globalConfig.getVault(args.id)!;
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Updated vault '${args.id}':
+**Name**: ${updatedVault.name}
+**Description**: ${updatedVault.description || 'None'}
+**Path**: ${updatedVault.path}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to update vault: ${errorMessage}`
+          }
+        ],
+        isError: true
+      };
+    }
+  };
 }
 
 // Main execution
 async function main(): Promise<void> {
   const server = new JadeNoteServer();
-  const workspacePath = process.env.JADE_NOTE_WORKSPACE || process.cwd();
-  await server.initialize(workspacePath);
+  await server.initialize();
   await server.run();
 }
 

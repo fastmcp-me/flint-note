@@ -8,7 +8,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 import yaml from 'js-yaml';
-import { MetadataSchema } from './metadata-schema.js';
+import type { MetadataSchema } from './metadata-schema.ts';
 
 interface WorkspaceConfig {
   workspace_root: string;

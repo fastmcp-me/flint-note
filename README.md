@@ -24,6 +24,60 @@ Create a note-taking system where:
 5. **Extensible**: Easy to add new note types and agent behaviors
 6. **Portable**: No vendor lock-in, works with standard file systems and version control
 
+## Multi-Vault System
+
+jade-note supports multiple vaults, allowing you to organize different collections of notes separately. Each vault is an independent workspace with its own note types, configuration, and notes. This is perfect for separating personal notes, work projects, research topics, or any other organizational structure you prefer.
+
+### Key Features
+
+- **Platform-specific storage**: Configuration stored in appropriate system directories (`~/.config/jade-note` on Unix, `%APPDATA%\jade-note` on Windows)
+- **Easy switching**: Switch between vaults instantly without restarting the server
+- **Independent workspaces**: Each vault has its own note types, templates, and configuration
+- **Legacy support**: Automatically migrates existing workspaces to the vault system
+
+### Vault Management
+
+You can manage vaults through both the MCP server tools and the command-line interface:
+
+#### MCP Tools
+- `list_vaults` - List all configured vaults
+- `create_vault` - Create a new vault
+- `switch_vault` - Switch to a different vault
+- `get_current_vault` - Show current vault information
+- `update_vault` - Update vault name or description
+- `remove_vault` - Remove vault from registry (files preserved)
+
+#### Command Line Interface
+```bash
+# List all vaults
+jade-note list
+
+# Create a new vault
+jade-note create work "Work Notes" ~/work-vault
+
+# Switch to a vault
+jade-note switch work
+
+# Initialize current directory as a vault
+jade-note init --id=project --name="Project Notes"
+
+# Show current vault
+jade-note current
+
+# Update vault information
+jade-note update work --name "Work & Research"
+
+# Remove a vault (files not deleted)
+jade-note remove work
+```
+
+### Getting Started with Vaults
+
+1. **First time setup**: When you first run jade-note, it will check for existing workspaces and offer to migrate them
+2. **Create your first vault**: Use `create_vault` tool or `jade-note create` command
+3. **Switch between vaults**: Use `switch_vault` tool or `jade-note switch` command
+4. **Organize by purpose**: Create separate vaults for work, personal, research, projects, etc.
+
 ## Agent Instructions System
 
 The agent instructions system is a core feature that enables users to define specific behaviors and guidance for AI agents when working with different note types. This creates a personalized, context-aware experience where agents understand the purpose and conventions of each note category.
