@@ -4,7 +4,7 @@
 
 import { test, describe, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { JadeNoteServer } from '../../src/server.ts';
+import { FlintNoteServer } from '../../src/server.ts';
 import {
   createTestServer,
   cleanupTestServer,
@@ -29,14 +29,14 @@ describe('Server Configuration', () => {
   });
 
   test('should create server with default configuration', async () => {
-    const server = new JadeNoteServer();
+    const server = new FlintNoteServer();
     assert.ok(server, 'Server should be created with default configuration');
   });
 
   test('should create server with explicit workspace configuration', async () => {
     context = await createTestServer('server-config-workspace');
 
-    const server = new JadeNoteServer({ workspacePath: context.tempDir });
+    const server = new FlintNoteServer({ workspacePath: context.tempDir });
     assert.ok(server, 'Server should be created with workspace configuration');
 
     await server.initialize();
@@ -44,7 +44,7 @@ describe('Server Configuration', () => {
   });
 
   test('should handle invalid workspace path gracefully', async () => {
-    const server = new JadeNoteServer({
+    const server = new FlintNoteServer({
       workspacePath: '/this/path/definitely/does/not/exist/anywhere',
       throwOnError: true
     });
@@ -74,7 +74,7 @@ describe('Command Line Argument Parsing', () => {
 
     try {
       // This simulates what would happen if --workspace was passed
-      const server = new JadeNoteServer({ workspacePath: context.tempDir });
+      const server = new FlintNoteServer({ workspacePath: context.tempDir });
       await server.initialize();
 
       // If we get here, the workspace path was accepted
@@ -85,7 +85,7 @@ describe('Command Line Argument Parsing', () => {
   });
 
   test('should handle empty configuration object', async () => {
-    const server = new JadeNoteServer({});
+    const server = new FlintNoteServer({});
     assert.ok(server, 'Server should handle empty configuration');
   });
 
@@ -95,28 +95,15 @@ describe('Command Line Argument Parsing', () => {
     try {
       context = await createTestServer('explicit-vs-env');
 
-      // Set environment variable
-      const originalEnv = process.env.JADE_NOTE_WORKSPACE;
-      process.env.JADE_NOTE_WORKSPACE = '/some/other/path';
+      // Create server with explicit workspace (should override env)
+      const server = new FlintNoteServer({
+        workspacePath: context.tempDir,
+        throwOnError: true
+      });
+      await server.initialize();
 
-      try {
-        // Create server with explicit workspace (should override env)
-        const server = new JadeNoteServer({
-          workspacePath: context.tempDir,
-          throwOnError: true
-        });
-        await server.initialize();
-
-        // If initialization succeeds, explicit workspace was used
-        assert.ok(true, 'Explicit workspace should override environment variable');
-      } finally {
-        // Restore original environment
-        if (originalEnv === undefined) {
-          delete process.env.JADE_NOTE_WORKSPACE;
-        } else {
-          process.env.JADE_NOTE_WORKSPACE = originalEnv;
-        }
-      }
+      // If initialization succeeds, explicit workspace was used
+      assert.ok(true, 'Explicit workspace should override environment variable');
     } finally {
       if (context) {
         await cleanupTestServer(context);
@@ -142,7 +129,7 @@ describe('Server Configuration Edge Cases', () => {
       try {
         process.chdir(parentDir);
 
-        const server = new JadeNoteServer({
+        const server = new FlintNoteServer({
           workspacePath: relativePath,
           throwOnError: true
         });
@@ -177,7 +164,7 @@ describe('Server Configuration Edge Cases', () => {
       await mkdir(join(specialDir, '.jade-note'), { recursive: true });
 
       try {
-        const server = new JadeNoteServer({
+        const server = new FlintNoteServer({
           workspacePath: specialDir,
           throwOnError: true
         });

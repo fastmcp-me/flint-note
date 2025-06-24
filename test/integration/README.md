@@ -1,6 +1,6 @@
-# Integration Tests for jade-note
+# Integration Tests for flint-note
 
-This directory contains comprehensive end-to-end integration tests for the jade-note MCP server, validating all functionality through the MCP protocol interface.
+This directory contains comprehensive end-to-end integration tests for the flint-note MCP server, validating all functionality through the MCP protocol interface.
 
 ## Quick Start
 
@@ -159,9 +159,9 @@ DEBUG=* npm run test:integration
 - ✅ `link_notes` - Basic error handling (full implementation in Phase 2)
 
 ### MCP Resources Coverage (Phase 3)
-- ⏳ `jade-note://types` - Note types resource
-- ⏳ `jade-note://recent` - Recent notes resource  
-- ⏳ `jade-note://stats` - Workspace statistics resource
+- ⏳ `flint-note://types` - Note types resource
+- ⏳ `flint-note://recent` - Recent notes resource  
+- ⏳ `flint-note://stats` - Workspace statistics resource
 
 ### Error Handling Coverage ✅ COMPLETE
 - ✅ Parameter validation for all tools
@@ -223,4 +223,4 @@ DEBUG=* npm run test:integration
 - Memory usage within acceptable limits
 - Test execution time under 5 minutes total
 
-This comprehensive integration test suite ensures the jade-note MCP server works correctly in real-world scenarios and provides confidence for continued development and deployment.
+This comprehensive integration test suite ensures the flint-note MCP server works correctly in real-world scenarios and provides confidence for continued development and deployment.

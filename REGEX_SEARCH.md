@@ -1,6 +1,6 @@
-# Regex Search in jade-note
+# Regex Search in flint-note
 
-The jade-note application now supports powerful regex (regular expression) search functionality, allowing users to find notes using complex pattern matching instead of just simple text searches.
+The flint-note application now supports powerful regex (regular expression) search functionality, allowing users to find notes using complex pattern matching instead of just simple text searches.
 
 ## Overview
 
@@ -201,4 +201,4 @@ The regex search includes robust error handling:
 
 ---
 
-This regex search functionality makes jade-note much more powerful for finding and organizing notes based on structured patterns and complex criteria.
+This regex search functionality makes flint-note much more powerful for finding and organizing notes based on structured patterns and complex criteria.

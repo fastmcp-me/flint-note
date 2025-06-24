@@ -1,6 +1,6 @@
-# jade-note Prompts Directory
+# flint-note Prompts Directory
 
-This directory contains all prompt files for jade-note AI integrations, organized by purpose and complexity level.
+This directory contains all prompt files for flint-note AI integrations, organized by purpose and complexity level.
 
 ## 📁 File Organization
 
@@ -80,7 +80,7 @@ Iterate based on user feedback
 ### Platform Adaptations  
 1. Use `clients_platform_specific.md` as template
 2. Adapt for platform-specific features
-3. Maintain core jade-note intelligence
+3. Maintain core flint-note intelligence
 4. Test cross-platform compatibility
 
 ## 🧪 Testing and Validation

@@ -1,27 +1,27 @@
-# jade-note Presentation Script
+# flint-note Presentation Script
 
 ## Opening Hook (2 minutes)
 **"What if your notes could think?"**
 
-*Start with a live demo - open Claude Desktop with jade-note MCP server running*
+*Start with a live demo - open Claude Desktop with flint-note MCP server running*
 
-"Today I'm going to show you jade-note - not just another note-taking app, but an **agent-first** knowledge management system. Instead of fighting with your tools to organize information, your notes become intelligent participants in your workflow."
+"Today I'm going to show you flint-note - not just another note-taking app, but an **agent-first** knowledge management system. Instead of fighting with your tools to organize information, your notes become intelligent participants in your workflow."
 
 *Show the config file briefly*
-"Here's what makes jade-note different - it's built from the ground up as an MCP server, meaning any AI agent can read, write, and reason about your notes with full context."
+"Here's what makes flint-note different - it's built from the ground up as an MCP server, meaning any AI agent can read, write, and reason about your notes with full context."
 
 ---
 
 ## Demo 1: Basic Note Creation with Intelligence (5 minutes)
 
 ### Setting Up Note Types
-"Let's start by creating some note types. In jade-note, every note type has its own personality through agent instructions."
+"Let's start by creating some note types. In flint-note, every note type has its own personality through agent instructions."
 
 **Live Demo:**
 ```bash
 # Show existing note types structure
-ls -la .jade-note/
-cat .jade-note/config.yml
+ls -la .flint-note/
+cat .flint-note/config.yml
 ```
 
 *Navigate to existing note types*
@@ -48,11 +48,11 @@ cat .jade-note/config.yml
 ## Demo 2: MCP Integration Power (8 minutes)
 
 ### Mixing Multiple MCP Servers
-"Here's where jade-note gets really powerful - it plays nicely with other MCP servers."
+"Here's where flint-note gets really powerful - it plays nicely with other MCP servers."
 
 **Setup:**
 *Show Claude Desktop config with multiple MCP servers:*
-- jade-note (our notes)
+- flint-note (our notes)
 - web search MCP server
 - filesystem MCP server
 
@@ -65,7 +65,7 @@ cat .jade-note/config.yml
 
 2. **Show the magic:**
    - Claude searches the web for current information
-   - Automatically structures it using jade-note's research note template
+   - Automatically structures it using flint-note's research note template
    - Creates proper metadata and tags
    - Links to related notes in the system
 
@@ -75,7 +75,7 @@ cat .jade-note/config.yml
    and connects them to my project goals."
    ```
    - Claude reads recent commits from filesystem
-   - References existing project notes in jade-note
+   - References existing project notes in flint-note
    - Creates connections and tracks progress
 
 ---
@@ -141,7 +141,7 @@ I'm halfway through chapter 5"
 ## Demo 4: Advanced Features (8 minutes)
 
 ### Intelligent Linking
-"jade-note doesn't just store notes - it understands relationships."
+"flint-note doesn't just store notes - it understands relationships."
 
 **Show automatic linking:**
 1. Create a project note about "Building a React Dashboard"
@@ -195,7 +195,7 @@ and show me the connections"
 ## Demo 5: Real-World Workflow (7 minutes)
 
 ### Daily Workflow Integration
-"Let me show you how I actually use jade-note in my daily workflow."
+"Let me show you how I actually use flint-note in my daily workflow."
 
 **Morning Routine:**
 1. **Daily Planning:**
@@ -234,7 +234,7 @@ and show me the connections"
 **Show Claude Desktop usage:**
 *Switch to Claude Desktop interface*
 
-"Here's how I use jade-note directly in Claude for development work:"
+"Here's how I use flint-note directly in Claude for development work:"
 
 ```
 "Look at my recent commits and help me update my daily log with what I accomplished. 
@@ -243,7 +243,7 @@ Also check if any of this work completes items from my current project goals."
 
 *Show the AI:*
 - Reading commit messages from filesystem
-- Updating daily log in jade-note
+- Updating daily log in flint-note
 - Cross-referencing with project notes
 - Updating goal progress
 - Suggesting next steps
@@ -314,7 +314,7 @@ Agent Instructions:
 ## Closing and Q&A (5 minutes)
 
 ### Key Takeaways
-"jade-note transforms note-taking from a passive storage system into an active thinking partner:"
+"flint-note transforms note-taking from a passive storage system into an active thinking partner:"
 
 1. **Agent-First Design:** Your notes understand context and relationships
 2. **MCP Integration:** Works with any AI system that supports MCP
@@ -323,7 +323,7 @@ Agent Instructions:
 5. **Future-Ready:** Grows with AI capabilities while keeping your data yours
 
 ### What's Next
-"This is just the beginning. With MCP as the foundation, jade-note can integrate with:"
+"This is just the beginning. With MCP as the foundation, flint-note can integrate with:"
 - Calendar systems for meeting notes
 - Email clients for message archiving
 - Code repositories for development logs
@@ -345,7 +345,7 @@ Agent Instructions:
 ## Demo Notes for Presenter
 
 ### Pre-Demo Setup Checklist
-- [ ] jade-note MCP server running
+- [ ] flint-note MCP server running
 - [ ] Claude Desktop configured with multiple MCP servers
 - [ ] Sample notes created in various types
 - [ ] Web search MCP server configured

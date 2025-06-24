@@ -1,12 +1,12 @@
-# jade-note Prompt System Overview
+# flint-note Prompt System Overview
 
-This document explains how the jade-note prompt files work together to provide consistent, intelligent assistance across different platforms and use cases.
+This document explains how the flint-note prompt files work together to provide consistent, intelligent assistance across different platforms and use cases.
 
 ## File Structure and Purpose
 
 ### 1. `system_core.md` - Core System Prompt
-**Purpose**: The main, concise system prompt for AI assistants interacting with jade-note.
-**Use**: Primary prompt for most integrations and general-purpose jade-note assistance.
+**Purpose**: The main, concise system prompt for AI assistants interacting with flint-note.
+**Use**: Primary prompt for most integrations and general-purpose flint-note assistance.
 **Key Features**:
 - Conversational, agent-first approach
 - Core behaviors and responsibilities
@@ -14,7 +14,7 @@ This document explains how the jade-note prompt files work together to provide c
 - Success metrics
 
 ### 2. `instructions_comprehensive.md` - Comprehensive Behavioral Guide
-**Purpose**: Detailed instructions for AI behavior, covering all aspects of jade-note interaction.
+**Purpose**: Detailed instructions for AI behavior, covering all aspects of flint-note interaction.
 **Use**: Reference guide for complex scenarios, training, and advanced integrations.
 **Key Features**:
 - Complete MCP tool usage guide
@@ -43,14 +43,14 @@ clients_platform_specific.md (Platform-specific adaptations)
 ```
 
 ### Information Flow
-1. **Start with system_core.md** for basic jade-note behavior
+1. **Start with system_core.md** for basic flint-note behavior
 2. **Reference instructions_comprehensive.md** for detailed guidance on complex scenarios
 3. **Use clients_platform_specific.md** for platform-specific modifications and examples
 
 ## Key Concepts Across All Files
 
 ### Agent Instructions System
-The foundation of jade-note's intelligence:
+The foundation of flint-note's intelligence:
 - **Note types define behavior** through agent instructions
 - **Agent instructions guide AI responses** contextually
 - **Continuous improvement** through agent instruction evolution
@@ -73,7 +73,7 @@ The foundation of jade-note's intelligence:
 ### For Simple Integrations
 Use `system_core.md` directly:
 ```
-You have access to jade-note, an intelligent note-taking system...
+You have access to flint-note, an intelligent note-taking system...
 [Include the core behaviors and essential tools section]
 ```
 
@@ -93,7 +93,7 @@ Start with appropriate template from `clients_platform_specific.md`:
 
 ### 1. General Purpose Assistant
 **Files**: `system_core.md`
-**Features**: Core jade-note functionality, conversational interface
+**Features**: Core flint-note functionality, conversational interface
 **Best for**: Personal knowledge management, general note-taking
 
 ### 2. Professional/Team Environment
@@ -127,7 +127,7 @@ Start with appropriate template from `clients_platform_specific.md`:
 ### Platform Adaptations
 1. **Choose appropriate clients_platform_specific.md template**
 2. **Modify for your platform's specific requirements**
-3. **Maintain jade-note core intelligence**
+3. **Maintain flint-note core intelligence**
 4. **Test cross-platform compatibility**
 
 ## Validation and Testing
@@ -140,7 +140,7 @@ Start with appropriate template from `clients_platform_specific.md`:
 
 ### Integration Tests
 - Platform-specific features work correctly
-- Core jade-note behaviors maintained
+- Core flint-note behaviors maintained
 - Error handling functions properly
 - Performance meets requirements
 
@@ -194,7 +194,7 @@ Start with appropriate template from `clients_platform_specific.md`:
 
 ## Conclusion
 
-The jade-note prompt system is designed to be:
+The flint-note prompt system is designed to be:
 - **Modular**: Use only what you need
 - **Extensible**: Easy to customize for specific needs
 - **Consistent**: Core intelligence maintained across platforms
@@ -202,6 +202,6 @@ The jade-note prompt system is designed to be:
 
 By understanding how these files work together, you can create intelligent, personalized note-taking experiences that truly augment human thinking and knowledge work.
 
-The key to success is starting with the core principles in system_core.md, understanding the detailed behaviors in instructions_comprehensive.md, and adapting appropriately using clients_platform_specific.md templates - all while maintaining the agent-first, conversational approach that makes jade-note unique.
+The key to success is starting with the core principles in system_core.md, understanding the detailed behaviors in instructions_comprehensive.md, and adapting appropriately using clients_platform_specific.md templates - all while maintaining the agent-first, conversational approach that makes flint-note unique.
 
 > 📁 **Note**: All prompt files have been organized into the `prompts/` directory with consistent naming. See `prompts/README.md` for the complete file organization and quick start guide.

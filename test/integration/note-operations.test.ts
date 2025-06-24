@@ -1,6 +1,6 @@
 /**
  * Integration tests for core note operations through MCP protocol
- * Tests note creation, retrieval, and updates via the jade-note MCP server
+ * Tests note creation, retrieval, and updates via the flint-note MCP server
  */
 
 import { test, describe, beforeEach, afterEach } from 'node:test';

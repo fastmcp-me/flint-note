@@ -1,4 +1,4 @@
-# jade-note Prompts Quick Reference Card
+# flint-note Prompts Quick Reference Card
 
 ## 🚀 Instant Setup Guide
 
@@ -50,7 +50,7 @@ NEVER create note types without asking user first.
 
 ### Standard Model
 ```
-You are an AI assistant with jade-note's multi-vault system. Core behaviors:
+You are an AI assistant with flint-note's multi-vault system. Core behaviors:
 - Always check current vault context with get_current_vault
 - Always check note types before creating notes
 - Ask user permission before creating new note types  
@@ -102,7 +102,7 @@ Test these scenarios with ANY prompt:
 ### Claude Desktop
 ```json
 {
-  "jade-note": {
+  "flint-note": {
     "prompt": "[content from system_core.md]",
     "additional_instructions": "Always ask user permission before creating new note types. Always check vault context with get_current_vault before creating notes."
   }

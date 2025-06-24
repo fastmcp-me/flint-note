@@ -194,7 +194,7 @@ describe('Command Line Arguments Integration', () => {
 
       assert.ok(hasExited, 'Server should exit after showing help');
       assert.ok(
-        stdout.includes('jade-note MCP Server'),
+        stdout.includes('flint-note MCP Server'),
         'Should show server name in help'
       );
       assert.ok(stdout.includes('--workspace'), 'Should show workspace option in help');
@@ -245,7 +245,7 @@ describe('Command Line Arguments Integration', () => {
 
       assert.ok(hasExited, 'Server should exit after showing help');
       assert.ok(
-        stdout.includes('jade-note MCP Server'),
+        stdout.includes('flint-note MCP Server'),
         'Should show server name in help'
       );
     } finally {
@@ -364,10 +364,6 @@ describe('Command Line Arguments Integration', () => {
 
     // Set environment variable to a different path
     const serverProcess = spawn('node', [serverPath, '--workspace', context.tempDir], {
-      env: {
-        ...process.env,
-        JADE_NOTE_WORKSPACE: '/some/other/path'
-      },
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

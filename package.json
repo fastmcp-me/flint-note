@@ -1,10 +1,10 @@
 {
-  "name": "jade-note",
+  "name": "flint-note",
   "version": "0.1.0",
   "description": "Agent-first note-taking application with MCP server",
   "main": "src/server.ts",
   "bin": {
-    "jade-note": "src/cli.ts"
+    "flint-note": "src/cli.ts"
   },
   "type": "module",
   "scripts": {

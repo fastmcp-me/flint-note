@@ -1,6 +1,6 @@
-# Weak Model Implementation Guide for jade-note
+# Weak Model Implementation Guide for flint-note
 
-This guide provides everything needed to successfully implement jade-note with weaker AI models that require explicit, step-by-step instructions.
+This guide provides everything needed to successfully implement flint-note with weaker AI models that require explicit, step-by-step instructions.
 
 ## Quick Start for Implementation
 
@@ -68,7 +68,7 @@ ALWAYS follow the 4 steps. Keep responses simple.
 
 ### Template 2: Structured Workflow Configuration
 ```
-SYSTEM: You are helping users with jade-note. Follow this exact workflow:
+SYSTEM: You are helping users with flint-note. Follow this exact workflow:
 
 MANDATORY WORKFLOW:
 1. FIRST: Always use `list_note_types` to see what exists

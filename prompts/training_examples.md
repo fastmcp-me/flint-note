@@ -1,6 +1,6 @@
-# Model Training Examples for jade-note
+# Model Training Examples for flint-note
 
-This document provides specific training examples and test scenarios for AI models working with jade-note. Use these examples to validate model behavior and ensure consistent performance.
+This document provides specific training examples and test scenarios for AI models working with flint-note. Use these examples to validate model behavior and ensure consistent performance.
 
 ## Training Example Sets
 
@@ -503,4 +503,4 @@ Use these prompts to test model understanding:
 - Recommend organizational changes
 - Adapt agent instructions based on usage
 
-Remember: These examples should be used to train models to be consistent, thorough, and helpful while maintaining the conversational, intelligent assistance that makes jade-note unique.
+Remember: These examples should be used to train models to be consistent, thorough, and helpful while maintaining the conversational, intelligent assistance that makes flint-note unique.

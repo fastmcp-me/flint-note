@@ -33,7 +33,7 @@ describe('GlobalConfigManager', () => {
     cleanup: () => void;
   }> {
     // Create unique temporary directory for each test
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jade-note-global-test-'));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'flint-note-global-test-'));
 
     // Store original env var
     const originalXDGConfigHome = process.env.XDG_CONFIG_HOME;
@@ -69,8 +69,8 @@ describe('GlobalConfigManager', () => {
     try {
       const configDir = globalConfig.getPlatformConfigDir();
       assert.ok(
-        configDir.includes('jade-note'),
-        'Config directory should contain jade-note'
+        configDir.includes('flint-note'),
+        'Config directory should contain flint-note'
       );
       assert.ok(path.isAbsolute(configDir), 'Config directory should be absolute path');
     } finally {

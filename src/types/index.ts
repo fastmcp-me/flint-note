@@ -1,5 +1,5 @@
 /**
- * Type definitions for jade-note
+ * Type definitions for flint-note
  *
  * This file provides common type definitions used across the application.
  */

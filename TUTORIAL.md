@@ -1,10 +1,10 @@
-# jade-note Tutorial: Your Agent-First Note-Taking System
+# flint-note Tutorial: Your Agent-First Note-Taking System
 
-Welcome to jade-note! This tutorial will guide you through using jade-note, an innovative note-taking application designed from the ground up to work seamlessly with AI agents. Unlike traditional note apps that bolt on AI features, jade-note is built to be controlled entirely through natural language conversations with AI assistants.
+Welcome to flint-note! This tutorial will guide you through using flint-note, an innovative note-taking application designed from the ground up to work seamlessly with AI agents. Unlike traditional note apps that bolt on AI features, flint-note is built to be controlled entirely through natural language conversations with AI assistants.
 
-## What Makes jade-note Different?
+## What Makes flint-note Different?
 
-jade-note flips the script on note-taking:
+flint-note flips the script on note-taking:
 - **Agent-First**: Talk to your AI assistant to manage notes, don't click through menus
 - **Semantic Organization**: Your note types have meaning that AI agents understand
 - **File-Based**: All your notes are stored as simple Markdown files you own
@@ -22,10 +22,10 @@ Before you begin, make sure you have:
 
 ### Installation
 
-1. **Get jade-note:**
+1. **Get flint-note:**
    ```bash
    git clone <repository-url>
-   cd jade-note
+   cd flint-note
    npm install
    ```
 
@@ -41,18 +41,18 @@ Before you begin, make sure you have:
    ```json
    {
      "mcpServers": {
-       "jade-note": {
+       "flint-note": {
          "command": "node",
-         "args": ["/path/to/jade-note/src/server.ts"],
+         "args": ["/path/to/flint-note/src/server.ts"],
          "cwd": "/Users/yourname/my-knowledge-base"
        }
      }
    }
    ```
 
-4. **Start jade-note:**
+4. **Start flint-note:**
    ```bash
-   # In the jade-note directory
+   # In the flint-note directory
    npm start
    ```
 
@@ -60,9 +60,9 @@ Before you begin, make sure you have:
 
 ## Core Concepts
 
-### Note Types: The Heart of jade-note
+### Note Types: The Heart of flint-note
 
-Traditional note apps organize by folders or tags. jade-note organizes by **note types** - categories that carry semantic meaning. Each note type defines:
+Traditional note apps organize by folders or tags. flint-note organizes by **note types** - categories that carry semantic meaning. Each note type defines:
 
 - **Purpose**: What kind of information belongs here
 - **Agent Instructions**: Specific behaviors AI should exhibit with these notes
@@ -71,7 +71,7 @@ Traditional note apps organize by folders or tags. jade-note organizes by **note
 
 #### Agent Instructions: Your Personal AI Assistant
 
-A key innovation in jade-note is **agent instructions** - customizable guidelines that tell AI assistants exactly how to behave with each note type. For example:
+A key innovation in flint-note is **agent instructions** - customizable guidelines that tell AI assistants exactly how to behave with each note type. For example:
 
 - **Meeting notes**: "Always extract action items with owners and deadlines"
 - **Reading notes**: "Ask for key insights and personal rating"
@@ -180,7 +180,7 @@ Would you like me to add more details about specific habit strategies from the b
 
 ### Smart Linking and Discovery
 
-jade-note automatically suggests connections between your notes:
+flint-note automatically suggests connections between your notes:
 
 **You:** "Search for notes about habit formation"
 
@@ -296,7 +296,7 @@ Remember that all your notes are just Markdown files in folders. You can:
 **Problem**: Assistant says it can't locate specific notes.
 
 **Solution**:
-- Check that jade-note server is running (`npm start`)
+- Check that flint-note server is running (`npm start`)
 - Verify your workspace directory contains the notes
 - Try searching with different keywords
 
@@ -307,7 +307,7 @@ Remember that all your notes are just Markdown files in folders. You can:
 **Solution**:
 - Ensure note type names are filesystem-safe (no special characters)
 - Check that you have write permissions in your workspace
-- Look for error details in `.jade-note/mcp-server.log`
+- Look for error details in `.flint-note/mcp-server.log`
 
 ### "Links Not Working"
 
@@ -320,7 +320,7 @@ Remember that all your notes are just Markdown files in folders. You can:
 
 ## What's Next?
 
-As you use jade-note, you'll discover your own patterns and preferences:
+As you use flint-note, you'll discover your own patterns and preferences:
 
 1. **Week 1**: Focus on creating 2-3 core note types with basic agent instructions
 2. **Week 2**: Let AI start suggesting connections and improvements, refine agent instructions based on your workflow
@@ -330,7 +330,7 @@ As you use jade-note, you'll discover your own patterns and preferences:
 
 ### Advanced Integrations
 
-Consider integrating jade-note with:
+Consider integrating flint-note with:
 - **Git** for version control and collaboration
 - **Task managers** by having AI extract action items
 - **Calendar apps** by linking meeting notes to calendar events
@@ -338,7 +338,7 @@ Consider integrating jade-note with:
 
 ## Philosophy: Notes as Living Documents
 
-jade-note treats notes as living, evolving documents rather than static captures. Your AI assistant helps notes grow more valuable over time by:
+flint-note treats notes as living, evolving documents rather than static captures. Your AI assistant helps notes grow more valuable over time by:
 
 - Adding context and connections based on agent instructions
 - Extracting actionable information according to note type behaviors
@@ -353,4 +353,4 @@ This creates a knowledge base that becomes more useful the more you use it - a t
 
 **Ready to start?** Begin with a simple conversation: "What note types should I create for my work?" and let your AI assistant guide you into the future of note-taking.
 
-*jade-note: Where your notes and AI work together.*
+*flint-note: Where your notes and AI work together.*

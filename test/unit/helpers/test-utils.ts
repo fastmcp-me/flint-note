@@ -1,5 +1,5 @@
 /**
- * Shared test utilities for jade-note unit tests
+ * Shared test utilities for flint-note unit tests
  *
  * Provides common setup/teardown functions and test data creators
  * to reduce duplication across test files.
@@ -14,7 +14,7 @@ import { NoteTypeManager } from '../../../src/core/note-types.ts';
 import { SearchManager } from '../../../src/core/search.ts';
 import { LinkManager } from '../../../src/core/links.ts';
 import { ConfigManager } from '../../../src/utils/config.ts';
-import { JadeNoteServer } from '../../../src/server.ts';
+import { FlintNoteServer } from '../../../src/server.ts';
 
 /**
  * Test context containing all managers and workspace info
@@ -34,13 +34,13 @@ export interface TestContext {
  */
 export interface ServerTestContext {
   tempDir: string;
-  server: JadeNoteServer;
+  server: FlintNoteServer;
 }
 
 /**
  * Creates a unique temporary directory name for tests
  */
-export function createTempDirName(prefix = 'jade-note-test'): string {
+export function createTempDirName(prefix = 'flint-note-test'): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   return join(tmpdir(), `${prefix}-${timestamp}-${random}`);
@@ -82,9 +82,9 @@ export async function createTestServer(prefix?: string): Promise<ServerTestConte
 
   // Create basic workspace structure
   await fs.mkdir(join(tempDir, 'general'), { recursive: true });
-  await fs.mkdir(join(tempDir, '.jade-note'), { recursive: true });
+  await fs.mkdir(join(tempDir, '.flint-note'), { recursive: true });
 
-  const server = new JadeNoteServer({ workspacePath: tempDir, throwOnError: true });
+  const server = new FlintNoteServer({ workspacePath: tempDir, throwOnError: true });
   await server.initialize();
 
   return {
@@ -175,7 +175,7 @@ This book provides excellent insights into habit formation and breaking bad habi
   // Create another note with different metadata
   const anotherNoteWithMetadata = `---
 title: "Project Planning Notes"
-project: "jade-note"
+project: "flint-note"
 priority: "high"
 status: "in-progress"
 tags: ["planning", "development"]
@@ -186,7 +186,7 @@ updated: "2024-01-16T09:00:00Z"
 
 # Project Planning
 
-Planning notes for the jade-note project development.
+Planning notes for the flint-note project development.
 
 ## Next Steps
 - Implement search functionality

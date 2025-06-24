@@ -77,9 +77,9 @@ export class NoteTypeManager {
       // Ensure the note type directory exists
       const typePath = await this.workspace.ensureNoteType(name);
 
-      // Create the description file in the .jade-note config directory
+      // Create the description file in the .flint-note config directory
       const descriptionPath = path.join(
-        this.workspace.jadeNoteDir,
+        this.workspace.flintNoteDir,
         `${name}_description.md`
       );
       const descriptionContent = this.formatNoteTypeDescription(
@@ -181,7 +181,7 @@ export class NoteTypeManager {
     try {
       const typePath = this.workspace.getNoteTypePath(typeName);
       const descriptionPath = path.join(
-        this.workspace.jadeNoteDir,
+        this.workspace.flintNoteDir,
         `${typeName}_description.md`
       );
 
@@ -314,7 +314,7 @@ export class NoteTypeManager {
         ) {
           const typePath = path.join(workspaceRoot, entry.name);
           const descriptionPath = path.join(
-            this.workspace.jadeNoteDir,
+            this.workspace.flintNoteDir,
             `${entry.name}_description.md`
           );
 
@@ -387,12 +387,12 @@ export class NoteTypeManager {
     updates: NoteTypeUpdateRequest
   ): Promise<NoteTypeDescription> {
     try {
-      const noteType = await this.getNoteTypeDescription(typeName);
+      const _noteType = await this.getNoteTypeDescription(typeName);
 
       // Update description if provided
       if (updates.description) {
         const descriptionPath = path.join(
-          this.workspace.jadeNoteDir,
+          this.workspace.flintNoteDir,
           `${typeName}_description.md`
         );
         const newDescription = this.formatNoteTypeDescription(
@@ -452,8 +452,8 @@ export class NoteTypeManager {
    */
   async getMetadataSchema(typeName: string): Promise<MetadataSchema> {
     try {
-      const noteType = await this.getNoteTypeDescription(typeName);
-      return noteType.metadataSchema;
+      const _noteType = await this.getNoteTypeDescription(typeName);
+      return _noteType.metadataSchema;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
@@ -467,19 +467,19 @@ export class NoteTypeManager {
    */
   async updateMetadataSchema(typeName: string, schema: MetadataSchema): Promise<void> {
     try {
-      const noteType = await this.getNoteTypeDescription(typeName);
+      const _noteType = await this.getNoteTypeDescription(typeName);
 
       // Generate new description with updated schema
       const newDescription = this.formatNoteTypeDescription(
         typeName,
-        noteType.parsed.purpose,
-        noteType.parsed.agentInstructions,
+        _noteType.parsed.purpose,
+        _noteType.parsed.agentInstructions,
         schema
       );
 
       // Write updated description
       const descriptionPath = path.join(
-        this.workspace.jadeNoteDir,
+        this.workspace.flintNoteDir,
         `${typeName}_description.md`
       );
       await fs.writeFile(descriptionPath, newDescription, 'utf-8');

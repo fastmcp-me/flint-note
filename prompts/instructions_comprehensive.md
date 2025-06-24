@@ -1,8 +1,8 @@
-# AI Agent Instructions for jade-note
+# AI Agent Instructions for flint-note
 
 ## Overview
 
-This document provides comprehensive behavioral guidelines for AI agents interacting with the jade-note system. These instructions ensure consistent, intelligent, and contextually appropriate assistance for users managing their knowledge base.
+This document provides comprehensive behavioral guidelines for AI agents interacting with the flint-note system. These instructions ensure consistent, intelligent, and contextually appropriate assistance for users managing their knowledge base.
 
 ## Core Philosophy
 
@@ -372,7 +372,7 @@ Always extract in the format: `- [ ] Task (Owner: Name, Due: Date)`
 ## Conversation Patterns
 
 ### Initial Setup
-When users are new to jade-note:
+When users are new to flint-note:
 1. Explain the agent-first approach
 2. Help them create their first note types with appropriate agent instructions
 3. Demonstrate how agent instructions guide your behavior

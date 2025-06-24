@@ -145,7 +145,7 @@ dist
 ehthumbs.db
 Thumbs.db
 
-# jade-note specific
-.jade-note/mcp-server.log
-.jade-note/search-index.json
+# flint-note specific
+.flint-note/mcp-server.log
+.flint-note/search-index.json
 # Keep config.yml in version control but exclude logs and cache

@@ -1,8 +1,8 @@
-# jade-note Setup Guide
+# flint-note Setup Guide
 
 ## Overview
 
-jade-note is an agent-first note-taking application that uses the Model Context Protocol (MCP) to provide AI agents with direct access to your personal knowledge base. This guide will help you set up and start using jade-note.
+flint-note is an agent-first note-taking application that uses the Model Context Protocol (MCP) to provide AI agents with direct access to your personal knowledge base. This guide will help you set up and start using flint-note.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ jade-note is an agent-first note-taking application that uses the Model Context 
 1. **Clone or download the project:**
    ```bash
    git clone <repository-url>
-   cd jade-note
+   cd flint-note
    ```
 
 2. **Install dependencies:**
@@ -52,7 +52,7 @@ node src/server.ts --workspace /path/to/your/notes-directory
 
 ### 3. Start the MCP Server
 
-From the jade-note directory, start the server:
+From the flint-note directory, start the server:
 
 ```bash
 npm start
@@ -66,14 +66,14 @@ npm run dev
 
 ### 4. Configure Your MCP Client
 
-Add jade-note to your MCP client configuration. For Claude Desktop, add this to your `claude_desktop_config.json`:
+Add flint-note to your MCP client configuration. For Claude Desktop, add this to your `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "jade-note": {
+    "flint-note": {
       "command": "node",
-      "args": ["/path/to/jade-note/src/server.js", "--workspace", "/path/to/your/notes-directory"]
+      "args": ["/path/to/flint-note/src/server.js", "--workspace", "/path/to/your/notes-directory"]
     }
   }
 }
@@ -96,7 +96,7 @@ After initialization, your workspace will look like this:
 
 ```
 my-notes/
-├── .jade-note/
+├── .flint-note/
 │   ├── config.yml              # Configuration
 │   ├── search-index.json       # Search index
 │   └── mcp-server.log         # Server logs
@@ -111,21 +111,21 @@ my-notes/
 
 ## Configuration
 
-The configuration file (`.jade-note/config.yml`) contains:
+The configuration file (`.flint-note/config.yml`) contains:
 
 ```yaml
 version: "1.0.0"
 workspace_root: "."
 default_note_type: "general"
 mcp_server:
-  name: "jade-note"
+  name: "flint-note"
   version: "0.1.0"
   port: 3000
   log_level: "info"
-  log_file: ".jade-note/mcp-server.log"
+  log_file: ".flint-note/mcp-server.log"
 search:
   index_enabled: true
-  index_path: ".jade-note/search-index.json"
+  index_path: ".flint-note/search-index.json"
   rebuild_on_startup: false
   max_results: 50
 note_types:
@@ -136,7 +136,7 @@ note_types:
 
 ## Available MCP Tools
 
-jade-note exposes these tools to AI agents:
+flint-note exposes these tools to AI agents:
 
 ### Note Management
 - `create_note` - Create a new note in a specific type
@@ -149,9 +149,9 @@ jade-note exposes these tools to AI agents:
 - `list_note_types` - List all available note types
 
 ### Resources
-- `jade-note://types` - Available note types
-- `jade-note://recent` - Recently modified notes
-- `jade-note://stats` - Workspace statistics
+- `flint-note://types` - Available note types
+- `flint-note://recent` - Recently modified notes
+- `flint-note://stats` - Workspace statistics
 
 ## Usage Examples
 
@@ -198,7 +198,7 @@ npm run dev
 ### Project Structure
 
 ```
-jade-note/
+flint-note/
 ├── src/
 │   ├── server.js              # MCP server entry point
 │   ├── core/
@@ -224,11 +224,11 @@ jade-note/
 2. **MCP connection issues**
    - Verify the server is running with `npm start`
    - Check your MCP client configuration
-   - Look for errors in `.jade-note/mcp-server.log`
+   - Look for errors in `.flint-note/mcp-server.log`
 
 3. **Permission errors**
    - Ensure the user has write permissions to the workspace directory
-   - Check that the `.jade-note` directory can be created
+   - Check that the `.flint-note` directory can be created
 
 4. **Workspace not found errors**
    - Verify that the `--workspace` argument is provided correctly
@@ -237,11 +237,11 @@ jade-note/
 
 ### Logs
 
-Server logs are stored in `.jade-note/mcp-server.log`. Check this file for detailed error information.
+Server logs are stored in `.flint-note/mcp-server.log`. Check this file for detailed error information.
 
 ## Security Considerations
 
-- jade-note restricts all file operations to within your workspace directory
+- flint-note restricts all file operations to within your workspace directory
 - No external network access is required
 - All data stays on your local machine
 - Use version control (git) to backup your notes
@@ -262,9 +262,9 @@ MIT License - see LICENSE file for details
 
 For issues and questions:
 - Check the troubleshooting section above
-- Review the logs in `.jade-note/mcp-server.log`
+- Review the logs in `.flint-note/mcp-server.log`
 - Open an issue on the project repository
 
 ---
 
-*jade-note: Agent-first note-taking for the modern knowledge worker*
+*flint-note: Agent-first note-taking for the modern knowledge worker*

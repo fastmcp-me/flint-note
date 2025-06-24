@@ -1,5 +1,5 @@
 /**
- * Basic integration tests for jade-note MCP server
+ * Basic integration tests for flint-note MCP server
  * Tests that the server can start and stop correctly
  */
 
@@ -61,7 +61,7 @@ describe('MCP Server Integration', () => {
 
   test('should handle invalid workspace path gracefully', async () => {
     // Create a file, then try to use it as a workspace directory
-    // This should fail since you can't create .jade-note directory inside a file
+    // This should fail since you can't create .flint-note directory inside a file
     const tempFile = join(context.tempDir, 'not-a-directory');
     await fs.writeFile(tempFile, 'This is a file, not a directory', 'utf8');
 
@@ -72,7 +72,7 @@ describe('MCP Server Integration', () => {
       });
       assert.fail('Server should not start when workspace path is a file');
     } catch (error) {
-      // Expected to fail - server should detect it can't create .jade-note in a file
+      // Expected to fail - server should detect it can't create .flint-note in a file
       assert.ok(error instanceof Error, 'Should throw an error for invalid workspace');
       assert.ok(
         error.message.includes('exited unexpectedly') ||

@@ -1,6 +1,6 @@
 # Test Directory Structure
 
-This directory contains all tests for the jade-note project, organized into two main categories:
+This directory contains all tests for the flint-note project, organized into two main categories:
 
 ## Directory Structure
 

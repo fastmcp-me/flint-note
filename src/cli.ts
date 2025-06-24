@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * jade-note CLI Utility
+ * flint-note CLI Utility
  *
- * Command-line interface for managing jade-note vaults.
+ * Command-line interface for managing flint-note vaults.
  * Provides commands for creating, listing, switching, and managing vaults.
  */
 
@@ -150,7 +150,7 @@ class JadeNoteCli {
           break;
         default:
           console.error(`Unknown command: ${command}`);
-          console.error('Use "jade-note help" to see available commands.');
+          console.error('Use "flint-note help" to see available commands.');
           process.exit(1);
       }
     } catch (error) {
@@ -161,10 +161,10 @@ class JadeNoteCli {
   }
 
   showHelp(): void {
-    console.log(`jade-note CLI - Vault Management Utility
+    console.log(`flint-note CLI - Vault Management Utility
 
 USAGE:
-  jade-note <command> [arguments] [options]
+  flint-note <command> [arguments] [options]
 
 COMMANDS:`);
 
@@ -183,13 +183,13 @@ COMMANDS:`);
     }
 
     console.log(`EXAMPLES:
-  jade-note list
-  jade-note create work "Work Notes" ~/work-vault
-  jade-note create personal "Personal Notes" ~/personal --description "My personal knowledge base"
-  jade-note switch work
-  jade-note init --id=project --name="Project Notes"
-  jade-note current
-  jade-note update work --name "Work & Research"
+  flint-note list
+  flint-note create work "Work Notes" ~/work-vault
+  flint-note create personal "Personal Notes" ~/personal --description "My personal knowledge base"
+  flint-note switch work
+  flint-note init --id=project --name="Project Notes"
+  flint-note current
+  flint-note update work --name "Work & Research"
 
 GLOBAL CONFIG:
   Configuration is stored in: ${this.#globalConfig.getConfigDir()}
@@ -202,7 +202,7 @@ GLOBAL CONFIG:
     if (vaults.length === 0) {
       console.log('No vaults configured.');
       console.log(
-        'Use "jade-note create" or "jade-note init" to create your first vault.'
+        'Use "flint-note create" or "flint-note init" to create your first vault.'
       );
       return;
     }
@@ -226,7 +226,7 @@ GLOBAL CONFIG:
 
   async createVault(args: string[]): Promise<void> {
     if (args.length < 3) {
-      console.error('Usage: jade-note create <id> <name> <path> [options]');
+      console.error('Usage: flint-note create <id> <name> <path> [options]');
       process.exit(1);
     }
 
@@ -282,7 +282,7 @@ GLOBAL CONFIG:
 
   async switchVault(args: string[]): Promise<void> {
     if (args.length === 0) {
-      console.error('Usage: jade-note switch <id>');
+      console.error('Usage: flint-note switch <id>');
       process.exit(1);
     }
 
@@ -300,7 +300,7 @@ GLOBAL CONFIG:
 
   async removeVault(args: string[]): Promise<void> {
     if (args.length === 0) {
-      console.error('Usage: jade-note remove <id>');
+      console.error('Usage: flint-note remove <id>');
       process.exit(1);
     }
 
@@ -333,7 +333,7 @@ GLOBAL CONFIG:
     if (!currentVault) {
       console.log('⚠️  No vault is currently selected.');
       console.log(
-        'Use "jade-note list" to see available vaults or "jade-note create" to add a new one.'
+        'Use "flint-note list" to see available vaults or "flint-note create" to add a new one.'
       );
       return;
     }
@@ -356,7 +356,7 @@ GLOBAL CONFIG:
 
   async updateVault(args: string[]): Promise<void> {
     if (args.length === 0) {
-      console.error('Usage: jade-note update <id> [options]');
+      console.error('Usage: flint-note update <id> [options]');
       console.error('Options: --name <name>, --description <description>');
       process.exit(1);
     }
@@ -409,12 +409,12 @@ GLOBAL CONFIG:
       throw new Error(`Vault with ID '${id}' already exists`);
     }
 
-    // Check if current directory already has a jade-note vault
-    const jadeNoteDir = path.join(currentDir, '.jade-note');
+    // Check if current directory already has a flint-note vault
+    const flintNoteDir = path.join(currentDir, '.flint-note');
     let vaultExists = false;
 
     try {
-      await fs.access(jadeNoteDir);
+      await fs.access(flintNoteDir);
       vaultExists = true;
     } catch {
       // Vault doesn't exist, which is fine
@@ -422,7 +422,7 @@ GLOBAL CONFIG:
 
     if (vaultExists && !options.force) {
       throw new Error(
-        'Directory already contains a jade-note vault. Use --force to reinitialize.'
+        'Directory already contains a flint-note vault. Use --force to reinitialize.'
       );
     }
 

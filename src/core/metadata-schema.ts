@@ -2,7 +2,7 @@
  * Metadata Schema System
  *
  * Provides structured metadata schema definition, parsing, and validation
- * for note types in jade-note.
+ * for note types in flint-note.
  */
 
 export type MetadataFieldType =

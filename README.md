@@ -1,8 +1,8 @@
-# jade-note Design Document
+# flint-note Design Document
 
 ## Overview
 
-**jade-note** is an agent-first note-taking application designed to help users maintain and interact with their personal knowledge base through natural language interfaces. Unlike traditional note-taking apps that add AI features as an afterthought, jade-note is architected from the ground up to be agent-native.
+**flint-note** is an agent-first note-taking application designed to help users maintain and interact with their personal knowledge base through natural language interfaces. Unlike traditional note-taking apps that add AI features as an afterthought, flint-note is architected from the ground up to be agent-native.
 
 > 🤖 **AI Integration**: Ready-to-use prompts for all AI models are available in the [`prompts/`](./prompts/) directory. See [`prompts/README.md`](./prompts/README.md) for setup instructions.
 
@@ -25,11 +25,11 @@ Create a note-taking system where:
 
 ## Multi-Vault System
 
-jade-note supports multiple vaults, allowing you to organize different collections of notes separately. Each vault is an independent workspace with its own note types, configuration, and notes. This is perfect for separating personal notes, work projects, research topics, or any other organizational structure you prefer.
+flint-note supports multiple vaults, allowing you to organize different collections of notes separately. Each vault is an independent workspace with its own note types, configuration, and notes. This is perfect for separating personal notes, work projects, research topics, or any other organizational structure you prefer.
 
 ### Key Features
 
-- **Platform-specific storage**: Configuration stored in appropriate system directories (`~/.config/jade-note` on Unix, `%APPDATA%\jade-note` on Windows)
+- **Platform-specific storage**: Configuration stored in appropriate system directories (`~/.config/flint-note` on Unix, `%APPDATA%\flint-note` on Windows)
 - **Easy switching**: Switch between vaults instantly without restarting the server
 - **Independent workspaces**: Each vault has its own note types and configuration
 - **Legacy support**: Automatically migrates existing workspaces to the vault system
@@ -49,37 +49,37 @@ You can manage vaults through both the MCP server tools and the command-line int
 #### Command Line Interface
 ```bash
 # List all vaults
-jade-note list
+flint-note list
 
 # Create a new vault
-jade-note create work "Work Notes" ~/work-vault
+flint-note create work "Work Notes" ~/work-vault
 
 # Switch to a vault
-jade-note switch work
+flint-note switch work
 
 # Initialize current directory as a vault
-jade-note init --id=project --name="Project Notes"
+flint-note init --id=project --name="Project Notes"
 
 # Show current vault
-jade-note current
+flint-note current
 
 # Update vault information
-jade-note update work --name "Work & Research"
+flint-note update work --name "Work & Research"
 
 # Remove a vault (files not deleted)
-jade-note remove work
+flint-note remove work
 ```
 
 ### Getting Started with Vaults
 
-1. **First time setup**: When you first run jade-note, it will check for existing workspaces and offer to migrate them
-2. **Create your first vault**: Use `create_vault` tool or `jade-note create` command
-3. **Switch between vaults**: Use `switch_vault` tool or `jade-note switch` command
+1. **First time setup**: When you first run flint-note, it will check for existing workspaces and offer to migrate them
+2. **Create your first vault**: Use `create_vault` tool or `flint-note create` command
+3. **Switch between vaults**: Use `switch_vault` tool or `flint-note switch` command
 4. **Organize by purpose**: Create separate vaults for work, personal, research, projects, etc.
 
 ### System Prompts and Multi-Vault Context
 
-When working with multi-vault systems, jade-note automatically provides context to AI agents about the current vault and its purpose. This enables intelligent, vault-aware assistance:
+When working with multi-vault systems, flint-note automatically provides context to AI agents about the current vault and its purpose. This enables intelligent, vault-aware assistance:
 
 - **Current Vault Context**: All MCP tool responses include information about which vault is currently active
 - **Vault-Specific Behavior**: Agents understand the purpose and context of each vault (work, personal, research, etc.)
@@ -187,8 +187,8 @@ Expected frontmatter or metadata fields for this note type:
 ### File System Structure
 
 ```
-jade-note-workspace/
-├── .jade-note/
+flint-note-workspace/
+├── .flint-note/
 │   ├── config.yml              # Global configuration
 │   ├── search-index.json       # Search index cache
 │   └── mcp-server.log         # MCP server logs
@@ -267,7 +267,7 @@ Would definitely recommend to anyone interested in personal development.
 
 ### MCP Server Interface
 
-The jade-note MCP server exposes the following tools and resources:
+The flint-note MCP server exposes the following tools and resources:
 
 #### Tools
 
@@ -296,11 +296,11 @@ The jade-note MCP server exposes the following tools and resources:
 
 | Resource URI | Description | Content |
 |:-------------|:------------|:--------|
-| `jade-note://vaults` | All configured vaults | JSON list of vault configurations |
-| `jade-note://current-vault` | Current active vault information | JSON with vault details and stats |
-| `jade-note://types` | Available note types and descriptions | JSON list of types |
-| `jade-note://recent` | Recently modified notes | JSON list of recent notes |
-| `jade-note://stats` | Workspace statistics | JSON with counts, types, etc. |
+| `flint-note://vaults` | All configured vaults | JSON list of vault configurations |
+| `flint-note://current-vault` | Current active vault information | JSON with vault details and stats |
+| `flint-note://types` | Available note types and descriptions | JSON list of types |
+| `flint-note://recent` | Recently modified notes | JSON list of recent notes |
+| `flint-note://stats` | Workspace statistics | JSON with counts, types, etc. |
 
 ## MVP Feature Set
 
@@ -336,7 +336,7 @@ The jade-note MCP server exposes the following tools and resources:
 
 ## Vault Initialization
 
-When jade-note initializes a new vault, it automatically creates several default note types to provide a comprehensive foundation for knowledge management. These pre-configured note types come with optimized agent instructions and metadata schemas.
+When flint-note initializes a new vault, it automatically creates several default note types to provide a comprehensive foundation for knowledge management. These pre-configured note types come with optimized agent instructions and metadata schemas.
 
 ### Default Note Types
 
@@ -475,7 +475,7 @@ When jade-note initializes a new vault, it automatically creates several default
 
 ### Vault Initialization Process
 
-1. **Create vault structure**: Initialize `.jade-note/` directory with configuration
+1. **Create vault structure**: Initialize `.flint-note/` directory with configuration
 2. **Generate default config**: Create `config.yml` with optimal defaults
 3. **Create note type directories**: Set up folders for all default note types
 4. **Generate description files**: Create `_description.md` for each note type with instructions and schemas
@@ -494,7 +494,7 @@ The initialization ensures users have a rich, immediately usable knowledge manag
 
 ### Configuration Schema
 
-#### Global Configuration (~/.jade-note/config.yml)
+#### Global Configuration (~/.flint-note/config.yml)
 ```yaml
 # Global vault registry
 vaults:
@@ -517,7 +517,7 @@ mcp_server:
   auto_switch_vault: true  # Switch vault context based on MCP client requests
 ```
 
-#### Per-Vault Configuration (.jade-note/config.yml in each vault)
+#### Per-Vault Configuration (.flint-note/config.yml in each vault)
 ```yaml
 # Individual vault configuration
 vault_id: "work"
@@ -525,7 +525,7 @@ workspace_root: "."
 default_note_type: "general"
 search:
   index_enabled: true
-  index_path: ".jade-note/search-index.json"
+  index_path: ".flint-note/search-index.json"
 note_types:
   auto_create_directories: true
   require_descriptions: true
@@ -603,10 +603,10 @@ Would you like to switch to a different vault or create a new one?
 
 #### Initializing a New Vault
 ```
-User: "Set up a new jade-note vault in my documents folder"
+User: "Set up a new flint-note vault in my documents folder"
 
-Agent: I'll initialize a new jade-note vault for you with all the default note types.
-[Creates .jade-note directory structure, config.yml, and default note types]
+Agent: I'll initialize a new flint-note vault for you with all the default note types.
+[Creates .flint-note directory structure, config.yml, and default note types]
 
 Vault initialized successfully! I've created the following note types for you:
 - **daily**: For tracking daily events and reflections

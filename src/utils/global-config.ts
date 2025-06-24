@@ -1,7 +1,7 @@
 /**
  * Global Configuration Utilities
  *
- * Manages global jade-note configuration including vault registry,
+ * Manages global flint-note configuration including vault registry,
  * platform-specific config directories, and vault switching.
  */
 
@@ -49,23 +49,23 @@ export class GlobalConfigManager {
 
     // Check for XDG_CONFIG_HOME first (for testing and Linux systems)
     if (process.env.XDG_CONFIG_HOME) {
-      return path.join(process.env.XDG_CONFIG_HOME, 'jade-note');
+      return path.join(process.env.XDG_CONFIG_HOME, 'flint-note');
     }
 
     switch (platform) {
       case 'win32':
         // Windows: Use APPDATA or fallback to user profile
         return process.env.APPDATA
-          ? path.join(process.env.APPDATA, 'jade-note')
-          : path.join(homeDir, 'AppData', 'Roaming', 'jade-note');
+          ? path.join(process.env.APPDATA, 'flint-note')
+          : path.join(homeDir, 'AppData', 'Roaming', 'flint-note');
 
       case 'darwin':
         // macOS: Use Application Support directory
-        return path.join(homeDir, 'Library', 'Application Support', 'jade-note');
+        return path.join(homeDir, 'Library', 'Application Support', 'flint-note');
 
       default:
         // Unix-like systems: Use ~/.config
-        return path.join(homeDir, '.config', 'jade-note');
+        return path.join(homeDir, '.config', 'flint-note');
     }
   }
 
@@ -477,10 +477,10 @@ export async function initializeVaultSystem(): Promise<string> {
   // No current vault - use current working directory
   const legacyPath = process.cwd();
 
-  // Check if legacy path has a jade-note workspace
-  const legacyJadeNoteDir = path.join(legacyPath, '.jade-note');
+  // Check if legacy path has a flint-note workspace
+  const legacyFlintNoteDir = path.join(legacyPath, '.flint-note');
   try {
-    await fs.access(legacyJadeNoteDir);
+    await fs.access(legacyFlintNoteDir);
     // Legacy workspace exists - migrate it to vault system
     await globalConfig.addVault(
       'default',

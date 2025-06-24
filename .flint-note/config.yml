@@ -5,7 +5,7 @@ mcp_server:
   log_level: info
 search:
   index_enabled: true
-  index_path: .jade-note/search-index.json
+  index_path: .flint-note/search-index.json
 note_types:
   auto_create_directories: true
   require_descriptions: true

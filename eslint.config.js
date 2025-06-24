@@ -95,6 +95,6 @@ export default [
     }
   },
   {
-    ignores: ['node_modules/', 'dist/', '.jade-note/']
+    ignores: ['node_modules/', 'dist/', '.flint-note/']
   }
 ];

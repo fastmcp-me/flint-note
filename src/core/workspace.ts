@@ -1,7 +1,7 @@
 /**
  * Workspace Manager
  *
- * Handles initialization and management of jade-note workspaces,
+ * Handles initialization and management of flint-note workspaces,
  * including directory structure, configuration, and default note types.
  */
 
@@ -45,7 +45,7 @@ interface DefaultNoteType {
 
 export class Workspace {
   public readonly rootPath: string;
-  public readonly jadeNoteDir: string;
+  public readonly flintNoteDir: string;
   public readonly configPath: string;
   public readonly searchIndexPath: string;
   public readonly logPath: string;
@@ -53,10 +53,10 @@ export class Workspace {
 
   constructor(rootPath: string) {
     this.rootPath = path.resolve(rootPath);
-    this.jadeNoteDir = path.join(this.rootPath, '.jade-note');
-    this.configPath = path.join(this.jadeNoteDir, 'config.yml');
-    this.searchIndexPath = path.join(this.jadeNoteDir, 'search-index.json');
-    this.logPath = path.join(this.jadeNoteDir, 'mcp-server.log');
+    this.flintNoteDir = path.join(this.rootPath, '.flint-note');
+    this.configPath = path.join(this.flintNoteDir, 'config.yml');
+    this.searchIndexPath = path.join(this.flintNoteDir, 'search-index.json');
+    this.logPath = path.join(this.flintNoteDir, 'mcp-server.log');
   }
 
   /**
@@ -64,8 +64,8 @@ export class Workspace {
    */
   async initialize(): Promise<void> {
     try {
-      // Create .jade-note directory if it doesn't exist
-      await this.ensureDirectory(this.jadeNoteDir);
+      // Create .flint-note directory if it doesn't exist
+      await this.ensureDirectory(this.flintNoteDir);
 
       // Load or create configuration
       await this.loadOrCreateConfig();
@@ -86,8 +86,8 @@ export class Workspace {
    */
   async initializeVault(): Promise<void> {
     try {
-      // Create .jade-note directory if it doesn't exist
-      await this.ensureDirectory(this.jadeNoteDir);
+      // Create .flint-note directory if it doesn't exist
+      await this.ensureDirectory(this.flintNoteDir);
 
       // Load or create configuration
       await this.loadOrCreateConfig();
@@ -153,7 +153,7 @@ export class Workspace {
       },
       search: {
         index_enabled: true,
-        index_path: '.jade-note/search-index.json'
+        index_path: '.flint-note/search-index.json'
       },
       note_types: {
         auto_create_directories: true,
@@ -260,9 +260,9 @@ Expected frontmatter fields:
     const typePath = path.join(this.rootPath, typeName);
     await this.ensureDirectory(typePath);
 
-    // Create description file in .jade-note config directory if required and doesn't exist
+    // Create description file in .flint-note config directory if required and doesn't exist
     if (this.config?.note_types.require_descriptions) {
-      const descriptionPath = path.join(this.jadeNoteDir, `${typeName}_description.md`);
+      const descriptionPath = path.join(this.flintNoteDir, `${typeName}_description.md`);
       try {
         await fs.access(descriptionPath);
       } catch (error) {
@@ -282,7 +282,7 @@ Expected frontmatter fields:
   isValidNoteTypeName(name: string): boolean {
     // Must be non-empty, contain only safe characters, and not be a reserved name
     const validPattern = /^[a-zA-Z0-9_-]+$/;
-    const reservedNames = ['.jade-note', '.', '..', 'CON', 'PRN', 'AUX', 'NUL'];
+    const reservedNames = ['.flint-note', '.', '..', 'CON', 'PRN', 'AUX', 'NUL'];
 
     return (
       Boolean(name) &&
@@ -841,9 +841,9 @@ Expected frontmatter fields:
     const typePath = path.join(this.rootPath, noteType.name);
     await this.ensureDirectory(typePath);
 
-    // Create description file in .jade-note config directory
+    // Create description file in .flint-note config directory
     const descriptionPath = path.join(
-      this.jadeNoteDir,
+      this.flintNoteDir,
       `${noteType.name}_description.md`
     );
     const descriptionContent = this.formatNoteTypeDescription(noteType);
@@ -900,11 +900,11 @@ Expected frontmatter fields:
    * Create welcome note explaining the vault structure
    */
   async createWelcomeNote(): Promise<void> {
-    const welcomePath = path.join(this.rootPath, 'Welcome to Jade Note.md');
+    const welcomePath = path.join(this.rootPath, 'Welcome to Flint Note.md');
 
-    const welcomeContent = `# Welcome to Your Jade Note Vault
+    const welcomeContent = `# Welcome to Your Flint Note Vault
 
-Congratulations! Your jade-note vault has been successfully initialized with a comprehensive set of default note types designed to help you capture and organize your knowledge effectively.
+Congratulations! Your flint-note vault has been successfully initialized with a comprehensive set of default note types designed to help you capture and organize your knowledge effectively.
 
 ## Your Default Note Types
 

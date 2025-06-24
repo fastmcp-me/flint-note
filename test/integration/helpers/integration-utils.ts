@@ -1,5 +1,5 @@
 /**
- * Shared integration test utilities for jade-note MCP server testing
+ * Shared integration test utilities for flint-note MCP server testing
  *
  * Provides common functions for server lifecycle management, workspace setup,
  * and MCP protocol communication testing.
@@ -30,7 +30,7 @@ export interface ServerStartupOptions {
 /**
  * Creates a unique temporary directory name for integration tests
  */
-export function createTempDirName(prefix = 'jade-note-integration'): string {
+export function createTempDirName(prefix = 'flint-note-integration'): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   return join(tmpdir(), `${prefix}-${timestamp}-${random}`);
@@ -47,7 +47,7 @@ export async function createIntegrationWorkspace(
 
   // Create basic workspace structure
   await fs.mkdir(join(tempDir, 'general'), { recursive: true });
-  await fs.mkdir(join(tempDir, '.jade-note'), { recursive: true });
+  await fs.mkdir(join(tempDir, '.flint-note'), { recursive: true });
 
   return { tempDir };
 }
@@ -250,12 +250,12 @@ export async function createTestNoteType(
   const noteTypePath = join(workspacePath, noteType);
   await fs.mkdir(noteTypePath, { recursive: true });
 
-  // Create .jade-note directory if it doesn't exist
-  const jadeNoteDir = join(workspacePath, '.jade-note');
-  await fs.mkdir(jadeNoteDir, { recursive: true });
+  // Create .flint-note directory if it doesn't exist
+  const flintNoteDir = join(workspacePath, '.flint-note');
+  await fs.mkdir(flintNoteDir, { recursive: true });
 
-  // Write description file to .jade-note config directory
-  const descriptionPath = join(jadeNoteDir, `${noteType}_description.md`);
+  // Write description file to .flint-note config directory
+  const descriptionPath = join(flintNoteDir, `${noteType}_description.md`);
   await fs.writeFile(descriptionPath, description, 'utf8');
 }
 

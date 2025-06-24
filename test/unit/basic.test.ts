@@ -1,5 +1,5 @@
 /**
- * Basic tests for jade-note project structure and imports
+ * Basic tests for flint-note project structure and imports
  * Tests core class imports, configuration, and workspace functionality
  */
 

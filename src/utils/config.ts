@@ -1,7 +1,7 @@
 /**
  * Configuration Utilities
  *
- * Utilities for loading, validating, and managing jade-note configuration.
+ * Utilities for loading, validating, and managing flint-note configuration.
  */
 
 import path from 'path';
@@ -46,7 +46,7 @@ export class ConfigManager {
   public config: WorkspaceConfig | null = null;
 
   constructor(workspaceRoot: string) {
-    this.#configPath = path.join(workspaceRoot, '.jade-note', 'config.yml');
+    this.#configPath = path.join(workspaceRoot, '.flint-note', 'config.yml');
   }
 
   /**
@@ -102,15 +102,15 @@ export class ConfigManager {
       workspace_root: '.',
       default_note_type: 'general',
       mcp_server: {
-        name: 'jade-note',
+        name: 'flint-note',
         version: '0.1.0',
         port: 3000,
         log_level: 'info',
-        log_file: '.jade-note/mcp-server.log'
+        log_file: '.flint-note/mcp-server.log'
       },
       search: {
         index_enabled: true,
-        index_path: '.jade-note/search-index.json',
+        index_path: '.flint-note/search-index.json',
         rebuild_on_startup: false,
         max_results: 50
       },
@@ -191,7 +191,7 @@ export class ConfigManager {
    */
   isValidNoteTypeName(name: string): boolean {
     const validPattern = /^[a-zA-Z0-9_-]+$/;
-    const reservedNames = ['.jade-note', '.', '..', 'CON', 'PRN', 'AUX', 'NUL'];
+    const reservedNames = ['.flint-note', '.', '..', 'CON', 'PRN', 'AUX', 'NUL'];
 
     return (
       Boolean(name) &&

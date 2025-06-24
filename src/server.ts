@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * jade-note MCP Server
+ * flint-note MCP Server
  *
- * Main entry point for the jade-note MCP server that provides
+ * Main entry point for the flint-note MCP server that provides
  * agent-first note-taking functionality.
  */
 
@@ -113,7 +113,7 @@ interface UpdateVaultArgs {
   description?: string;
 }
 
-export class JadeNoteServer {
+export class FlintNoteServer {
   #server: Server;
   #workspace!: Workspace;
   #noteManager!: NoteManager;
@@ -127,7 +127,7 @@ export class JadeNoteServer {
     this.#config = config;
     this.#server = new Server(
       {
-        name: 'jade-note',
+        name: 'flint-note',
         version: '0.1.0'
       },
       {
@@ -150,14 +150,14 @@ export class JadeNoteServer {
       this.#workspace = new Workspace(workspacePath);
 
       // Check if workspace has any note type descriptions
-      const jadeNoteDir = path.join(workspacePath, '.jade-note');
+      const flintNoteDir = path.join(workspacePath, '.flint-note');
       let hasDescriptions = false;
 
       try {
-        const configEntries = await fs.readdir(jadeNoteDir);
-        hasDescriptions = configEntries.some(entry => entry.endsWith('_description.md'));
+        const files = await fs.readdir(flintNoteDir);
+        hasDescriptions = files.some(entry => entry.endsWith('_description.md'));
       } catch {
-        // .jade-note directory doesn't exist or is empty
+        // .flint-note directory doesn't exist or is empty
         hasDescriptions = false;
       }
 
@@ -180,19 +180,19 @@ export class JadeNoteServer {
         const currentVault = this.#globalConfig.getCurrentVault();
         if (currentVault) {
           console.error(
-            `jade-note server initialized successfully with vault: ${currentVault.name}`
+            `flint-note server initialized successfully with vault: ${currentVault.name}`
           );
         } else {
-          console.error('jade-note server initialized successfully (no vault selected)');
+          console.error('flint-note server initialized successfully (no vault selected)');
         }
       } else {
         console.error(
-          `jade-note server initialized successfully with workspace: ${workspacePath}`
+          `flint-note server initialized successfully with workspace: ${workspacePath}`
         );
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Failed to initialize jade-note server:', errorMessage);
+      console.error('Failed to initialize flint-note server:', errorMessage);
 
       if (this.#config.throwOnError) {
         throw error;
@@ -470,7 +470,7 @@ export class JadeNoteServer {
           {
             name: 'initialize_vault',
             description:
-              'Initialize a new jade-note vault with default note types (daily, reading, todos, projects, goals, games, movies)',
+              'Initialize a new flint-note vault with default note types (daily, reading, todos, projects, goals, games, movies)',
             inputSchema: {
               type: 'object',
               properties: {
@@ -660,19 +660,19 @@ export class JadeNoteServer {
       return {
         resources: [
           {
-            uri: 'jade-note://types',
+            uri: 'flint-note://types',
             mimeType: 'application/json',
             name: 'Available note types',
             description: 'List of all available note types with their descriptions'
           },
           {
-            uri: 'jade-note://recent',
+            uri: 'flint-note://recent',
             mimeType: 'application/json',
             name: 'Recently modified notes',
             description: 'List of recently modified notes'
           },
           {
-            uri: 'jade-note://stats',
+            uri: 'flint-note://stats',
             mimeType: 'application/json',
             name: 'Workspace statistics',
             description: 'Statistics about the current workspace'
@@ -687,11 +687,11 @@ export class JadeNoteServer {
 
       try {
         switch (uri) {
-          case 'jade-note://types':
+          case 'flint-note://types':
             return await this.#handleTypesResource();
-          case 'jade-note://recent':
+          case 'flint-note://recent':
             return await this.#handleRecentResource();
-          case 'jade-note://stats':
+          case 'flint-note://stats':
             return await this.#handleStatsResource();
           default:
             throw new Error(`Unknown resource: ${uri}`);
@@ -921,9 +921,9 @@ export class JadeNoteServer {
         throw new Error(`Invalid field: ${args.field}`);
     }
 
-    // Write the updated description to the file in .jade-note config directory
+    // Write the updated description to the file in .flint-note config directory
     const descriptionPath = path.join(
-      this.#workspace.jadeNoteDir,
+      this.#workspace.flintNoteDir,
       `${args.type_name}_description.md`
     );
     await fs.writeFile(descriptionPath, updatedDescription, 'utf-8');
@@ -991,7 +991,7 @@ export class JadeNoteServer {
     return {
       contents: [
         {
-          uri: 'jade-note://types',
+          uri: 'flint-note://types',
           mimeType: 'application/json',
           text: JSON.stringify(types, null, 2)
         }
@@ -1008,7 +1008,7 @@ export class JadeNoteServer {
     return {
       contents: [
         {
-          uri: 'jade-note://recent',
+          uri: 'flint-note://recent',
           mimeType: 'application/json',
           text: JSON.stringify(recentNotes, null, 2)
         }
@@ -1025,7 +1025,7 @@ export class JadeNoteServer {
     return {
       contents: [
         {
-          uri: 'jade-note://stats',
+          uri: 'flint-note://stats',
           mimeType: 'application/json',
           text: JSON.stringify(stats, null, 2)
         }
@@ -1047,12 +1047,12 @@ export class JadeNoteServer {
         throw new Error('Workspace not initialized');
       }
 
-      // Check if vault already exists (has .jade-note directory)
-      const jadeNoteDir = this.#workspace.jadeNoteDir;
+      // Check if vault already exists (has .flint-note directory)
+      const flintNoteDir = this.#workspace.flintNoteDir;
       let vaultExists = false;
 
       try {
-        await fs.access(jadeNoteDir);
+        await fs.access(flintNoteDir);
         vaultExists = true;
       } catch (_error) {
         // Vault doesn't exist, which is fine
@@ -1432,7 +1432,7 @@ function parseArgs(args: string[]): ServerConfig {
       i++; // Skip the next argument since we consumed it
     } else if (arg === '--help' || arg === '-h') {
       console.log(`
-jade-note MCP Server
+flint-note MCP Server
 
 Usage: node server.ts [options]
 
@@ -1441,7 +1441,7 @@ Options:
   --help, -h                           Show this help message
 
 Environment Variables:
-  JADE_NOTE_WORKSPACE                  Workspace path (deprecated, use --workspace instead)
+  FLINT_NOTE_WORKSPACE                  Workspace path (deprecated, use --workspace instead)
 `);
       process.exit(0);
     }
@@ -1452,19 +1452,19 @@ Environment Variables:
 
 async function main(): Promise<void> {
   const config = parseArgs(process.argv.slice(2));
-  const server = new JadeNoteServer(config);
+  const server = new FlintNoteServer(config);
   await server.initialize();
   await server.run();
 }
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.error('Shutting down jade-note server...');
+  console.error('Shutting down flint-note server...');
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.error('Shutting down jade-note server...');
+  console.error('Shutting down flint-note server...');
   process.exit(0);
 });
 

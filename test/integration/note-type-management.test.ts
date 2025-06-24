@@ -1,6 +1,6 @@
 /**
  * Integration tests for note type management through MCP protocol
- * Tests note type creation, updates, and information retrieval via the jade-note MCP server
+ * Tests note type creation, updates, and information retrieval via the flint-note MCP server
  */
 
 import { test, describe, beforeEach, afterEach } from 'node:test';
@@ -127,17 +127,17 @@ describe('Note Type Management Integration', () => {
       );
 
       // Verify directory was created
-      const typePath = join(context.tempDir, 'meetings');
+      const _typePath = join(context.tempDir, 'meetings');
       const dirExists = await fs
-        .access(typePath)
+        .access(_typePath)
         .then(() => true)
         .catch(() => false);
       assert.ok(dirExists, 'Note type directory should exist');
 
-      // Verify description file was created in .jade-note config directory
+      // Verify description file was created in .flint-note config directory
       const descriptionPath = join(
         context.tempDir,
-        '.jade-note',
+        '.flint-note',
         'meetings_description.md'
       );
       const descExists = await fs
@@ -175,7 +175,7 @@ describe('Note Type Management Integration', () => {
       // Verify agent instructions are stored in description file
       const descriptionPath = join(
         context.tempDir,
-        '.jade-note',
+        '.flint-note',
         'project-tasks_description.md'
       );
       const descriptionExist = await fs
@@ -220,10 +220,10 @@ describe('Note Type Management Integration', () => {
       );
 
       // Verify files were created (agent instructions are stored in description file)
-      const typePath = join(context.tempDir, 'research-papers');
+      const _typePath = join(context.tempDir, 'research-papers');
       const descriptionPath = join(
         context.tempDir,
-        '.jade-note',
+        '.flint-note',
         'research-papers_description.md'
       );
 
@@ -386,7 +386,7 @@ describe('Note Type Management Integration', () => {
       // Verify file was updated
       const descriptionPath = join(
         context.tempDir,
-        '.jade-note',
+        '.flint-note',
         'updateable_description.md'
       );
       const descContent = await fs.readFile(descriptionPath, 'utf8');
@@ -415,7 +415,7 @@ describe('Note Type Management Integration', () => {
       // Verify description was updated
       const descriptionPath = join(
         context.tempDir,
-        '.jade-note',
+        '.flint-note',
         'updateable_description.md'
       );
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
@@ -449,7 +449,7 @@ describe('Note Type Management Integration', () => {
       // Verify instructions were updated in description file
       const descriptionPath = join(
         context.tempDir,
-        '.jade-note',
+        '.flint-note',
         'updateable_description.md'
       );
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
@@ -700,23 +700,23 @@ reviewed: boolean`
       });
 
       // Verify note type directory exists but should be empty (no description file)
-      const typePath = join(context.tempDir, 'structured');
-      const files = await fs.readdir(typePath);
+      const _typePath = join(context.tempDir, 'structured');
+      const files = await fs.readdir(_typePath);
 
-      // Note type directory should be empty since description is in .jade-note
+      // Note type directory should be empty since description is in .flint-note
       assert.strictEqual(files.length, 0, 'Note type directory should be empty');
 
-      // Verify description file exists in .jade-note config directory
+      // Verify description file exists in .flint-note config directory
       const descriptionPath = join(
         context.tempDir,
-        '.jade-note',
+        '.flint-note',
         'structured_description.md'
       );
       const descExists = await fs
         .access(descriptionPath)
         .then(() => true)
         .catch(() => false);
-      assert.ok(descExists, 'Description file should exist in .jade-note directory');
+      assert.ok(descExists, 'Description file should exist in .flint-note directory');
     });
 
     test('should handle concurrent note type operations', async () => {
@@ -735,9 +735,9 @@ reviewed: boolean`
 
       // Verify all directories were created
       for (let i = 1; i <= 3; i++) {
-        const typePath = join(context.tempDir, `concurrent-${i}`);
+        const _typePath = join(context.tempDir, `concurrent-${i}`);
         const dirExists = await fs
-          .access(typePath)
+          .access(_typePath)
           .then(() => true)
           .catch(() => false);
         assert.ok(dirExists, `Concurrent note type ${i} directory should exist`);
