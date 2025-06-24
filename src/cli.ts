@@ -13,6 +13,8 @@ import { resolvePath, isPathSafe } from './utils/path.ts';
 import fs from 'fs/promises';
 import path from 'path';
 import process from 'process';
+import { fileURLToPath } from 'node:url';
+import { resolve, normalize } from 'node:path';
 
 interface CliCommand {
   name: string;
@@ -505,8 +507,19 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// Start the CLI
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Check if this module is being run directly (cross-platform compatible)
+function isMainModule(): boolean {
+  try {
+    const currentFile = normalize(resolve(fileURLToPath(import.meta.url)));
+    const mainFile = normalize(resolve(process.argv[1]));
+    return currentFile === mainFile;
+  } catch {
+    // Fallback to original logic if URL parsing fails
+    return import.meta.url === `file://${process.argv[1]}`;
+  }
+}
+
+if (isMainModule()) {
   main().catch((error: Error) => {
     console.error('Fatal error:', error.message);
     process.exit(1);
