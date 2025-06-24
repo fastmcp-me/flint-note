@@ -190,17 +190,6 @@ export class Workspace {
     const defaultTypePath = path.join(this.rootPath, defaultType);
 
     await this.ensureDirectory(defaultTypePath);
-
-    // Create _description.md if it doesn't exist
-    const descriptionPath = path.join(defaultTypePath, '_description.md');
-    try {
-      await fs.access(descriptionPath);
-    } catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-        const defaultDescription = this.getDefaultNoteTypeDescription(defaultType);
-        await fs.writeFile(descriptionPath, defaultDescription, 'utf-8');
-      }
-    }
   }
 
   /**

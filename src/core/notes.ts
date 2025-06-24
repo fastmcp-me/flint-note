@@ -270,8 +270,6 @@ export class NoteManager {
 
     formattedContent += '---\n\n';
 
-    // Simple format with title and content
-    formattedContent += `# ${title}\n\n`;
     formattedContent += content;
 
     return formattedContent;
