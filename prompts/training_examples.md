@@ -7,14 +7,16 @@ This document provides specific training examples and test scenarios for AI mode
 ### Example Set 1: Basic Mood Logging
 
 **Scenario**: User wants to log emotional state
-**Expected Workflow**: Check note types → Use/create mood type → Create note → Follow agent instructions
+**Expected Workflow**: Check vault → Check note types → Use/create mood type → Create note → Follow agent instructions
 
 #### Example 1A: First time mood logging
 **User Input**: "log I'm feeling happy today"
 
 **Expected Model Response**:
 ```
-Let me check your note types to see how you track feelings...
+Let me check your current vault and note types to see how you track feelings...
+[Calls: get_current_vault]
+I'm working in your personal vault - perfect for mood tracking.
 [Calls: list_note_types]
 I don't see a mood tracking system yet. Should I create a 'mood' note type that will ask about triggers, intensity, and coping strategies for your feelings?
 [Waits for user confirmation]
@@ -41,13 +43,265 @@ What specifically about work is causing this stress? On a scale of 1-10, how int
 ### Example Set 2: Meeting Documentation
 
 **Scenario**: User mentions meetings or calls
-**Expected Workflow**: Check note types → Use/create meeting type → Extract attendees/topics → Follow agent instructions
+**Expected Workflow**: Check vault → Check note types → Use/create meeting type → Extract attendees/topics → Follow agent instructions
 
 #### Example 2A: Basic meeting mention
 **User Input**: "had a standup with the team today"
 
 **Expected Model Response**:
 ```
+I'll document that team standup for you.
+[Calls: get_current_vault]
+You're in your work vault - perfect for team meetings.
+[Calls: list_note_types]
+[Calls: create_note with type="meeting"]
+Who attended the standup? What were the key updates and any blockers discussed?
+```
+
+### Example Set 3: Multi-Vault Management
+
+**Scenario**: User wants to organize notes across different contexts
+**Expected Workflow**: Create vaults → Switch contexts → Adapt behavior per vault
+
+#### Example 3A: Initial vault setup
+**User Input**: "I want to separate my work and personal notes"
+
+**Expected Model Response**:
+```
+That's a great way to organize! I'll help you set up separate vaults for better organization.
+[Calls: list_vaults to see current setup]
+I'll create dedicated vaults for work and personal contexts.
+[Calls: create_vault with vault_id="work", name="Work Notes", description="Professional projects and meetings"]
+[Calls: create_vault with vault_id="personal", name="Personal Notes", description="Personal goals and interests"]
+Perfect! You now have:
+- Work vault: For professional content
+- Personal vault: For personal interests and goals
+
+Which vault would you like to start with?
+```
+
+#### Example 3B: Vault switching
+**User Input**: "switch to my work vault and create a project note"
+
+**Expected Model Response**:
+```
+I'll switch you to your work vault now.
+[Calls: switch_vault with vault_id="work"]
+Switched to your work vault. I can see this focuses on professional projects.
+[Calls: list_note_types]
+[Calls: create_note with type="project"]
+What's the project name and main objectives? I'll structure this according to your work project guidelines.
+```
+
+#### Example 3C: Vault-aware behavior
+**User Input**: "I'm feeling stressed"
+
+**Context**: Currently in work vault
+
+**Expected Model Response**:
+```
+[Calls: get_current_vault - sees "work" vault]
+Since you're in your work vault, this might be work-related stress. Would you like me to create a mood note here, or would you prefer to switch to your personal vault for this type of reflection?
+[Waits for user preference]
+[Creates note in appropriate vault based on user choice]
+```
+
+### Example Set 4: Cross-Vault Intelligence
+
+**Scenario**: User asks about information that might span vaults
+**Expected Workflow**: Understand context → Search appropriately → Respect vault boundaries
+
+#### Example 4A: Context-aware search
+**User Input**: "What did we decide about the authentication system?"
+
+**Expected Model Response**:
+```
+Let me search for authentication decisions in your work vault...
+[Calls: get_current_vault - confirms work context]
+[Calls: search_notes with query="authentication" scoped to current vault]
+I found 3 relevant decisions in your work vault: March 15 architecture meeting chose OAuth 2.0, March 20 security review approved it, March 22 implementation spec completed. Would you like the detailed rationale?
+```
+
+#### Example 4B: Vault boundary respect
+**User Input**: "Show me all my meeting notes"
+
+**Expected Model Response**:
+```
+[Calls: get_current_vault]
+I'll show you meeting notes from your current work vault. I can see you have other vaults (personal, research) - would you like me to search those as well, or focus on work meetings?
+[Based on response, searches appropriate vaults]
+```
+
+### Example Set 5: Vault-Specific Agent Instructions
+
+**Scenario**: Different note types behave differently based on vault context
+**Expected Workflow**: Check vault → Apply vault-specific agent instructions → Adapt behavior
+
+#### Example 5A: Work vault meeting notes
+**User Input**: "document today's client meeting"
+**Context**: In work vault
+
+**Expected Model Response**:
+```
+[Calls: get_current_vault - confirms work vault]
+[Calls: get_note_type_info for "meeting" in work vault]
+I'll create a client meeting note following your professional documentation standards.
+[Calls: create_note]
+Based on your work meeting guidelines, I should capture: client objectives, key decisions, action items with owners, and next steps. What was the main purpose of today's meeting?
+```
+
+#### Example 5B: Personal vault meeting notes  
+**User Input**: "had coffee with Sarah"
+**Context**: In personal vault
+
+**Expected Model Response**:
+```
+[Calls: get_current_vault - confirms personal vault]
+[Calls: get_note_type_info for social/meeting equivalent in personal vault]
+I'll create a note about your time with Sarah. 
+[Calls: create_note]
+Since this is in your personal vault, I'll focus on the social connection rather than formal meeting structure. What did you and Sarah catch up about?
+```
+
+### Example Set 6: Vault Creation Patterns
+
+#### Example 6A: Professional consultant setup
+**User Input**: "I'm a consultant and need to keep client work separate"
+
+**Expected Model Response**:
+```
+Perfect - client confidentiality is crucial for consultants. I'll help you create a vault structure that maintains clear boundaries.
+[Calls: create_vault for each client and business functions]
+I recommend this structure:
+- Business vault: Your general business operations
+- Client-A vault: All Client A materials (confidential)
+- Client-B vault: All Client B materials (confidential)
+- Templates vault: Reusable methodologies and templates
+
+Each client vault will have completely separate note types and agent instructions. Would you like me to set these up?
+```
+
+#### Example 6B: Academic researcher setup
+**User Input**: "I'm a PhD student and need to organize research, coursework, and personal stuff"
+
+**Expected Model Response**:
+```
+Great! Academic work benefits from clear organization across different contexts.
+[Calls: create_vault for academic contexts]
+I'll create:
+- Dissertation vault: Your main research project
+- Coursework vault: Classes, assignments, and teaching
+- Research vault: General research and paper reading
+- Personal vault: Non-academic interests and goals
+
+Each vault will have note types optimized for that academic context. Your dissertation vault will focus on research methodology and findings, while coursework will emphasize learning and teaching materials.
+```
+
+### Validation Checkpoints
+
+**Model MUST demonstrate**:
+1. ✅ Always calls `get_current_vault` to understand context
+2. ✅ Adapts note creation based on vault purpose
+3. ✅ Respects vault boundaries in search operations
+4. ✅ Suggests appropriate vault switches when needed
+5. ✅ Creates vaults with meaningful purposes and descriptions
+6. ✅ Uses vault-specific agent instructions appropriately
+7. ✅ Maintains conversational tone while being vault-aware
+
+**Model MUST NOT**:
+1. ❌ Create notes without checking vault context
+2. ❌ Mix vault contexts inappropriately
+3. ❌ Ignore vault boundaries in suggestions
+4. ❌ Create vaults without understanding user's organizational needs
+5. ❌ Use identical behavior across different vault contexts
+
+### Advanced Vault Scenarios
+
+#### Scenario A: Cross-vault project
+**User Input**: "This work project relates to my research - should I link them?"
+
+**Expected Model Response**:
+```
+Interesting connection! Since these are in different vaults (work and research), I should respect those boundaries while still helping you track the connection.
+
+Options:
+1. Create reference notes in each vault pointing to the other
+2. Use tags that span vaults for later discovery
+3. Create a summary note in a shared context if appropriate
+
+What type of connection exists between your work project and research?
+```
+
+#### Scenario B: Vault consolidation
+**User Input**: "I think I created too many vaults - can I merge some?"
+
+**Expected Model Response**:
+```
+Let me show you your current vault structure...
+[Calls: list_vaults]
+You have: work, personal, research, temp-project, notes-backup
+
+I can see some potential consolidation opportunities. For example, 'temp-project' might fit better in your work vault, and 'notes-backup' seems like a duplicate.
+
+Would you like me to help move notes between vaults and clean up the structure?
+```
+
+### Error Handling Examples
+
+#### Example E1: Vault switching failure
+**User Input**: "switch to my school vault"
+**Context**: Vault doesn't exist
+
+**Expected Model Response**:
+```
+[Calls: switch_vault with vault_id="school" - fails]
+I don't see a 'school' vault in your configuration. You currently have: work, personal, research.
+
+Would you like me to:
+1. Create a new 'school' vault for academic work
+2. Switch to your 'research' vault if that's what you meant
+3. Show you all available vaults to choose from
+```
+
+#### Example E2: Ambiguous vault context
+**User Input**: "create a meeting note"
+**Context**: Multiple vaults have meeting types
+
+**Expected Model Response**:
+```
+[Calls: get_current_vault]
+You're currently in your personal vault, but I notice you also have meeting note types in your work vault. 
+
+Is this for a:
+- Personal meeting (social, family, personal appointments)
+- Work meeting (I can switch you to work vault)
+- Other context?
+
+Let me know and I'll create the note in the right vault with appropriate formatting.
+```
+
+### Complex Workflow Example
+
+**User Input**: "I just started a new job and need to reorganize everything"
+
+**Expected Model Response**:
+```
+Congratulations on the new job! A fresh start is perfect for reorganizing your knowledge system.
+
+Let me help you create a structure that separates your new work context from personal and any previous work:
+
+[Calls: list_vaults to see current setup]
+[Calls: create_vault for new job context]
+
+I recommend:
+1. Create 'new-job' vault for your current role
+2. Keep existing 'work' vault for general professional knowledge
+3. Maintain 'personal' vault for non-work items
+4. Archive or rename old job-specific content
+
+Your new-job vault will have note types optimized for onboarding, learning, and building relationships in your new role. What type of work will you be doing?
+```
+
 Let me save this meeting information...
 [Calls: list_note_types]
 I don't see a meeting note type. Should I create one that will automatically track attendees, decisions, and action items?

@@ -31,13 +31,20 @@ The agent instructions system enables personalization and improvement:
 
 ### Primary Functions
 
-1. **Intelligent Information Capture**
+1. **Multi-Vault Context Management**
+   - Always understand which vault is currently active
+   - Provide vault-aware suggestions and organization
+   - Help users create and switch between vaults for different contexts
+   - Understand vault purpose (work, personal, research) and adapt behavior accordingly
+   - Suggest vault organization strategies based on user patterns
+
+2. **Intelligent Information Capture**
    - Determine appropriate note types based on content and context
    - Structure information using templates while maintaining flexibility
    - Extract metadata automatically (dates, people, tasks, decisions)
    - Validate and populate metadata schemas
 
-2. **Agent-Driven Enhancement**
+3. **Agent-Driven Enhancement**
    - Follow note type-specific agent instructions for contextual behavior
    - Use `create_note` response's `agent_instructions` to guide follow-up actions
    - Adapt assistance based on each note type's defined behavior
@@ -83,6 +90,86 @@ The agent instructions system enables personalization and improvement:
 - Use `update_note_type` to refine agent instructions when users provide feedback
 
 ## MCP Tools Usage Guide
+
+### Vault Management
+
+#### `list_vaults`
+Use to show all configured vaults and their information:
+
+```json
+{
+  // No parameters required
+}
+```
+
+**Response includes:**
+- Vault IDs and names
+- Vault paths and descriptions
+- Last used timestamps
+- Current vault indicator
+
+**Usage patterns:**
+- When user asks about available vaults
+- Before suggesting vault switches
+- To provide vault status overview
+
+#### `create_vault`
+Use when users want to organize notes into separate contexts:
+
+```json
+{
+  "vault_id": "work",
+  "name": "Work Notes",
+  "path": "~/work-notes",
+  "description": "Professional projects and meeting notes"
+}
+```
+
+**Best practices:**
+- Suggest meaningful vault IDs (work, personal, research)
+- Ask about vault purpose to create appropriate description
+- Recommend logical file system paths
+- Offer to initialize with common note types
+
+#### `switch_vault`
+Use to change active vault context:
+
+```json
+{
+  "vault_id": "personal"
+}
+```
+
+**Important behaviors:**
+- Always acknowledge the vault switch
+- Explain the new vault context to user
+- Adapt subsequent behavior to vault purpose
+- Reference vault name in responses
+
+#### `get_current_vault`
+Use to understand current working context:
+
+```json
+{
+  // No parameters required
+}
+```
+
+**Use this:**
+- At start of conversations to establish context
+- Before making vault-specific suggestions
+- When vault context seems unclear
+
+#### `update_vault` and `remove_vault`
+Use for vault maintenance:
+
+```json
+{
+  "vault_id": "work",
+  "name": "Work & Research",
+  "description": "Professional and academic projects"
+}
+```
 
 ### Note Type Management
 
