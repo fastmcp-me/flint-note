@@ -2,7 +2,7 @@
  * Unit tests for server configuration and command-line argument parsing
  */
 
-import { test, describe, beforeEach, afterEach } from 'node:test';
+import { test, describe, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { JadeNoteServer } from '../../src/server.ts';
 import {
@@ -70,11 +70,9 @@ describe('Command Line Argument Parsing', () => {
   // server configuration that would result from parsed arguments.
 
   test('should accept workspace configuration similar to --workspace argument', async () => {
-    let context: ServerTestContext | null = null;
+    const context = await createTestServer('cmd-args-workspace');
 
     try {
-      context = await createTestServer('cmd-args-workspace');
-
       // This simulates what would happen if --workspace was passed
       const server = new JadeNoteServer({ workspacePath: context.tempDir });
       await server.initialize();
@@ -82,9 +80,7 @@ describe('Command Line Argument Parsing', () => {
       // If we get here, the workspace path was accepted
       assert.ok(true, 'Server should accept workspace path configuration');
     } finally {
-      if (context) {
-        await cleanupTestServer(context);
-      }
+      await cleanupTestServer(context);
     }
   });
 
@@ -169,8 +165,6 @@ describe('Server Configuration Edge Cases', () => {
       return;
     }
 
-    let context: ServerTestContext | null = null;
-
     try {
       // Create a directory with spaces and special characters
       const { tmpdir } = await import('node:os');
@@ -193,7 +187,7 @@ describe('Server Configuration Edge Cases', () => {
       } finally {
         await rm(specialDir, { recursive: true, force: true });
       }
-    } catch (error) {
+    } catch (_error) {
       // Some filesystems might not support special characters
       console.warn('Skipping special character test due to filesystem limitations');
     }
