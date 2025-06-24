@@ -383,6 +383,7 @@ Expected frontmatter fields:
           'Ask about key events and accomplishments from the day',
           'Encourage reflection on lessons learned or insights gained',
           'Help identify priorities for the next day',
+          "When creating other notes types link to today's entry",
           'Suggest connections to previous daily entries when relevant'
         ],
         metadataSchema: {
@@ -406,16 +407,6 @@ Expected frontmatter fields:
               }
             },
             {
-              name: 'energy_level',
-              type: 'number',
-              description: 'Energy level',
-              required: false,
-              constraints: {
-                min: 1,
-                max: 10
-              }
-            },
-            {
               name: 'tags',
               type: 'array',
               description: 'Topics or themes',
@@ -429,6 +420,7 @@ Expected frontmatter fields:
         purpose: 'Track articles, papers, books, and other reading material',
         agentInstructions: [
           'Always ask for author information and publication context',
+          'Offer to search the web to fill in missing information',
           'Extract and organize key insights and takeaways',
           'Request a personal rating and ask what made it memorable',
           'Suggest connections to other readings or note types',
@@ -446,7 +438,7 @@ Expected frontmatter fields:
               name: 'author',
               type: 'string',
               description: 'Author or creator',
-              required: true
+              required: false
             },
             {
               name: 'type',
@@ -461,26 +453,20 @@ Expected frontmatter fields:
               name: 'status',
               type: 'select',
               description: 'Reading status',
-              required: true,
+              required: false,
               constraints: { options: ['to_read', 'reading', 'completed', 'abandoned'] }
             },
             {
               name: 'rating',
               type: 'number',
               description: 'Personal rating',
-              required: true,
+              required: false,
               constraints: { min: 1, max: 5 }
             },
             {
               name: 'tags',
               type: 'array',
               description: 'Categories or topics',
-              required: false
-            },
-            {
-              name: 'isbn',
-              type: 'string',
-              description: 'ISBN for books',
               required: false
             },
             {
@@ -503,6 +489,7 @@ Expected frontmatter fields:
         purpose: 'Track tasks, action items, and things that need to be done',
         agentInstructions: [
           'Help break down large tasks into smaller, actionable items',
+          'Titles should be concise, descriptive, and action oriented',
           'Ask about priorities and deadlines',
           'Suggest realistic timeframes and dependencies',
           'Encourage regular status updates and progress tracking',
@@ -520,7 +507,7 @@ Expected frontmatter fields:
               name: 'priority',
               type: 'select',
               description: 'Priority level',
-              required: true,
+              required: false,
               constraints: { options: ['low', 'medium', 'high', 'urgent'] }
             },
             {
@@ -549,13 +536,6 @@ Expected frontmatter fields:
               type: 'array',
               description: 'Categories or contexts',
               required: false
-            },
-            {
-              name: 'estimated_time',
-              type: 'number',
-              description: 'Time estimate in minutes',
-              required: false,
-              constraints: { min: 1 }
             }
           ]
         }
@@ -639,7 +619,7 @@ Expected frontmatter fields:
               name: 'category',
               type: 'select',
               description: 'Goal category',
-              required: true,
+              required: false,
               constraints: {
                 options: [
                   'personal',
@@ -655,7 +635,7 @@ Expected frontmatter fields:
               name: 'timeline',
               type: 'select',
               description: 'Target timeframe',
-              required: true,
+              required: false,
               constraints: { options: ['short_term', 'medium_term', 'long_term'] }
             },
             {
@@ -680,13 +660,6 @@ Expected frontmatter fields:
               required: false
             },
             {
-              name: 'progress',
-              type: 'number',
-              description: 'Progress percentage',
-              required: false,
-              constraints: { min: 0, max: 100 }
-            },
-            {
               name: 'tags',
               type: 'array',
               description: 'Related themes or skills',
@@ -699,7 +672,7 @@ Expected frontmatter fields:
         name: 'games',
         purpose: 'Track video games played, progress, and experiences',
         agentInstructions: [
-          'Ask about platform, genre, and gameplay style preferences',
+          'Ask about genre and gameplay style preferences',
           'Encourage documenting memorable moments and achievements',
           'Help track completion status and playtime',
           'Suggest connections to similar games or genres',
@@ -708,22 +681,6 @@ Expected frontmatter fields:
         metadataSchema: {
           fields: [
             { name: 'title', type: 'string', description: 'Game title', required: true },
-            {
-              name: 'platform',
-              type: 'select',
-              description: 'Gaming platform',
-              required: true,
-              constraints: {
-                options: [
-                  'PC',
-                  'PlayStation',
-                  'Xbox',
-                  'Nintendo_Switch',
-                  'Mobile',
-                  'Other'
-                ]
-              }
-            },
             { name: 'genre', type: 'array', description: 'Game genre', required: false },
             {
               name: 'status',
@@ -740,13 +697,6 @@ Expected frontmatter fields:
               description: 'Personal rating',
               required: false,
               constraints: { min: 1, max: 5 }
-            },
-            {
-              name: 'playtime_hours',
-              type: 'number',
-              description: 'Hours played',
-              required: false,
-              constraints: { min: 0 }
             },
             {
               name: 'tags',
@@ -768,6 +718,7 @@ Expected frontmatter fields:
         purpose: 'Track movies watched, reviews, and recommendations',
         agentInstructions: [
           'Ask about what drew them to watch this particular movie',
+          'Offer to search the web to fill in metadata',
           'Encourage discussing themes, cinematography, and performances',
           'Help identify what made the movie memorable or forgettable',
           'Suggest similar movies or directors they might enjoy',
@@ -794,7 +745,7 @@ Expected frontmatter fields:
               name: 'rating',
               type: 'number',
               description: 'Personal rating',
-              required: true,
+              required: false,
               constraints: { min: 1, max: 5 }
             },
             {
