@@ -785,9 +785,13 @@ reviewed: boolean`
 
         const types = JSON.parse(result.content[0].text);
         assert.ok(Array.isArray(types), 'Should return array');
-        // Server creates default 'general' type, so we expect 1 type
-        assert.strictEqual(types.length, 1, 'Should have default general type');
-        assert.strictEqual(types[0].name, 'general', 'Should be general type');
+        // Server creates default note types, starting with 'daily'
+        assert.ok(types.length >= 1, 'Should have at least one default note type');
+        assert.strictEqual(
+          types[0].name,
+          'daily',
+          'Should have daily as first default type'
+        );
 
         // Cleanup
         emptyServerProcess.kill('SIGTERM');

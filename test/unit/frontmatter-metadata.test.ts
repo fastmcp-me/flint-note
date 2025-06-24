@@ -232,6 +232,8 @@ Some content here.`;
         context.workspace.getNoteTypePath(TEST_CONSTANTS.NOTE_TYPES.DEFAULT),
         'manual-note.md'
       );
+      // Ensure the directory exists before writing the file
+      await context.workspace.ensureNoteType(TEST_CONSTANTS.NOTE_TYPES.DEFAULT);
       await fs.writeFile(notePath, manualNoteContent, 'utf-8');
 
       // Retrieve the note using the note manager
@@ -367,9 +369,11 @@ invalid: yaml: content: [unclosed
 This note has malformed frontmatter.`;
 
       const notePath = pathJoin(
-        context.workspace.getNoteTypePath(TEST_CONSTANTS.NOTE_TYPES.DEFAULT),
+        context.workspace.getNoteTypePath('general'),
         'malformed-note.md'
       );
+      // Ensure the directory exists before writing the file
+      await context.workspace.ensureNoteType('general');
       await fs.writeFile(notePath, malformedContent, 'utf-8');
 
       // Should still be able to retrieve the note
@@ -395,9 +399,11 @@ This note has no frontmatter.
 Just plain markdown content.`;
 
       const notePath = pathJoin(
-        context.workspace.getNoteTypePath(TEST_CONSTANTS.NOTE_TYPES.DEFAULT),
+        context.workspace.getNoteTypePath('general'),
         'plain-note.md'
       );
+      // Ensure the directory exists before writing the file
+      await context.workspace.ensureNoteType('general');
       await fs.writeFile(notePath, plainContent, 'utf-8');
 
       // Should be able to retrieve the note

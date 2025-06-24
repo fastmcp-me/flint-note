@@ -465,6 +465,11 @@ export async function getCurrentVaultPath(): Promise<string | null> {
  * Helper function to initialize vault system and get current vault path
  */
 export async function initializeVaultSystem(): Promise<string> {
+  // If JADE_NOTE_WORKSPACE is explicitly set (for testing), use it directly
+  if (process.env.JADE_NOTE_WORKSPACE) {
+    return process.env.JADE_NOTE_WORKSPACE;
+  }
+
   const globalConfig = new GlobalConfigManager();
   await globalConfig.load();
 
@@ -473,8 +478,8 @@ export async function initializeVaultSystem(): Promise<string> {
     return currentPath;
   }
 
-  // No current vault - check for legacy workspace in CWD or env var
-  const legacyPath = process.env.JADE_NOTE_WORKSPACE || process.cwd();
+  // No current vault - use current working directory
+  const legacyPath = process.cwd();
 
   // Check if legacy path has a jade-note workspace
   const legacyJadeNoteDir = path.join(legacyPath, '.jade-note');

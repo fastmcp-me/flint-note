@@ -59,6 +59,8 @@ Expected frontmatter fields:
 - tags: List of relevant tags
 `;
 
+    // Ensure the directory exists before writing the file
+    await context.workspace.ensureNoteType('general');
     await fs.writeFile(descriptionPath, templateContent, 'utf-8');
   });
 

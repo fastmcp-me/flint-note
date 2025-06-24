@@ -5,6 +5,8 @@
 
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
 import {
   createIntegrationWorkspace,
   cleanupIntegrationWorkspace,
@@ -57,24 +59,26 @@ describe('MCP Server Integration', () => {
     );
   });
 
-  test('should handle invalid workspace path', async () => {
-    const invalidPath = '/nonexistent/path/that/does/not/exist';
+  test('should handle invalid workspace path gracefully', async () => {
+    // Create a file, then try to use it as a workspace directory
+    // This should fail since you can't create .jade-note directory inside a file
+    const tempFile = join(context.tempDir, 'not-a-directory');
+    await fs.writeFile(tempFile, 'This is a file, not a directory', 'utf8');
 
     try {
       context.serverProcess = await startServer({
-        workspacePath: invalidPath,
-        timeout: 2000 // Shorter timeout for error case
+        workspacePath: tempFile, // Try to use the file as a workspace
+        timeout: 2000
       });
-      assert.fail('Server should not start with invalid workspace path');
+      assert.fail('Server should not start when workspace path is a file');
     } catch (error) {
-      // Expected to fail - server should not start with invalid workspace
+      // Expected to fail - server should detect it can't create .jade-note in a file
       assert.ok(error instanceof Error, 'Should throw an error for invalid workspace');
-      // The error could be either startup failure or server exit
       assert.ok(
-        error.message.includes('failed to start') ||
-          error.message.includes('Server failed to start') ||
-          error.message.includes('exited unexpectedly'),
-        `Error message should indicate startup failure. Got: ${error.message}`
+        error.message.includes('exited unexpectedly') ||
+          error.message.includes('ENOTDIR') ||
+          error.message.includes('not a directory'),
+        `Error message should indicate directory access failure. Got: ${error.message}`
       );
     }
   });

@@ -123,7 +123,7 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
       const output = data.toString();
       errorOutput += output;
 
-      if (output.includes('jade-note MCP server running on stdio')) {
+      if (output.includes('Jade Note MCP server running on stdio')) {
         hasStarted = true;
         clearTimeout(startupTimeout);
         resolve(serverProcess);
