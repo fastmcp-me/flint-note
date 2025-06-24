@@ -250,7 +250,12 @@ export async function createTestNoteType(
   const noteTypePath = join(workspacePath, noteType);
   await fs.mkdir(noteTypePath, { recursive: true });
 
-  const descriptionPath = join(noteTypePath, '_description.md');
+  // Create .jade-note directory if it doesn't exist
+  const jadeNoteDir = join(workspacePath, '.jade-note');
+  await fs.mkdir(jadeNoteDir, { recursive: true });
+
+  // Write description file to .jade-note config directory
+  const descriptionPath = join(jadeNoteDir, `${noteType}_description.md`);
   await fs.writeFile(descriptionPath, description, 'utf8');
 }
 
