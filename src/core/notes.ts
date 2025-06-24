@@ -287,6 +287,8 @@ export class NoteManager {
 
     formattedContent += '---\n\n';
 
+    // Add title header to content
+    formattedContent += `# ${title}\n\n`;
     formattedContent += content;
 
     return formattedContent;

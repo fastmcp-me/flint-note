@@ -187,10 +187,11 @@ describe('LinkManager', () => {
       assert.ok(sourceNote, 'Source note should exist');
       const links = sourceNote.metadata.links;
 
-      assert.ok(Array.isArray(links), 'Links should be an array');
-      assert.ok(links.length > 0, 'Should have at least one link');
+      assert.ok(links && typeof links === 'object', 'Links should be an object');
+      assert.ok(Array.isArray(links.outbound), 'Outbound links should be an array');
+      assert.ok(links.outbound.length > 0, 'Should have at least one outbound link');
 
-      const link = links[0];
+      const link = links.outbound[0];
       assert.strictEqual(link.target, 'general/target-note.md');
       assert.strictEqual(link.relationship, 'references');
       assert.ok(link.created, 'Should have creation timestamp');
@@ -239,7 +240,7 @@ This is a note with custom metadata.`;
       assert.ok(sourceNote, 'Source note should exist');
 
       assert.ok(
-        sourceNote.content.includes('[[target-note|Target Note]]'),
+        sourceNote.content.includes('[[general/target-note|Target Note]]'),
         'Should contain wikilink to target note'
       );
     });
@@ -262,7 +263,7 @@ This is a note with custom metadata.`;
       const sourceNote = await noteManager.getNote('general/source-note.md');
       assert.ok(sourceNote, 'Source note should exist');
       const wikilinkMatches = sourceNote.content.match(
-        /\[\[target-note\|Target Note\]\]/g
+        /\[\[general\/target-note\|Target Note\]\]/g
       );
 
       assert.strictEqual(

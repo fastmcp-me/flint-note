@@ -61,16 +61,17 @@ links:
       const result = parseFrontmatter(yaml, true);
 
       assert.strictEqual(result.title, 'Note with Links');
-      assert.ok(Array.isArray(result.links));
-      assert.strictEqual(result.links!.length, 2);
+      assert.ok(result.links && typeof result.links === 'object');
+      assert.ok(Array.isArray(result.links.outbound));
+      assert.strictEqual(result.links.outbound!.length, 2);
 
-      const firstLink = result.links![0] as NoteLink;
+      const firstLink = result.links.outbound![0] as NoteLink;
       assert.strictEqual(firstLink.target, 'general/note-a.md');
       assert.strictEqual(firstLink.relationship, 'references');
       assert.strictEqual(firstLink.created, '2024-01-01T00:00:00Z');
       assert.strictEqual(firstLink.context, 'Related to project');
 
-      const secondLink = result.links![1] as NoteLink;
+      const secondLink = result.links.outbound![1] as NoteLink;
       assert.strictEqual(secondLink.target, 'general/note-b.md');
       assert.strictEqual(secondLink.relationship, 'mentions');
       assert.strictEqual(secondLink.created, '2024-01-01T01:00:00Z');
@@ -104,22 +105,23 @@ links:
       const result = parseFrontmatter(yaml, true);
 
       assert.strictEqual(result.title, 'Note with Malformed Links');
-      assert.ok(Array.isArray(result.links));
-      assert.strictEqual(result.links!.length, 3);
+      assert.ok(result.links && typeof result.links === 'object');
+      assert.ok(Array.isArray(result.links.outbound));
+      assert.strictEqual(result.links.outbound!.length, 3);
 
       // First link should have defaults
-      const firstLink = result.links![0] as NoteLink;
+      const firstLink = result.links.outbound![0] as NoteLink;
       assert.strictEqual(firstLink.target, 'general/note-a.md');
       assert.strictEqual(firstLink.relationship, 'references');
       assert.ok(firstLink.created);
 
-      // Second link should have empty target and defaults
-      const secondLink = result.links![1] as NoteLink;
+      // Second link should handle missing target gracefully
+      const secondLink = result.links.outbound![1] as NoteLink;
       assert.strictEqual(secondLink.target, '');
       assert.strictEqual(secondLink.relationship, 'references');
 
-      // Third link should be properly formed
-      const thirdLink = result.links![2] as NoteLink;
+      // Third link should be parsed normally
+      const thirdLink = result.links.outbound![2] as NoteLink;
       assert.strictEqual(thirdLink.target, 'general/note-b.md');
       assert.strictEqual(thirdLink.relationship, 'references');
     });
@@ -296,13 +298,14 @@ This note has links in its frontmatter.`;
       const result = parseNoteContent(noteContent, true);
 
       assert.strictEqual(result.metadata.title, 'Note with Links');
-      assert.ok(Array.isArray(result.metadata.links));
-      assert.strictEqual(result.metadata.links!.length, 1);
+      assert.ok(result.metadata.links && typeof result.metadata.links === 'object');
+      assert.ok(Array.isArray(result.metadata.links.outbound));
+      assert.strictEqual(result.metadata.links.outbound!.length, 1);
 
-      const link = result.metadata.links![0] as NoteLink;
-      assert.strictEqual(link.target, 'general/note-a.md');
-      assert.strictEqual(link.relationship, 'references');
-      assert.strictEqual(link.created, '2024-01-01T00:00:00Z');
+      const firstLink = result.metadata.links.outbound![0] as NoteLink;
+      assert.strictEqual(firstLink.target, 'general/note-a.md');
+      assert.strictEqual(firstLink.relationship, 'references');
+      assert.strictEqual(firstLink.created, '2024-01-01T00:00:00Z');
     });
 
     test('should parse links without full typing when parseLinks is false', () => {

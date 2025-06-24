@@ -33,7 +33,7 @@ export function parseFrontmatter(
     if (key === 'links' && parseLinks) {
       // Handle both old array format and new bidirectional format
       if (Array.isArray(value)) {
-        // Old format - convert to new bidirectional structure
+        // Old format - convert to new bidirectional structure for consistency
         metadata.links = {
           outbound: value.map(
             (link: Record<string, unknown>) =>
