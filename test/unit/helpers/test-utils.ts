@@ -14,6 +14,7 @@ import { NoteTypeManager } from '../../../src/core/note-types.ts';
 import { SearchManager } from '../../../src/core/search.ts';
 import { LinkManager } from '../../../src/core/links.ts';
 import { ConfigManager } from '../../../src/utils/config.ts';
+import { JadeNoteServer } from '../../../src/server.ts';
 
 /**
  * Test context containing all managers and workspace info
@@ -26,6 +27,14 @@ export interface TestContext {
   searchManager: SearchManager;
   linkManager: LinkManager;
   configManager: ConfigManager;
+}
+
+/**
+ * Test context for server-related tests
+ */
+export interface ServerTestContext {
+  tempDir: string;
+  server: JadeNoteServer;
 }
 
 /**
@@ -62,6 +71,37 @@ export async function createTestWorkspace(prefix?: string): Promise<TestContext>
     linkManager,
     configManager
   };
+}
+
+/**
+ * Creates and initializes a test server with explicit workspace path
+ */
+export async function createTestServer(prefix?: string): Promise<ServerTestContext> {
+  const tempDir = createTempDirName(prefix);
+  await fs.mkdir(tempDir, { recursive: true });
+
+  // Create basic workspace structure
+  await fs.mkdir(join(tempDir, 'general'), { recursive: true });
+  await fs.mkdir(join(tempDir, '.jade-note'), { recursive: true });
+
+  const server = new JadeNoteServer({ workspacePath: tempDir, throwOnError: true });
+  await server.initialize();
+
+  return {
+    tempDir,
+    server
+  };
+}
+
+/**
+ * Cleans up a test server by removing the temporary directory
+ */
+export async function cleanupTestServer(context: ServerTestContext): Promise<void> {
+  try {
+    await fs.rm(context.tempDir, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup errors
+  }
 }
 
 /**

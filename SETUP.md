@@ -39,33 +39,16 @@ mkdir my-notes
 cd my-notes
 ```
 
-### 2. Set the Workspace Environment Variable
+### 2. Set the Command-line Argument
 
-jade-note uses the `JADE_NOTE_WORKSPACE` environment variable to know where your notes are stored. Set this to point to your notes directory:
 
-**For the current session:**
-```bash
-export JADE_NOTE_WORKSPACE=/path/to/your/notes-directory
-```
-
-**To make it permanent (recommended):**
-
-Add the export command to your shell configuration file:
+When starting the server, use the `--workspace` argument to specify your notes directory:
 
 ```bash
-# For bash users
-echo 'export JADE_NOTE_WORKSPACE=/path/to/your/notes-directory' >> ~/.bashrc
-source ~/.bashrc
-
-# For zsh users (macOS default)
-echo 'export JADE_NOTE_WORKSPACE=/path/to/your/notes-directory' >> ~/.zshrc
-source ~/.zshrc
-
-# For fish users
-set -Ux JADE_NOTE_WORKSPACE /path/to/your/notes-directory
+node src/server.ts --workspace /path/to/your/notes-directory
 ```
 
-Replace `/path/to/your/notes-directory` with the absolute path to your notes directory (e.g., `/Users/yourname/my-notes` on macOS or `/home/yourname/my-notes` on Linux).
+
 
 ### 3. Start the MCP Server
 
@@ -90,10 +73,7 @@ Add jade-note to your MCP client configuration. For Claude Desktop, add this to 
   "mcpServers": {
     "jade-note": {
       "command": "node",
-      "args": ["/path/to/jade-note/src/server.js"],
-      "env": {
-        "JADE_NOTE_WORKSPACE": "/path/to/your/notes-directory"
-      }
+      "args": ["/path/to/jade-note/src/server.js", "--workspace", "/path/to/your/notes-directory"]
     }
   }
 }
@@ -179,7 +159,7 @@ jade-note exposes these tools to AI agents:
 
 ```bash
 # Through an AI agent:
-"Create a note type called 'meetings' for tracking my meeting notes. 
+"Create a note type called 'meetings' for tracking my meeting notes.
 Include fields for attendees, date, and action items."
 ```
 
@@ -187,8 +167,8 @@ Include fields for attendees, date, and action items."
 
 ```bash
 # Through an AI agent:
-"Add a meeting note for today's team standup. 
-Attendees were Alice, Bob, and Charlie. 
+"Add a meeting note for today's team standup.
+Attendees were Alice, Bob, and Charlie.
 Main topic was the Q4 planning."
 ```
 
@@ -251,7 +231,7 @@ jade-note/
    - Check that the `.jade-note` directory can be created
 
 4. **Workspace not found errors**
-   - Verify that the `JADE_NOTE_WORKSPACE` environment variable is set correctly
+   - Verify that the `--workspace` argument is provided correctly
    - Check that the workspace directory exists and is accessible
    - Ensure the path is absolute, not relative
 

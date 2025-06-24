@@ -27,6 +27,11 @@ import type { MetadataSchema } from './core/metadata-schema.ts';
 import fs from 'fs/promises';
 import path from 'path';
 
+interface ServerConfig {
+  workspacePath?: string;
+  throwOnError?: boolean;
+}
+
 interface CreateNoteTypeArgs {
   type_name: string;
   description: string;
@@ -113,16 +118,18 @@ interface UpdateVaultArgs {
   description?: string;
 }
 
-class JadeNoteServer {
+export class JadeNoteServer {
   #server: Server;
-  #workspace: Workspace | null = null;
-  #noteManager: NoteManager | null = null;
-  #noteTypeManager: NoteTypeManager | null = null;
-  #searchManager: SearchManager | null = null;
-  #linkManager: LinkManager | null = null;
+  #workspace!: Workspace;
+  #noteManager!: NoteManager;
+  #noteTypeManager!: NoteTypeManager;
+  #searchManager!: SearchManager;
+  #linkManager!: LinkManager;
   #globalConfig: GlobalConfigManager;
+  #config: ServerConfig;
 
-  constructor() {
+  constructor(config: ServerConfig = {}) {
+    this.#config = config;
     this.#server = new Server(
       {
         name: 'jade-note',
@@ -142,8 +149,8 @@ class JadeNoteServer {
 
   async initialize(): Promise<void> {
     try {
-      // Initialize vault system and get current vault path
-      const workspacePath = await initializeVaultSystem();
+      // Use provided workspace path or initialize vault system
+      const workspacePath = this.#config.workspacePath || (await initializeVaultSystem());
 
       this.#workspace = new Workspace(workspacePath);
       await this.#workspace.initialize();
@@ -153,20 +160,30 @@ class JadeNoteServer {
       this.#searchManager = new SearchManager(this.#workspace);
       this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
 
-      // Load global config
-      await this.#globalConfig.load();
-
-      const currentVault = this.#globalConfig.getCurrentVault();
-      if (currentVault) {
-        console.error(
-          `jade-note server initialized successfully with vault: ${currentVault.name}`
-        );
+      // Load global config (skip if using explicit workspace path)
+      if (!this.#config.workspacePath) {
+        await this.#globalConfig.load();
+        const currentVault = this.#globalConfig.getCurrentVault();
+        if (currentVault) {
+          console.error(
+            `jade-note server initialized successfully with vault: ${currentVault.name}`
+          );
+        } else {
+          console.error('jade-note server initialized successfully (no vault selected)');
+        }
       } else {
-        console.error('jade-note server initialized successfully (no vault selected)');
+        console.error(
+          `jade-note server initialized successfully with workspace: ${workspacePath}`
+        );
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to initialize jade-note server:', errorMessage);
+
+      if (this.#config.throwOnError) {
+        throw error;
+      }
+
       process.exit(1);
     }
   }
@@ -1446,8 +1463,46 @@ A welcome note has been created in your vault root directory to help you get sta
 }
 
 // Main execution
+/**
+ * Parse command-line arguments
+ */
+function parseArgs(args: string[]): ServerConfig {
+  const config: ServerConfig = {};
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === '--workspace' || arg === '--workspace-path') {
+      const workspacePath = args[i + 1];
+      if (!workspacePath || workspacePath.startsWith('--')) {
+        console.error(`Error: ${arg} requires a path argument`);
+        process.exit(1);
+      }
+      config.workspacePath = workspacePath;
+      i++; // Skip the next argument since we consumed it
+    } else if (arg === '--help' || arg === '-h') {
+      console.log(`
+jade-note MCP Server
+
+Usage: node server.ts [options]
+
+Options:
+  --workspace, --workspace-path <path>  Specify workspace path (overrides vault system)
+  --help, -h                           Show this help message
+
+Environment Variables:
+  JADE_NOTE_WORKSPACE                  Workspace path (deprecated, use --workspace instead)
+`);
+      process.exit(0);
+    }
+  }
+
+  return config;
+}
+
 async function main(): Promise<void> {
-  const server = new JadeNoteServer();
+  const config = parseArgs(process.argv.slice(2));
+  const server = new JadeNoteServer(config);
   await server.initialize();
   await server.run();
 }

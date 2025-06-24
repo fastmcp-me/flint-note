@@ -88,10 +88,9 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
   return new Promise((resolve, reject) => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
-    const serverProcess = spawn('node', [serverPath], {
+    const serverProcess = spawn('node', [serverPath, '--workspace', workspacePath], {
       env: {
         ...process.env,
-        JADE_NOTE_WORKSPACE: workspacePath,
         ...env
       },
       stdio: ['pipe', 'pipe', 'pipe']

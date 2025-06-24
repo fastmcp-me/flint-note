@@ -465,11 +465,6 @@ export async function getCurrentVaultPath(): Promise<string | null> {
  * Helper function to initialize vault system and get current vault path
  */
 export async function initializeVaultSystem(): Promise<string> {
-  // If JADE_NOTE_WORKSPACE is explicitly set (for testing), use it directly
-  if (process.env.JADE_NOTE_WORKSPACE) {
-    return process.env.JADE_NOTE_WORKSPACE;
-  }
-
   const globalConfig = new GlobalConfigManager();
   await globalConfig.load();
 
