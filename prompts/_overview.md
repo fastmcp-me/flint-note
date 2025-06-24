@@ -66,6 +66,27 @@ Every note creation follows this mandatory sequence:
 4. Create note following agent instructions (`create_note`)
 5. Follow additional instructions from response
 
+### Dual Link Formatting System
+**Critical Distinction**: Different formatting for note content vs user responses
+- **In note content**: Use `[[type/filename|Display Name]]` wikilink format
+- **In user responses**: Use `_human-friendly names_` in markdown italics
+- This keeps notes technically precise while making responses conversational
+
+### Link Formatting Examples
+**In Note Content:**
+```
+[[reading-notes/atomic-habits|Atomic Habits]]
+[[project-notes/website-redesign|Website Project]]
+[[daily-notes/2024-01-15]]
+```
+
+**In User Responses:**
+```
+"I've connected this to your _Atomic Habits_ notes"
+"This relates to your _Website Project_ work"
+"I found relevant information in your _January 15th_ entry"
+```
+
 ### Agent Instructions System
 The foundation of flint-note's intelligence:
 - **Note types define behavior** through agent instructions

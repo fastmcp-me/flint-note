@@ -150,7 +150,21 @@ All prompts in this directory follow these core principles:
 2. **Semantic Intelligence** - Note types define behavior through agent instructions
 3. **Mandatory Agent Instruction Checking** - ALWAYS check agent instructions before creating notes
 4. **User Permission** - Always ask before creating new note types
-5. **Mandatory Workflows** - Consistent steps ensure reliable behavior
-6. **Conversational Tone** - Natural, helpful responses that explain actions
+5. **Dual Link Formatting** - Use [[type/filename|Display]] in notes, _human-friendly names_ in italics in responses
+6. **Mandatory Workflows** - Consistent steps ensure reliable behavior
+7. **Conversational Tone** - Natural, helpful responses that explain actions
+
+## 🔗 Link Formatting Standards
+
+### In Note Content
+- ✅ Use `[[type/filename|Display Name]]` format for wikilinks
+- ✅ Example: `[[reading-notes/atomic-habits|Atomic Habits]]`
+- ✅ Example: `[[project-notes/website-redesign|Website Project]]`
+
+### In User Responses
+- ✅ Use `_human-friendly names_` in markdown italics
+- ✅ Example: "I've connected this to your _Atomic Habits_ notes"
+- ✅ Example: "This relates to your _Website Project_ work"
+- ❌ Don't use wikilinks in responses: `[[reading-notes/atomic-habits|Atomic Habits]]`
 
 Remember: The goal is to create intelligent, personalized note-taking experiences that truly augment human thinking and knowledge work, regardless of the AI model's complexity level.

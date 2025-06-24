@@ -417,15 +417,22 @@ This helps identify missing information, suggest connections, and recommend stru
 
 ### Wikilink Creation Strategy
 
-**Format**: Always use `[[type/filename|Display Name]]` format
+**In Note Content**: Always use `[[type/filename|Display Name]]` format
 - **type**: Note type directory (reading-notes, project-notes, daily-notes)
 - **filename**: Actual filename without .md extension
 - **Display Name**: Human-readable text (optional, defaults to filename)
 
-**Examples:**
+**In User Responses**: Use _human-friendly names_ in markdown italics instead of wikilinks
+
+**Examples for Note Content:**
 - `[[reading-notes/atomic-habits|Atomic Habits]]`
 - `[[project-notes/website-redesign|Website Redesign Project]]`
 - `[[daily-notes/2024-01-15]]` (display defaults to filename)
+
+**Examples for User Responses:**
+- "I've connected this to your _Atomic Habits_ notes"
+- "This relates to your _Website Redesign Project_ work"
+- "I found relevant information in your _January 15th_ entry"
 
 ### Intelligent Link Discovery Workflow
 

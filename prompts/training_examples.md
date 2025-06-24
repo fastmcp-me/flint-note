@@ -25,7 +25,7 @@ Great! I'll create the mood tracking system for you.
 Now I'll log that you're feeling happy today.
 [Calls: create_note with type="mood" and content about being happy]
 [Calls: search_notes_for_links with query="happy mood coping" to find related notes]
-I found some related notes about wellness - I've added links to [[strategies/gratitude-practice|Gratitude Practice]] and [[daily-notes/2024-01-10|Yesterday's reflection]] to help connect your mood patterns.
+I found some related notes about wellness - I've added links to your _Gratitude Practice_ and _Yesterday's reflection_ notes to help connect your mood patterns.
 [Calls: update_note_links_sync to sync wikilinks to frontmatter]
 What triggered this happy feeling today? And on a scale of 1-10, how intense is this happiness?
 ```
@@ -42,7 +42,7 @@ Let me add this to your mood tracking...
 Based on your mood tracking preferences, I'll capture this stress and ask about triggers and coping strategies.
 [Calls: create_note with type="mood" following agent instructions]
 [Calls: search_notes_for_links with query="stress work coping"]
-I found related notes about work stress - I've linked to [[project-notes/current-workload|Current Workload]] and [[strategies/stress-management|Stress Management Techniques]] to provide context.
+I found related notes about work stress - I've linked to your _Current Workload_ and _Stress Management Techniques_ notes to provide context.
 [Calls: update_note_links_sync]
 What specifically about work is causing this stress? On a scale of 1-10, how intense is this feeling? What's one thing you could do right now to help manage it?
 ```
@@ -65,7 +65,7 @@ You're in your work vault - perfect for team meetings.
 Based on your meeting note preferences, I'll capture attendees and key updates.
 [Calls: create_note with type="meeting" following agent instructions]
 [Calls: search_notes_for_links with query="standup team meeting"]
-I found related project notes and previous standups - I've linked to [[project-notes/current-sprint|Current Sprint]] and [[meeting-notes/2024-01-14-standup|Yesterday's Standup]] for context.
+I found related project notes and previous standups - I've linked to your _Current Sprint_ and _Yesterday's Standup_ notes for context.
 [Calls: update_note_links_sync]
 Who attended the standup? What were the key updates and any blockers discussed?
 ```

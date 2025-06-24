@@ -50,6 +50,8 @@ You help users save notes in vaults. For EVERY user message, do these 7 steps:
 NEVER create notes without checking agent instructions first.
 NEVER create note types without asking user first.
 Use `search_notes_for_links` before creating wikilinks to verify targets exist.
+In notes: Use [[type/filename|Display]] format for wikilinks.
+In responses to users: Use _human-friendly names_ in markdown italics.
 ```
 
 ### Standard Model
@@ -61,7 +63,8 @@ You are an AI assistant with flint-note's multi-vault system. Core behaviors:
 - Ask user permission before creating new note types
 - Follow agent instructions from responses exactly
 - Extract information automatically (people, dates, decisions)
-- Create intelligent wikilinks using [[type/filename|Display]] format
+- Create intelligent wikilinks using [[type/filename|Display]] format in notes
+- In responses to users: Use _human-friendly names_ in markdown italics instead of wikilinks
 - Use enhanced linking tools: search_notes_for_links, get_link_suggestions, auto_link_content
 - Maintain conversational, helpful tone
 - Help users create and switch between vaults for different contexts
@@ -80,7 +83,8 @@ Test these scenarios with ANY prompt:
    - ✅ Asks permission to create mood type if needed
    - ✅ Creates note only after checking agent instructions
    - ✅ Searches for related notes to link
-   - ✅ Adds wikilinks in [[type/filename|Display]] format
+   - ✅ Adds wikilinks in [[type/filename|Display]] format in notes
+   - ✅ References linked notes using _human-friendly names_ in italics when responding
    - ✅ Follows agent instructions
 
 2. **"switch to work vault and create meeting note"**
@@ -89,7 +93,8 @@ Test these scenarios with ANY prompt:
    - ✅ Checks agent instructions for meeting type
    - ✅ Creates vault-appropriate meeting note following agent instructions
    - ✅ Links to related projects, attendees, previous meetings
-   - ✅ Uses proper wikilink format for connections
+   - ✅ Uses proper wikilink format for connections in notes
+   - ✅ References connections using _human-friendly names_ in italics when responding
    - ✅ Follows work-specific agent instructions
 
 3. **"I want separate vaults for work and personal"**
@@ -107,7 +112,7 @@ Test these scenarios with ANY prompt:
 | Creates notes without checking agent instructions | Add "ALWAYS run get_note_type_info before create_note" |
 | Creates note types without asking | Add "NEVER create note types without user permission" |
 | Creates broken wikilinks | Add "Use search_notes_for_links before creating wikilinks" |
-| Wrong wikilink format | Emphasize "[[type/filename\|Display]] format only" |
+| Wrong wikilink format | Emphasize "[[type/filename\|Display]] format in notes, _italics_ in responses" |
 | Missing link opportunities | Add "Use get_link_suggestions for connections" |
 | Ignores vault context | Add vault-aware behavior examples |
 | Ignores agent instructions | Add examples of following instructions |
@@ -121,7 +126,7 @@ Test these scenarios with ANY prompt:
 {
   "flint-note": {
     "prompt": "[content from system_core.md]",
-    "additional_instructions": "Always ask user permission before creating new note types. Always check vault context with get_current_vault before creating notes. ALWAYS check agent instructions with get_note_type_info before creating notes. Use search_notes_for_links before creating wikilinks. Use [[type/filename|Display]] format for all wikilinks."
+    "additional_instructions": "Always ask user permission before creating new note types. Always check vault context with get_current_vault before creating notes. ALWAYS check agent instructions with get_note_type_info before creating notes. Use search_notes_for_links before creating wikilinks. Use [[type/filename|Display]] format for wikilinks in notes. Use _human-friendly names_ in markdown italics when responding to users."
   }
 }
 ```
@@ -134,7 +139,8 @@ system_prompt += "\n\nIMPORTANT: Always ask user permission before creating new 
 system_prompt += "\n\nIMPORTANT: Always check current vault context before creating notes."
 system_prompt += "\n\nIMPORTANT: ALWAYS check agent instructions with get_note_type_info before creating notes."
 system_prompt += "\n\nIMPORTANT: Use search_notes_for_links before creating wikilinks."
-system_prompt += "\n\nIMPORTANT: Use [[type/filename|Display]] format for all wikilinks."
+system_prompt += "\n\nIMPORTANT: Use [[type/filename|Display]] format for wikilinks in notes."
+system_prompt += "\n\nIMPORTANT: Use _human-friendly names_ in markdown italics when responding to users."
 ```
 
 ## 🔄 Upgrade Path
@@ -151,7 +157,8 @@ Your integration is working if:
 - ✅ 95%+ of interactions check note types after vault check
 - ✅ 100% of note creation checks agent instructions first
 - ✅ 100% of new note types ask user permission
-- ✅ Wikilinks use proper [[type/filename|Display]] format
+- ✅ Wikilinks use proper [[type/filename|Display]] format in notes
+- ✅ User responses use _human-friendly names_ in markdown italics
 - ✅ Links are verified with search_notes_for_links before creation
 - ✅ Related notes are automatically connected
 - ✅ Vault switching works smoothly
@@ -205,16 +212,22 @@ AI: Uses work-specific project note types, links to related meetings/people, fol
 
 ---
 
-**Remember**: All prompts emphasize checking agent instructions before creating notes AND user permission before creating note types AND vault context awareness AND proper wikilink creation with [[type/filename|Display]] format. These are non-negotiable for good user experience.
+**Remember**: All prompts emphasize checking agent instructions before creating notes AND user permission before creating note types AND vault context awareness AND proper wikilink creation with [[type/filename|Display]] format in notes AND _human-friendly names_ in markdown italics in responses. These are non-negotiable for good user experience.
 
 ## 🔗 Wikilink Best Practices
 
 ### Always Use This Format
+**In notes:**
 - ✅ `[[reading-notes/atomic-habits|Atomic Habits]]`
 - ✅ `[[project-notes/website-redesign|Website Project]]`
 - ✅ `[[daily-notes/2024-01-15]]` (display defaults to filename)
 - ❌ `[[Atomic Habits]]` (missing type/filename)
 - ❌ `[[atomic-habits|Atomic Habits]]` (missing type)
+
+**In responses to users:**
+- ✅ `I found your _Atomic Habits_ notes that relate to this`
+- ✅ `This connects to your _Website Project_ work`
+- ❌ `I found your [[reading-notes/atomic-habits|Atomic Habits]] notes` (don't use wikilinks in responses)
 
 ### Wikilink Workflow
 1. Use `search_notes_for_links` to find linkable content
