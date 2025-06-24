@@ -102,10 +102,10 @@ describe('LinkManager', () => {
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
       assert.ok(sourceNote, 'Source note should exist');
-      const links = sourceNote.metadata.links || [];
+      const links = sourceNote.metadata.links || { outbound: [], inbound: [] };
 
-      assert.ok(links.length > 0, 'Links should exist');
-      const link = links.find(l => l.target === 'general/target-note.md');
+      assert.ok(links.outbound && links.outbound.length > 0, 'Links should exist');
+      const link = links.outbound.find(l => l.target === 'general/target-note.md');
       assert.ok(link, 'Specific link should exist');
       assert.strictEqual(link.context, context, 'Context should be preserved');
     });
@@ -141,16 +141,20 @@ describe('LinkManager', () => {
         // Check forward link
         const sourceNote = await noteManager.getNote('general/source-note.md');
         assert.ok(sourceNote, 'Source note should exist');
-        const sourceLinks = sourceNote.metadata.links || [];
-        const forwardLink = sourceLinks.find(l => l.target === 'general/target-note.md');
+        const sourceLinks = sourceNote.metadata.links || { outbound: [], inbound: [] };
+        const forwardLink = sourceLinks.outbound?.find(
+          l => l.target === 'general/target-note.md'
+        );
         assert.ok(forwardLink, 'Forward link should exist');
         assert.strictEqual(forwardLink.relationship, relationship);
 
         // Check reverse link
         const targetNote = await noteManager.getNote('general/target-note.md');
         assert.ok(targetNote, 'Target note should exist');
-        const targetLinks = targetNote.metadata.links || [];
-        const reverseLink = targetLinks.find(l => l.target === 'general/source-note.md');
+        const targetLinks = targetNote.metadata.links || { outbound: [], inbound: [] };
+        const reverseLink = targetLinks.outbound?.find(
+          l => l.target === 'general/source-note.md'
+        );
         assert.ok(reverseLink, 'Reverse link should exist');
         assert.strictEqual(reverseLink.relationship, expectedReverse);
       });
@@ -313,11 +317,11 @@ This is a note with custom metadata.`;
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
       assert.ok(sourceNote, 'Source note should exist');
-      const links = sourceNote.metadata.links || [];
+      const links = sourceNote.metadata.links || { outbound: [], inbound: [] };
 
-      assert.strictEqual(links.length, 2, 'Should have two links');
-      assert.ok(links.some(l => l.relationship === 'references'));
-      assert.ok(links.some(l => l.relationship === 'supports'));
+      assert.strictEqual(links.outbound?.length || 0, 2, 'Should have two links');
+      assert.ok(links.outbound?.some(l => l.relationship === 'references'));
+      assert.ok(links.outbound?.some(l => l.relationship === 'supports'));
     });
   });
 
@@ -385,10 +389,9 @@ This is a note with custom metadata.`;
       });
 
       const links = await linkManager.getLinksForNote('general/source-note.md');
-
-      assert.strictEqual(links.length, 2, 'Should have two links');
-      assert.ok(links.some(l => l.target === 'general/target-note.md'));
-      assert.ok(links.some(l => l.target === 'general/another-note.md'));
+      assert.strictEqual(links.outbound?.length || 0, 2, 'Should have two links');
+      assert.ok(links.outbound.some(l => l.target === 'general/target-note.md'));
+      assert.ok(links.outbound.some(l => l.target === 'general/another-note.md'));
     });
 
     test('should remove specific links', async () => {
@@ -415,8 +418,12 @@ This is a note with custom metadata.`;
       assert.ok(removed, 'Link removal should succeed');
 
       const remainingLinks = await linkManager.getLinksForNote('general/source-note.md');
-      assert.strictEqual(remainingLinks.length, 1, 'Should have one remaining link');
-      assert.strictEqual(remainingLinks[0].target, 'general/another-note.md');
+      assert.strictEqual(
+        remainingLinks.outbound.length,
+        1,
+        'Should have one remaining link'
+      );
+      assert.strictEqual(remainingLinks.outbound[0].target, 'general/another-note.md');
     });
 
     test('should return false when removing non-existent link', async () => {
@@ -450,9 +457,9 @@ This is a note with custom metadata.`;
 
       const sourceNote = await noteManager.getNote('general/source-note.md');
       assert.ok(sourceNote, 'Source note should exist');
-      const links = sourceNote.metadata.links || [];
+      const links = sourceNote.metadata.links || { outbound: [], inbound: [] };
 
-      assert.strictEqual(links.length, 2, 'Should have two links');
+      assert.strictEqual(links.outbound?.length || 0, 2, 'Should have two links');
     });
 
     test('should handle notes without existing frontmatter', async () => {

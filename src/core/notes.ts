@@ -65,6 +65,14 @@ interface NoteListItem {
   modified: string;
   size: number;
   tags: string[];
+  path: string;
+}
+
+interface SearchNotesArgs {
+  query?: string;
+  type_filter?: string;
+  limit?: number;
+  use_regex?: boolean;
 }
 
 interface ParsedIdentifier {
@@ -234,16 +242,25 @@ export class NoteManager {
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
     const timestamp = new Date().toISOString();
+    const filename = this.generateFilename(title);
+    const baseFilename = path.basename(filename, '.md');
 
     let formattedContent = '---\n';
     formattedContent += `title: "${title}"\n`;
+    formattedContent += `filename: "${baseFilename}"\n`;
     formattedContent += `type: ${typeName}\n`;
     formattedContent += `created: ${timestamp}\n`;
     formattedContent += `updated: ${timestamp}\n`;
 
     // Add custom metadata fields
     for (const [key, value] of Object.entries(metadata)) {
-      if (key !== 'title' && key !== 'type' && key !== 'created' && key !== 'updated') {
+      if (
+        key !== 'title' &&
+        key !== 'filename' &&
+        key !== 'type' &&
+        key !== 'created' &&
+        key !== 'updated'
+      ) {
         if (Array.isArray(value)) {
           const escapedArray = value.map(v => {
             if (typeof v === 'string') {
@@ -474,18 +491,50 @@ export class NoteManager {
     let formattedContent = '---\n';
 
     for (const [key, value] of Object.entries(metadata)) {
-      if (key === 'links' && Array.isArray(value)) {
-        // Special handling for links array
-        if (value.length > 0) {
+      if (key === 'links' && value && typeof value === 'object') {
+        // Special handling for new bidirectional links structure
+        const links = value as { outbound?: NoteLink[]; inbound?: NoteLink[] };
+        if (
+          (links.outbound && links.outbound.length > 0) ||
+          (links.inbound && links.inbound.length > 0)
+        ) {
           formattedContent += 'links:\n';
-          (value as NoteLink[]).forEach((link: NoteLink) => {
-            formattedContent += `  - target: "${link.target}"\n`;
-            formattedContent += `    relationship: "${link.relationship}"\n`;
-            formattedContent += `    created: "${link.created}"\n`;
-            if (link.context) {
-              formattedContent += `    context: "${link.context}"\n`;
-            }
-          });
+
+          if (links.outbound && links.outbound.length > 0) {
+            formattedContent += '  outbound:\n';
+            links.outbound.forEach((link: NoteLink) => {
+              formattedContent += `    - target: "${link.target}"\n`;
+              formattedContent += `      relationship: "${link.relationship}"\n`;
+              formattedContent += `      created: "${link.created}"\n`;
+              if (link.context) {
+                formattedContent += `      context: "${link.context}"\n`;
+              }
+              if (link.display) {
+                formattedContent += `      display: "${link.display}"\n`;
+              }
+              if (link.type) {
+                formattedContent += `      type: "${link.type}"\n`;
+              }
+            });
+          }
+
+          if (links.inbound && links.inbound.length > 0) {
+            formattedContent += '  inbound:\n';
+            links.inbound.forEach((link: NoteLink) => {
+              formattedContent += `    - target: "${link.target}"\n`;
+              formattedContent += `      relationship: "${link.relationship}"\n`;
+              formattedContent += `      created: "${link.created}"\n`;
+              if (link.context) {
+                formattedContent += `      context: "${link.context}"\n`;
+              }
+              if (link.display) {
+                formattedContent += `      display: "${link.display}"\n`;
+              }
+              if (link.type) {
+                formattedContent += `      type: "${link.type}"\n`;
+              }
+            });
+          }
         }
       } else if (Array.isArray(value)) {
         // Handle other arrays (like tags)
@@ -665,7 +714,8 @@ export class NoteManager {
               created: stats.birthtime.toISOString(),
               modified: stats.mtime.toISOString(),
               size: stats.size,
-              tags: parsed.metadata.tags || []
+              tags: parsed.metadata.tags || [],
+              path: notePath
             });
           }
         } catch {
@@ -688,6 +738,29 @@ export class NoteManager {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to list notes: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Search notes using the SearchManager
+   */
+  async searchNotes(args: SearchNotesArgs): Promise<NoteListItem[]> {
+    try {
+      const searchManager = new SearchManager(this.#workspace);
+      const results = await searchManager.searchNotes(
+        args.query,
+        args.type_filter,
+        args.limit,
+        args.use_regex
+      );
+      return results;
+    } catch (error) {
+      // Fallback to listing notes if search fails
+      console.error(
+        'Search failed, falling back to list:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+      return await this.listNotes(args.type_filter, args.limit);
     }
   }
 

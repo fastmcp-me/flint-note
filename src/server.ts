@@ -113,6 +113,53 @@ interface UpdateVaultArgs {
   description?: string;
 }
 
+interface SearchNotesForLinksArgs {
+  query: string;
+  type?: string;
+  limit?: number;
+}
+
+interface GetLinkSuggestionsArgs {
+  query: string;
+  context_type?: string;
+  limit?: number;
+}
+
+interface UpdateNoteLinksSyncArgs {
+  identifier: string;
+}
+
+interface GetNoteInfoArgs {
+  title_or_filename: string;
+  type?: string;
+}
+
+interface ListNotesByTypeArgs {
+  type: string;
+  limit?: number;
+}
+
+interface SuggestLinkTargetsArgs {
+  partial_query: string;
+  context_type?: string;
+  limit?: number;
+}
+
+interface ValidateWikilinksArgs {
+  content: string;
+  context_type?: string;
+}
+
+interface AutoLinkContentArgs {
+  content: string;
+  context_type?: string;
+  aggressiveness?: 'conservative' | 'moderate' | 'aggressive';
+}
+
+interface GenerateLinkReportArgs {
+  identifier: string;
+}
+
 export class FlintNoteServer {
   #server: Server;
   #workspace!: Workspace;
@@ -601,6 +648,187 @@ export class FlintNoteServer {
               },
               required: ['id']
             }
+          },
+          {
+            name: 'search_notes_for_links',
+            description:
+              'Search for notes that could be linked, returning filename and type information',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'Search query to find linkable notes'
+                },
+                type: {
+                  type: 'string',
+                  description: 'Optional: filter by note type'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Optional: maximum number of results (default: 20)',
+                  default: 20
+                }
+              },
+              required: ['query']
+            }
+          },
+          {
+            name: 'get_link_suggestions',
+            description:
+              'Get link suggestions for a partial query, formatted for wikilink creation',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'Partial text to get link suggestions for'
+                },
+                context_type: {
+                  type: 'string',
+                  description: 'Optional: current note type for context filtering'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Optional: maximum number of suggestions (default: 10)',
+                  default: 10
+                }
+              },
+              required: ['query']
+            }
+          },
+          {
+            name: 'update_note_links_sync',
+            description:
+              'Parse wikilinks from note content and sync with frontmatter metadata',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                identifier: {
+                  type: 'string',
+                  description: 'Note identifier to update links for'
+                }
+              },
+              required: ['identifier']
+            }
+          },
+          {
+            name: 'get_note_info',
+            description:
+              'Get detailed information about a note including filename for link creation',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                title_or_filename: {
+                  type: 'string',
+                  description: 'Note title or filename to look up'
+                },
+                type: {
+                  type: 'string',
+                  description: 'Optional: note type to narrow search'
+                }
+              },
+              required: ['title_or_filename']
+            }
+          },
+          {
+            name: 'list_notes_by_type',
+            description: 'List all notes of a specific type with filename information',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  description: 'Note type to list'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Optional: maximum number of results (default: 50)',
+                  default: 50
+                }
+              },
+              required: ['type']
+            }
+          },
+          {
+            name: 'suggest_link_targets',
+            description: 'Get formatted wikilink suggestions for a partial query',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                partial_query: {
+                  type: 'string',
+                  description: 'Partial text to get link target suggestions for'
+                },
+                context_type: {
+                  type: 'string',
+                  description: 'Optional: current note type for filtering'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Optional: maximum number of suggestions (default: 10)',
+                  default: 10
+                }
+              },
+              required: ['partial_query']
+            }
+          },
+          {
+            name: 'validate_wikilinks',
+            description:
+              'Validate all wikilinks in content and get suggestions for broken links',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                content: {
+                  type: 'string',
+                  description: 'Content to validate wikilinks in'
+                },
+                context_type: {
+                  type: 'string',
+                  description: 'Optional: note type for context-aware suggestions'
+                }
+              },
+              required: ['content']
+            }
+          },
+          {
+            name: 'auto_link_content',
+            description: 'Automatically suggest and insert wikilinks in content',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                content: {
+                  type: 'string',
+                  description: 'Content to auto-link'
+                },
+                context_type: {
+                  type: 'string',
+                  description: 'Optional: note type for context filtering'
+                },
+                aggressiveness: {
+                  type: 'string',
+                  enum: ['conservative', 'moderate', 'aggressive'],
+                  description: 'How aggressively to suggest links (default: moderate)',
+                  default: 'moderate'
+                }
+              },
+              required: ['content']
+            }
+          },
+          {
+            name: 'generate_link_report',
+            description: 'Generate a comprehensive report about links in a note',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                identifier: {
+                  type: 'string',
+                  description: 'Note identifier to generate link report for'
+                }
+              },
+              required: ['identifier']
+            }
           }
         ]
       };
@@ -653,6 +881,40 @@ export class FlintNoteServer {
             return await this.#handleGetCurrentVault();
           case 'update_vault':
             return await this.#handleUpdateVault(args as unknown as UpdateVaultArgs);
+          case 'search_notes_for_links':
+            return await this.#handleSearchNotesForLinks(
+              args as unknown as SearchNotesForLinksArgs
+            );
+          case 'get_link_suggestions':
+            return await this.#handleGetLinkSuggestions(
+              args as unknown as GetLinkSuggestionsArgs
+            );
+          case 'update_note_links_sync':
+            return await this.#handleUpdateNoteLinkSync(
+              args as unknown as UpdateNoteLinksSyncArgs
+            );
+          case 'get_note_info':
+            return await this.#handleGetNoteInfo(args as unknown as GetNoteInfoArgs);
+          case 'list_notes_by_type':
+            return await this.#handleListNotesByType(
+              args as unknown as ListNotesByTypeArgs
+            );
+          case 'suggest_link_targets':
+            return await this.#handleSuggestLinkTargets(
+              args as unknown as SuggestLinkTargetsArgs
+            );
+          case 'validate_wikilinks':
+            return await this.#handleValidateWikilinks(
+              args as unknown as ValidateWikilinksArgs
+            );
+          case 'auto_link_content':
+            return await this.#handleAutoLinkContent(
+              args as unknown as AutoLinkContentArgs
+            );
+          case 'generate_link_report':
+            return await this.#handleGenerateLinkReport(
+              args as unknown as GenerateLinkReportArgs
+            );
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -1067,6 +1329,307 @@ export class FlintNoteServer {
           uri: 'flint-note://stats',
           mimeType: 'application/json',
           text: JSON.stringify(stats, null, 2)
+        }
+      ]
+    };
+  };
+
+  // New wikilink and note discovery handlers
+  #handleSearchNotesForLinks = async (args: SearchNotesForLinksArgs) => {
+    this.#requireWorkspace();
+    if (!this.#linkManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const notes = await this.#linkManager.searchLinkableNotes(args.query, args.type);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(notes.slice(0, args.limit || 20), null, 2)
+        }
+      ]
+    };
+  };
+
+  #handleGetLinkSuggestions = async (args: GetLinkSuggestionsArgs) => {
+    this.#requireWorkspace();
+    if (!this.#linkManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const suggestions = await this.#linkManager.getLinkSuggestions(
+      args.query,
+      args.context_type
+    );
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(suggestions.slice(0, args.limit || 10), null, 2)
+        }
+      ]
+    };
+  };
+
+  #handleUpdateNoteLinkSync = async (args: UpdateNoteLinksSyncArgs) => {
+    this.#requireWorkspace();
+    if (!this.#linkManager) {
+      throw new Error('Server not initialized');
+    }
+
+    await this.#linkManager.updateLinksFromContent(args.identifier);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              success: true,
+              message: `Links synchronized for note: ${args.identifier}`
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  };
+
+  #handleGetNoteInfo = async (args: GetNoteInfoArgs) => {
+    this.#requireWorkspace();
+    if (!this.#noteManager) {
+      throw new Error('Server not initialized');
+    }
+
+    // Try to find the note by title or filename
+    const searchResults = await this.#noteManager.searchNotes({
+      query: args.title_or_filename,
+      type_filter: args.type,
+      limit: 5
+    });
+
+    if (searchResults.length === 0) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                found: false,
+                message: `No note found with title or filename: ${args.title_or_filename}`
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    }
+
+    // Return the best match with filename info
+    const bestMatch = searchResults[0];
+    const filename = bestMatch.filename.replace('.md', '');
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              found: true,
+              filename: filename,
+              title: bestMatch.title,
+              type: bestMatch.type,
+              path: bestMatch.path,
+              wikilink_format: `${bestMatch.type}/${filename}`,
+              suggested_wikilink: `[[${bestMatch.type}/${filename}|${bestMatch.title}]]`
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  };
+
+  #handleListNotesByType = async (args: ListNotesByTypeArgs) => {
+    this.#requireWorkspace();
+    if (!this.#noteManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const notes = await this.#noteManager.searchNotes({
+      type_filter: args.type,
+      limit: args.limit || 50
+    });
+
+    const notesWithFilenames = notes.map(note => ({
+      filename: note.filename.replace('.md', ''),
+      title: note.title,
+      type: note.type,
+      path: note.path,
+      created: note.created,
+      modified: note.modified,
+      wikilink_format: `${note.type}/${note.filename.replace('.md', '')}`,
+      suggested_wikilink: `[[${note.type}/${note.filename.replace('.md', '')}|${note.title}]]`
+    }));
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(notesWithFilenames, null, 2)
+        }
+      ]
+    };
+  };
+
+  #handleSuggestLinkTargets = async (args: SuggestLinkTargetsArgs) => {
+    this.#requireWorkspace();
+    if (!this.#linkManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const suggestions = await this.#linkManager.getLinkSuggestions(
+      args.partial_query,
+      args.context_type
+    );
+
+    const formattedSuggestions = suggestions
+      .slice(0, args.limit || 10)
+      .map(suggestion => ({
+        target: suggestion.target,
+        display: suggestion.display,
+        type: suggestion.type,
+        filename: suggestion.filename,
+        title: suggestion.title,
+        relevance: suggestion.relevance,
+        wikilink: `[[${suggestion.target}|${suggestion.display}]]`,
+        wikilink_simple: `[[${suggestion.target}]]`
+      }));
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(formattedSuggestions, null, 2)
+        }
+      ]
+    };
+  };
+
+  #handleValidateWikilinks = async (args: ValidateWikilinksArgs) => {
+    this.#requireWorkspace();
+    if (!this.#linkManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const validationResult = await this.#linkManager.validateWikilinks(
+      args.content,
+      args.context_type
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              valid: validationResult.valid,
+              broken_links: validationResult.broken,
+              suggestions: Object.fromEntries(validationResult.suggestions),
+              summary: {
+                total_links:
+                  validationResult.broken.length +
+                  (validationResult.valid ? 0 : validationResult.broken.length),
+                broken_count: validationResult.broken.length
+              }
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  };
+
+  #handleAutoLinkContent = async (args: AutoLinkContentArgs) => {
+    this.#requireWorkspace();
+    if (!this.#linkManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const autoLinkResult = await this.#linkManager.autoLinkContent(
+      args.content,
+      args.context_type,
+      args.aggressiveness
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              original_content: autoLinkResult.originalContent,
+              updated_content: autoLinkResult.updatedContent,
+              added_links: autoLinkResult.addedLinks,
+              changes_count: autoLinkResult.changesCount,
+              summary: {
+                links_added: autoLinkResult.changesCount,
+                content_changed:
+                  autoLinkResult.originalContent !== autoLinkResult.updatedContent
+              }
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  };
+
+  #handleGenerateLinkReport = async (args: GenerateLinkReportArgs) => {
+    this.#requireWorkspace();
+    if (!this.#linkManager || !this.#noteManager) {
+      throw new Error('Server not initialized');
+    }
+
+    const note = await this.#noteManager.getNote(args.identifier);
+    if (!note) {
+      throw new Error(`Note not found: ${args.identifier}`);
+    }
+
+    const linkReport = await this.#linkManager.generateLinkReport(
+      note.content,
+      note.type
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              note_id: args.identifier,
+              note_title: note.title,
+              note_type: note.type,
+              link_report: linkReport,
+              recommendations: {
+                needs_linking: linkReport.linkingOpportunities > 0,
+                has_broken_links: linkReport.brokenLinks > 0,
+                link_density_rating:
+                  linkReport.linkDensity < 0.05
+                    ? 'low'
+                    : linkReport.linkDensity < 0.15
+                      ? 'moderate'
+                      : 'high'
+              }
+            },
+            null,
+            2
+          )
         }
       ]
     };

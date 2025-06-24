@@ -28,6 +28,8 @@ export interface NoteLink {
   relationship: LinkRelationship;
   created: Timestamp;
   context?: string;
+  display?: string; // Display text from wikilink
+  type?: string; // Target note type
 }
 
 export interface NoteMetadata {
@@ -36,8 +38,20 @@ export interface NoteMetadata {
   created?: string;
   updated?: string;
   tags?: string[];
-  links?: NoteLink[];
-  [key: string]: string | string[] | number | boolean | NoteLink[] | null | undefined;
+  filename?: string; // Store filename for easy reference
+  links?: {
+    outbound?: NoteLink[];
+    inbound?: NoteLink[];
+  };
+  [key: string]:
+    | string
+    | string[]
+    | number
+    | boolean
+    | NoteLink[]
+    | object
+    | null
+    | undefined;
 }
 
 export interface LinkResult {
@@ -56,6 +70,41 @@ export interface LinkResult {
 // Configuration types
 export interface BaseConfig {
   version?: string;
+}
+
+// Wikilink types
+export interface WikiLink {
+  target: string; // type/filename format
+  display: string; // Display text
+  type?: string; // Target note type
+  filename?: string; // Target filename
+  raw: string; // Original wikilink text
+  position: {
+    start: number;
+    end: number;
+  };
+}
+
+export interface LinkParseResult {
+  wikilinks: WikiLink[];
+  content: string; // Content with links potentially modified
+}
+
+export interface NoteLookupResult {
+  filename: string;
+  title: string;
+  type: string;
+  path: string;
+  exists: boolean;
+}
+
+export interface LinkSuggestion {
+  target: string; // type/filename format
+  display: string; // Suggested display text
+  type: string;
+  filename: string;
+  title: string;
+  relevance?: number;
 }
 
 // Error types

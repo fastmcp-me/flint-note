@@ -33,6 +33,11 @@ interface SearchResult {
   score: number;
   snippet: string;
   lastUpdated: string;
+  filename: string;
+  path: string;
+  created: string;
+  modified: string;
+  size: number;
 }
 
 interface TagSearchResult {
@@ -113,6 +118,7 @@ export class SearchManager {
 
           // Parse note path to get identifier
           const identifier = this.pathToIdentifier(notePath);
+          const stats = await this.getFileStats(notePath);
 
           results.push({
             id: identifier,
@@ -121,7 +127,12 @@ export class SearchManager {
             tags: noteData.tags,
             score: 1, // Default score for empty query
             snippet: this.generateSnippet(noteData.content, []),
-            lastUpdated: noteData.updated
+            lastUpdated: noteData.updated,
+            filename: path.basename(notePath),
+            path: notePath,
+            created: stats.created,
+            modified: stats.modified,
+            size: stats.size
           });
         }
 
@@ -146,6 +157,7 @@ export class SearchManager {
           // Parse note path to get identifier
           const identifier = this.pathToIdentifier(notePath);
 
+          const stats = await this.getFileStats(notePath);
           results.push({
             id: identifier,
             title: noteData.title,
@@ -153,7 +165,12 @@ export class SearchManager {
             tags: noteData.tags,
             score,
             snippet: this.generateSnippet(noteData.content, searchTerms),
-            lastUpdated: noteData.updated
+            lastUpdated: noteData.updated,
+            filename: path.basename(notePath),
+            path: notePath,
+            created: stats.created,
+            modified: stats.modified,
+            size: stats.size
           });
         }
       }
@@ -191,15 +208,21 @@ export class SearchManager {
 
           // Parse note path to get identifier
           const identifier = this.pathToIdentifier(notePath);
+          const stats = await this.getFileStats(notePath);
 
           results.push({
             id: identifier,
             title: noteData.title,
             type: noteData.type,
             tags: noteData.tags,
-            score: 1, // Default score for empty pattern
+            score: 1, // Default score for empty query
             snippet: this.generateSnippet(noteData.content, []),
-            lastUpdated: noteData.updated
+            lastUpdated: noteData.updated,
+            filename: path.basename(notePath),
+            path: notePath,
+            created: stats.created,
+            modified: stats.modified,
+            size: stats.size
           });
         }
 
@@ -244,15 +267,21 @@ export class SearchManager {
 
           // Parse note path to get identifier
           const identifier = this.pathToIdentifier(notePath);
+          const stats = await this.getFileStats(notePath);
 
           results.push({
             id: identifier,
             title: noteData.title,
             type: noteData.type,
             tags: noteData.tags,
-            score,
+            score: 1,
             snippet: this.generateRegexSnippet(noteData.content, regex),
-            lastUpdated: noteData.updated
+            lastUpdated: noteData.updated,
+            filename: path.basename(notePath),
+            path: notePath,
+            created: stats.created,
+            modified: stats.modified,
+            size: stats.size
           });
         }
       }
@@ -439,9 +468,34 @@ export class SearchManager {
   }
 
   /**
+   * Get file stats helper method
+   */
+  private async getFileStats(notePath: string): Promise<{
+    created: string;
+    modified: string;
+    size: number;
+  }> {
+    try {
+      const stats = await fs.stat(notePath);
+      return {
+        created: stats.birthtime.toISOString(),
+        modified: stats.mtime.toISOString(),
+        size: stats.size
+      };
+    } catch {
+      // Return default values if stat fails
+      return {
+        created: new Date().toISOString(),
+        modified: new Date().toISOString(),
+        size: 0
+      };
+    }
+  }
+
+  /**
    * Convert file path to note identifier
    */
-  pathToIdentifier(notePath: string): string {
+  private pathToIdentifier(notePath: string): string {
     const relativePath = path.relative(this.#workspace.rootPath, notePath);
     const parts = relativePath.split(path.sep);
 

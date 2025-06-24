@@ -2,13 +2,23 @@
  * Link Manager
  *
  * Handles creation and management of links between notes, including
- * bidirectional linking, relationship types, and link validation.
+ * bidirectional linking, relationship types, link validation, and wikilink integration.
  */
 
 import path from 'path';
 import { Workspace } from './workspace.ts';
 import { NoteManager } from './notes.ts';
-import type { NoteLink, LinkRelationship, LinkResult } from '../types/index.ts';
+import { WikilinkParser } from './wikilink-parser.ts';
+import { NoteLinkingUtils } from '../utils/note-linking.ts';
+import type {
+  NoteLink,
+  LinkRelationship,
+  LinkResult,
+  WikiLink,
+  NoteLookupResult,
+  LinkSuggestion
+} from '../types/index.ts';
+import type { NoteLinkingManager } from '../utils/note-linking.ts';
 
 interface LinkNotesArgs {
   source: string;
@@ -18,11 +28,15 @@ interface LinkNotesArgs {
   context?: string;
 }
 
-export class LinkManager {
+export class LinkManager implements NoteLinkingManager {
+  #workspace: Workspace;
   #noteManager: NoteManager;
+  #linkingUtils: NoteLinkingUtils;
 
-  constructor(_workspace: Workspace, noteManager: NoteManager) {
+  constructor(workspace: Workspace, noteManager: NoteManager) {
+    this.#workspace = workspace;
     this.#noteManager = noteManager;
+    this.#linkingUtils = new NoteLinkingUtils(this);
   }
 
   /**
@@ -113,10 +127,14 @@ export class LinkManager {
     if (!note) {
       throw new Error(`Note not found: ${identifier}`);
     }
-    const links = note.metadata.links || [];
 
-    // Add the new link
-    links.push(link);
+    // Initialize links structure if it doesn't exist
+    const links = note.metadata.links || { outbound: [], inbound: [] };
+    if (!links.outbound) links.outbound = [];
+    if (!links.inbound) links.inbound = [];
+
+    // Add the new link to outbound
+    links.outbound.push(link);
 
     // Update the note metadata and let updateNote handle the content formatting
     const updatedMetadata = { ...note.metadata, links };
@@ -161,17 +179,11 @@ export class LinkManager {
 
     const targetTitle = targetNote.title;
     const targetFilename = path.basename(targetNote.filename, '.md');
+    const targetType = targetNote.type;
+    const targetWikilink = `${targetType}/${targetFilename}`;
 
-    // Check if content already contains a link to the target
-    const wikilinkPattern = new RegExp(`\\[\\[${targetFilename}([|][^\\]]*)?\\]\\]`);
-    const markdownLinkPattern = new RegExp(
-      `\\[([^\\]]*)\\]\\([^)]*${targetFilename}[^)]*\\)`
-    );
-
-    if (
-      wikilinkPattern.test(sourceNote.content) ||
-      markdownLinkPattern.test(sourceNote.content)
-    ) {
+    // Check if content already contains a wikilink to the target
+    if (WikilinkParser.containsLinkToTarget(sourceNote.content, targetWikilink)) {
       // Link already exists in content, don't add another
       return;
     }
@@ -182,7 +194,11 @@ export class LinkManager {
       relationship === 'mentions' ||
       relationship === 'related-to'
     ) {
-      const wikilink = `[[${targetFilename}|${targetTitle}]]`;
+      const wikilink = WikilinkParser.createWikilink(
+        targetType,
+        targetFilename,
+        targetTitle
+      );
 
       // Add a simple reference at the end of the content
       const updatedContent = sourceNote.content.trim() + `\n\nSee also: ${wikilink}`;
@@ -215,7 +231,7 @@ export class LinkManager {
       if (!currentNote) {
         return false;
       }
-      const links = currentNote.metadata?.links || [];
+      const links = currentNote.metadata?.links?.outbound || [];
 
       return links.some(
         link => link.target === targetIdentifier && link.relationship === relationship
@@ -263,12 +279,19 @@ export class LinkManager {
   /**
    * Get all links for a specific note
    */
-  async getLinksForNote(identifier: string): Promise<NoteLink[]> {
+  async getLinksForNote(
+    identifier: string
+  ): Promise<{ outbound: NoteLink[]; inbound: NoteLink[] }> {
     const note = await this.#noteManager.getNote(identifier);
     if (!note) {
-      return [];
+      return { outbound: [], inbound: [] };
     }
-    return note.metadata.links || [];
+
+    const links = note.metadata.links || { outbound: [], inbound: [] };
+    return {
+      outbound: links.outbound || [],
+      inbound: links.inbound || []
+    };
   }
 
   /**
@@ -283,9 +306,11 @@ export class LinkManager {
     if (!note) {
       return false;
     }
-    const links = note.metadata.links || [];
 
-    const linkIndex = links.findIndex(
+    const links = note.metadata.links || { outbound: [], inbound: [] };
+    const outboundLinks = links.outbound || [];
+
+    const linkIndex = outboundLinks.findIndex(
       link => link.target === target && link.relationship === relationship
     );
 
@@ -294,12 +319,287 @@ export class LinkManager {
     }
 
     // Remove the link
-    links.splice(linkIndex, 1);
+    outboundLinks.splice(linkIndex, 1);
 
     // Update the note with new metadata
-    const updatedMetadata = { ...note.metadata, links };
+    const updatedMetadata = {
+      ...note.metadata,
+      links: { ...links, outbound: outboundLinks }
+    };
     await this.#noteManager.updateNoteWithMetadata(source, note.content, updatedMetadata);
 
     return true;
+  }
+
+  /**
+   * Parse and update frontmatter links from wikilinks in content
+   */
+  async updateLinksFromContent(identifier: string): Promise<void> {
+    const note = await this.#noteManager.getNote(identifier);
+    if (!note) {
+      throw new Error(`Note not found: ${identifier}`);
+    }
+
+    // Parse wikilinks from content
+    const contentLinks = WikilinkParser.extractLinksForFrontmatter(note.content);
+
+    // Convert to NoteLink format
+    const outboundLinks: NoteLink[] = [];
+    const timestamp = new Date().toISOString();
+
+    for (const link of contentLinks) {
+      // Validate that target note exists
+      const targetNote = await this.#noteManager.getNote(link.target);
+      if (targetNote) {
+        outboundLinks.push({
+          target: link.target,
+          relationship: 'references',
+          created: timestamp,
+          display: link.display,
+          type: link.type
+        });
+      }
+    }
+
+    // Update metadata
+    const existingLinks = note.metadata.links || { outbound: [], inbound: [] };
+    const updatedMetadata = {
+      ...note.metadata,
+      links: {
+        ...existingLinks,
+        outbound: outboundLinks
+      }
+    };
+
+    await this.#noteManager.updateNoteWithMetadata(
+      identifier,
+      note.content,
+      updatedMetadata
+    );
+  }
+
+  /**
+   * Search for notes that could be linked
+   */
+  async searchLinkableNotes(
+    query: string,
+    excludeType?: string
+  ): Promise<NoteLookupResult[]> {
+    // Use the search manager to find notes
+    const searchResults = await this.#noteManager.searchNotes({
+      query,
+      limit: 20
+    });
+
+    return searchResults
+      .map(result => ({
+        filename: path.basename(result.filename, '.md'),
+        title: result.title,
+        type: result.type,
+        path: result.path,
+        exists: true
+      }))
+      .filter(note => !excludeType || note.type !== excludeType);
+  }
+
+  /**
+   * Get link suggestions for a partial query
+   */
+  async getLinkSuggestions(
+    query: string,
+    contextType?: string
+  ): Promise<LinkSuggestion[]> {
+    const notes = await this.searchLinkableNotes(query, contextType);
+
+    return notes
+      .map(note => ({
+        target: `${note.type}/${note.filename}`,
+        display: note.title,
+        type: note.type,
+        filename: note.filename,
+        title: note.title,
+        relevance: this.calculateRelevance(query, note.title)
+      }))
+      .sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
+  }
+
+  /**
+   * Calculate relevance score for search suggestions
+   */
+  private calculateRelevance(query: string, title: string): number {
+    const queryLower = query.toLowerCase();
+    const titleLower = title.toLowerCase();
+
+    // Exact match gets highest score
+    if (titleLower === queryLower) return 1.0;
+
+    // Starts with query gets high score
+    if (titleLower.startsWith(queryLower)) return 0.8;
+
+    // Contains query gets medium score
+    if (titleLower.includes(queryLower)) return 0.6;
+
+    // Fuzzy match gets lower score
+    const words = queryLower.split(/\s+/);
+    const matchingWords = words.filter(word => titleLower.includes(word));
+    return (matchingWords.length / words.length) * 0.4;
+  }
+
+  /**
+   * Find potential automatic link opportunities in content
+   */
+  async findAutoLinkOpportunities(identifier: string): Promise<
+    Array<{
+      text: string;
+      position: { start: number; end: number };
+      suggestions: LinkSuggestion[];
+    }>
+  > {
+    const note = await this.#noteManager.getNote(identifier);
+    if (!note) {
+      return [];
+    }
+
+    // Get all available notes
+    const allNotes = await this.searchLinkableNotes('', note.type);
+
+    // Find linkable text in content
+    return WikilinkParser.findLinkableText(note.content, allNotes);
+  }
+
+  /**
+   * Update inbound links for a target note
+   */
+  async updateInboundLinks(targetIdentifier: string): Promise<void> {
+    const targetNote = await this.#noteManager.getNote(targetIdentifier);
+    if (!targetNote) {
+      throw new Error(`Target note not found: ${targetIdentifier}`);
+    }
+
+    // Search for all notes that might link to this target
+    const allNotes = await this.#noteManager.searchNotes({ query: '', limit: 1000 });
+    const inboundLinks: NoteLink[] = [];
+
+    for (const note of allNotes) {
+      if (note.id === targetIdentifier) continue; // Skip self
+
+      const noteContent = await this.#noteManager.getNote(note.id);
+      if (!noteContent) continue;
+
+      // Check if this note contains wikilinks to the target
+      const parseResult = WikilinkParser.parseWikilinks(noteContent.content);
+      const targetType = targetNote.type;
+      const targetFilename = path.basename(targetNote.filename, '.md');
+      const targetReference = `${targetType}/${targetFilename}`;
+
+      for (const wikilink of parseResult.wikilinks) {
+        if (WikilinkParser.normalizeTarget(wikilink.target) === targetReference) {
+          inboundLinks.push({
+            target: note.id,
+            relationship: 'references',
+            created: note.created,
+            display: note.title,
+            type: note.type
+          });
+          break; // Only count each note once
+        }
+      }
+    }
+
+    // Update target note's inbound links
+    const existingLinks = targetNote.metadata.links || { outbound: [], inbound: [] };
+    const updatedMetadata = {
+      ...targetNote.metadata,
+      links: {
+        ...existingLinks,
+        inbound: inboundLinks
+      }
+    };
+
+    await this.#noteManager.updateNoteWithMetadata(
+      targetIdentifier,
+      targetNote.content,
+      updatedMetadata
+    );
+  }
+
+  /**
+   * Implementation of NoteLinkingManager interface for NoteLinkingUtils
+   */
+  async searchNotes(
+    query: string,
+    type?: string,
+    limit?: number
+  ): Promise<NoteLookupResult[]> {
+    const searchResults = await this.searchLinkableNotes(query, type);
+    return searchResults.slice(0, limit || 20);
+  }
+
+  /**
+   * Implementation of NoteLinkingManager interface for NoteLinkingUtils
+   */
+  async getNote(identifier: string): Promise<{
+    id: string;
+    title: string;
+    type: string;
+    filename: string;
+    content: string;
+    exists: boolean;
+  } | null> {
+    const note = await this.#noteManager.getNote(identifier);
+    if (!note) {
+      return null;
+    }
+
+    return {
+      id: note.id,
+      title: note.title,
+      type: note.type,
+      filename: path.basename(note.filename, '.md'),
+      content: note.content,
+      exists: true
+    };
+  }
+
+  /**
+   * Validate wikilinks in content using enhanced utilities
+   */
+  async validateWikilinks(content: string, contextType?: string) {
+    return await this.#linkingUtils.validateWikilinks(content, contextType);
+  }
+
+  /**
+   * Auto-link content with intelligent suggestions
+   */
+  async autoLinkContent(
+    content: string,
+    contextType?: string,
+    aggressiveness: 'conservative' | 'moderate' | 'aggressive' = 'moderate'
+  ) {
+    return await this.#linkingUtils.autoLinkContent(content, contextType, aggressiveness);
+  }
+
+  /**
+   * Get smart link suggestions with context awareness
+   */
+  async getSmartLinkSuggestions(
+    partialQuery: string,
+    contextType?: string,
+    contextContent?: string,
+    limit: number = 10
+  ) {
+    return await this.#linkingUtils.getSmartLinkSuggestions(
+      partialQuery,
+      contextType,
+      contextContent,
+      limit
+    );
+  }
+
+  /**
+   * Generate comprehensive link report for content
+   */
+  async generateLinkReport(content: string, contextType?: string) {
+    return await this.#linkingUtils.generateLinkReport(content, contextType);
   }
 }

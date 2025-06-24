@@ -30,17 +30,56 @@ export function parseFrontmatter(
   const metadata: NoteMetadata = {};
 
   for (const [key, value] of Object.entries(parsed)) {
-    if (key === 'links' && Array.isArray(value) && parseLinks) {
-      // Parse links array with proper typing (for NoteManager)
-      metadata.links = value.map(
-        (link: Record<string, unknown>) =>
-          ({
-            target: (link.target as string) || '',
-            relationship: (link.relationship as string) || 'references',
-            created: (link.created as string) || new Date().toISOString(),
-            context: link.context as string | undefined
-          }) as NoteLink
-      );
+    if (key === 'links' && parseLinks) {
+      // Handle both old array format and new bidirectional format
+      if (Array.isArray(value)) {
+        // Old format - convert to new bidirectional structure
+        metadata.links = {
+          outbound: value.map(
+            (link: Record<string, unknown>) =>
+              ({
+                target: (link.target as string) || '',
+                relationship: (link.relationship as string) || 'references',
+                created: (link.created as string) || new Date().toISOString(),
+                context: link.context as string | undefined,
+                display: link.display as string | undefined,
+                type: link.type as string | undefined
+              }) as NoteLink
+          ),
+          inbound: []
+        };
+      } else if (value && typeof value === 'object') {
+        // New bidirectional format
+        const linksObj = value as Record<string, unknown>;
+        metadata.links = {
+          outbound: Array.isArray(linksObj.outbound)
+            ? linksObj.outbound.map(
+                (link: Record<string, unknown>) =>
+                  ({
+                    target: (link.target as string) || '',
+                    relationship: (link.relationship as string) || 'references',
+                    created: (link.created as string) || new Date().toISOString(),
+                    context: link.context as string | undefined,
+                    display: link.display as string | undefined,
+                    type: link.type as string | undefined
+                  }) as NoteLink
+              )
+            : [],
+          inbound: Array.isArray(linksObj.inbound)
+            ? linksObj.inbound.map(
+                (link: Record<string, unknown>) =>
+                  ({
+                    target: (link.target as string) || '',
+                    relationship: (link.relationship as string) || 'references',
+                    created: (link.created as string) || new Date().toISOString(),
+                    context: link.context as string | undefined,
+                    display: link.display as string | undefined,
+                    type: link.type as string | undefined
+                  }) as NoteLink
+              )
+            : []
+        };
+      }
     } else {
       // Type guard for allowed metadata values
       if (
