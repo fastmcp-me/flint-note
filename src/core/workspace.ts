@@ -260,9 +260,9 @@ Expected frontmatter fields:
     const typePath = path.join(this.rootPath, typeName);
     await this.ensureDirectory(typePath);
 
-    // Create _description.md if required and doesn't exist
+    // Create description file in .jade-note config directory if required and doesn't exist
     if (this.config?.note_types.require_descriptions) {
-      const descriptionPath = path.join(typePath, '_description.md');
+      const descriptionPath = path.join(this.jadeNoteDir, `${typeName}_description.md`);
       try {
         await fs.access(descriptionPath);
       } catch (error) {
@@ -841,8 +841,11 @@ Expected frontmatter fields:
     const typePath = path.join(this.rootPath, noteType.name);
     await this.ensureDirectory(typePath);
 
-    // Create description file
-    const descriptionPath = path.join(typePath, '_description.md');
+    // Create description file in .jade-note config directory
+    const descriptionPath = path.join(
+      this.jadeNoteDir,
+      `${noteType.name}_description.md`
+    );
     const descriptionContent = this.formatNoteTypeDescription(noteType);
     await fs.writeFile(descriptionPath, descriptionContent, 'utf-8');
   }

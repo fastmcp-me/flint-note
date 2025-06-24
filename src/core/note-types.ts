@@ -77,8 +77,11 @@ export class NoteTypeManager {
       // Ensure the note type directory exists
       const typePath = await this.workspace.ensureNoteType(name);
 
-      // Create the description file
-      const descriptionPath = path.join(typePath, '_description.md');
+      // Create the description file in the .jade-note config directory
+      const descriptionPath = path.join(
+        this.workspace.jadeNoteDir,
+        `${name}_description.md`
+      );
       const descriptionContent = this.formatNoteTypeDescription(
         name,
         description,
@@ -177,7 +180,10 @@ export class NoteTypeManager {
   async getNoteTypeDescription(typeName: string): Promise<NoteTypeDescription> {
     try {
       const typePath = this.workspace.getNoteTypePath(typeName);
-      const descriptionPath = path.join(typePath, '_description.md');
+      const descriptionPath = path.join(
+        this.workspace.jadeNoteDir,
+        `${typeName}_description.md`
+      );
 
       // Check if note type exists
       try {
@@ -307,14 +313,25 @@ export class NoteTypeManager {
           entry.name !== 'node_modules'
         ) {
           const typePath = path.join(workspaceRoot, entry.name);
-          const descriptionPath = path.join(typePath, '_description.md');
+          const descriptionPath = path.join(
+            this.workspace.jadeNoteDir,
+            `${entry.name}_description.md`
+          );
 
           // Check if this is a valid note type (has notes or description)
           const typeEntries = await fs.readdir(typePath);
           const hasNotes = typeEntries.some(
             file => file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_')
           );
-          const hasDescription = typeEntries.includes('_description.md');
+
+          // Check if description exists in config directory
+          let hasDescription = false;
+          try {
+            await fs.access(descriptionPath);
+            hasDescription = true;
+          } catch {
+            hasDescription = false;
+          }
 
           if (hasNotes || hasDescription) {
             // Get basic info about the note type
@@ -374,7 +391,10 @@ export class NoteTypeManager {
 
       // Update description if provided
       if (updates.description) {
-        const descriptionPath = path.join(noteType.path, '_description.md');
+        const descriptionPath = path.join(
+          this.workspace.jadeNoteDir,
+          `${typeName}_description.md`
+        );
         const newDescription = this.formatNoteTypeDescription(
           typeName,
           updates.description
@@ -458,7 +478,10 @@ export class NoteTypeManager {
       );
 
       // Write updated description
-      const descriptionPath = path.join(noteType.path, '_description.md');
+      const descriptionPath = path.join(
+        this.workspace.jadeNoteDir,
+        `${typeName}_description.md`
+      );
       await fs.writeFile(descriptionPath, newDescription, 'utf-8');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

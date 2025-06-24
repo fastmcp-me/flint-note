@@ -134,8 +134,12 @@ describe('Note Type Management Integration', () => {
         .catch(() => false);
       assert.ok(dirExists, 'Note type directory should exist');
 
-      // Verify description file was created
-      const descriptionPath = join(typePath, '_description.md');
+      // Verify description file was created in .jade-note config directory
+      const descriptionPath = join(
+        context.tempDir,
+        '.jade-note',
+        'meetings_description.md'
+      );
       const descExists = await fs
         .access(descriptionPath)
         .then(() => true)
@@ -169,7 +173,11 @@ describe('Note Type Management Integration', () => {
       );
 
       // Verify agent instructions are stored in description file
-      const descriptionPath = join(context.tempDir, 'project-tasks', '_description.md');
+      const descriptionPath = join(
+        context.tempDir,
+        '.jade-note',
+        'project-tasks_description.md'
+      );
       const descriptionExist = await fs
         .access(descriptionPath)
         .then(() => true)
@@ -213,7 +221,11 @@ describe('Note Type Management Integration', () => {
 
       // Verify files were created (agent instructions are stored in description file)
       const typePath = join(context.tempDir, 'research-papers');
-      const descriptionPath = join(typePath, '_description.md');
+      const descriptionPath = join(
+        context.tempDir,
+        '.jade-note',
+        'research-papers_description.md'
+      );
 
       const descriptionExists = await fs
         .access(descriptionPath)
@@ -372,7 +384,11 @@ describe('Note Type Management Integration', () => {
       assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
 
       // Verify file was updated
-      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
+      const descriptionPath = join(
+        context.tempDir,
+        '.jade-note',
+        'updateable_description.md'
+      );
       const descContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descContent.includes('Updated description'),
@@ -397,7 +413,11 @@ describe('Note Type Management Integration', () => {
       assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
 
       // Verify description was updated
-      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
+      const descriptionPath = join(
+        context.tempDir,
+        '.jade-note',
+        'updateable_description.md'
+      );
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descriptionContent.includes('Updated description for comprehensive testing'),
@@ -427,7 +447,11 @@ describe('Note Type Management Integration', () => {
       assert.strictEqual(responseData.field_updated, 'instructions');
 
       // Verify instructions were updated in description file
-      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
+      const descriptionPath = join(
+        context.tempDir,
+        '.jade-note',
+        'updateable_description.md'
+      );
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descriptionContent.includes('date and timestamp'),
@@ -675,23 +699,24 @@ reviewed: boolean`
         agent_instructions: ['Instruction 1', 'Instruction 2']
       });
 
-      // Verify directory structure
+      // Verify note type directory exists but should be empty (no description file)
       const typePath = join(context.tempDir, 'structured');
       const files = await fs.readdir(typePath);
 
-      // Agent instructions are stored in description file, not separate file
-      const expectedFiles = ['_description.md'];
-      for (const expectedFile of expectedFiles) {
-        assert.ok(files.includes(expectedFile), `Should contain ${expectedFile}`);
-      }
+      // Note type directory should be empty since description is in .jade-note
+      assert.strictEqual(files.length, 0, 'Note type directory should be empty');
 
-      // Verify no unexpected files
-      const unexpectedFiles = files.filter(file => !expectedFiles.includes(file));
-      assert.strictEqual(
-        unexpectedFiles.length,
-        0,
-        'Should not contain unexpected files'
+      // Verify description file exists in .jade-note config directory
+      const descriptionPath = join(
+        context.tempDir,
+        '.jade-note',
+        'structured_description.md'
       );
+      const descExists = await fs
+        .access(descriptionPath)
+        .then(() => true)
+        .catch(() => false);
+      assert.ok(descExists, 'Description file should exist in .jade-note directory');
     });
 
     test('should handle concurrent note type operations', async () => {

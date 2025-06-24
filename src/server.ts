@@ -148,7 +148,26 @@ export class JadeNoteServer {
       const workspacePath = this.#config.workspacePath || (await initializeVaultSystem());
 
       this.#workspace = new Workspace(workspacePath);
-      await this.#workspace.initialize();
+
+      // Check if workspace has any note type descriptions
+      const jadeNoteDir = path.join(workspacePath, '.jade-note');
+      let hasDescriptions = false;
+
+      try {
+        const configEntries = await fs.readdir(jadeNoteDir);
+        hasDescriptions = configEntries.some(entry => entry.endsWith('_description.md'));
+      } catch {
+        // .jade-note directory doesn't exist or is empty
+        hasDescriptions = false;
+      }
+
+      if (!hasDescriptions) {
+        // No note type descriptions found - initialize as a vault with default note types
+        await this.#workspace.initializeVault();
+      } else {
+        // Existing workspace with note types - just initialize
+        await this.#workspace.initialize();
+      }
 
       this.#noteManager = new NoteManager(this.#workspace);
       this.#noteTypeManager = new NoteTypeManager(this.#workspace);
@@ -902,8 +921,11 @@ export class JadeNoteServer {
         throw new Error(`Invalid field: ${args.field}`);
     }
 
-    // Write the updated description to the file
-    const descriptionPath = path.join(currentInfo.path, '_description.md');
+    // Write the updated description to the file in .jade-note config directory
+    const descriptionPath = path.join(
+      this.#workspace.jadeNoteDir,
+      `${args.type_name}_description.md`
+    );
     await fs.writeFile(descriptionPath, updatedDescription, 'utf-8');
 
     // Get the updated note type info
