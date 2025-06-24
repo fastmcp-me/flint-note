@@ -9,6 +9,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
 import yaml from 'js-yaml';
+import { resolvePath } from './path.ts';
 
 interface VaultInfo {
   name: string;
@@ -245,7 +246,7 @@ export class GlobalConfigManager {
     const now = new Date().toISOString();
     this.#config!.vaults[id] = {
       name,
-      path: path.resolve(vaultPath),
+      path: resolvePath(vaultPath),
       created: now,
       last_accessed: now,
       description

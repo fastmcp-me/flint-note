@@ -9,6 +9,7 @@
 
 import { GlobalConfigManager } from './utils/global-config.ts';
 import { Workspace } from './core/workspace.ts';
+import { resolvePath, isPathSafe } from './utils/path.ts';
 import fs from 'fs/promises';
 import path from 'path';
 import process from 'process';
@@ -32,8 +33,16 @@ const COMMANDS: CliCommand[] = [
     args: ['<id>', '<name>', '<path>'],
     options: [
       { name: '--description', description: 'Description of the vault', type: 'string' },
-      { name: '--no-init', description: 'Skip initialization with default note types', type: 'boolean' },
-      { name: '--no-switch', description: 'Do not switch to the new vault', type: 'boolean' }
+      {
+        name: '--no-init',
+        description: 'Skip initialization with default note types',
+        type: 'boolean'
+      },
+      {
+        name: '--no-switch',
+        description: 'Do not switch to the new vault',
+        type: 'boolean'
+      }
     ]
   },
   {
@@ -57,7 +66,11 @@ const COMMANDS: CliCommand[] = [
     args: ['<id>'],
     options: [
       { name: '--name', description: 'New name for the vault', type: 'string' },
-      { name: '--description', description: 'New description for the vault', type: 'string' }
+      {
+        name: '--description',
+        description: 'New description for the vault',
+        type: 'string'
+      }
     ]
   },
   {
@@ -66,9 +79,17 @@ const COMMANDS: CliCommand[] = [
     args: [],
     options: [
       { name: '--id', description: 'Vault ID (default: directory name)', type: 'string' },
-      { name: '--name', description: 'Vault name (default: directory name)', type: 'string' },
+      {
+        name: '--name',
+        description: 'Vault name (default: directory name)',
+        type: 'string'
+      },
       { name: '--description', description: 'Vault description', type: 'string' },
-      { name: '--force', description: 'Force initialization even if vault exists', type: 'boolean' }
+      {
+        name: '--force',
+        description: 'Force initialization even if vault exists',
+        type: 'boolean'
+      }
     ]
   },
   {
@@ -180,7 +201,9 @@ GLOBAL CONFIG:
 
     if (vaults.length === 0) {
       console.log('No vaults configured.');
-      console.log('Use "jade-note create" or "jade-note init" to create your first vault.');
+      console.log(
+        'Use "jade-note create" or "jade-note init" to create your first vault.'
+      );
       return;
     }
 
@@ -191,7 +214,9 @@ GLOBAL CONFIG:
       console.log(`${indicator} ${id}: ${info.name}`);
       console.log(`   Path: ${info.path}`);
       console.log(`   Created: ${new Date(info.created).toLocaleDateString()}`);
-      console.log(`   Last accessed: ${new Date(info.last_accessed).toLocaleDateString()}`);
+      console.log(
+        `   Last accessed: ${new Date(info.last_accessed).toLocaleDateString()}`
+      );
       if (info.description) {
         console.log(`   Description: ${info.description}`);
       }
@@ -210,7 +235,9 @@ GLOBAL CONFIG:
 
     // Validate vault ID
     if (!this.#globalConfig.isValidVaultId(id)) {
-      throw new Error(`Invalid vault ID '${id}'. Must contain only letters, numbers, hyphens, and underscores.`);
+      throw new Error(
+        `Invalid vault ID '${id}'. Must contain only letters, numbers, hyphens, and underscores.`
+      );
     }
 
     // Check if vault already exists
@@ -218,13 +245,24 @@ GLOBAL CONFIG:
       throw new Error(`Vault with ID '${id}' already exists`);
     }
 
-    const resolvedPath = path.resolve(targetPath);
+    // Resolve path with tilde expansion
+    const resolvedPath = resolvePath(targetPath);
+
+    // Validate path safety
+    if (!isPathSafe(targetPath)) {
+      throw new Error(`Invalid or unsafe path: ${targetPath}`);
+    }
 
     // Ensure directory exists
     await fs.mkdir(resolvedPath, { recursive: true });
 
     // Add vault to registry
-    await this.#globalConfig.addVault(id, name, resolvedPath, options.description as string);
+    await this.#globalConfig.addVault(
+      id,
+      name,
+      resolvedPath,
+      options.description as string
+    );
 
     console.log(`✅ Created vault '${name}' (${id}) at: ${resolvedPath}`);
 
@@ -294,7 +332,9 @@ GLOBAL CONFIG:
 
     if (!currentVault) {
       console.log('⚠️  No vault is currently selected.');
-      console.log('Use "jade-note list" to see available vaults or "jade-note create" to add a new one.');
+      console.log(
+        'Use "jade-note list" to see available vaults or "jade-note create" to add a new one.'
+      );
       return;
     }
 
@@ -306,7 +346,9 @@ GLOBAL CONFIG:
     console.log(`🟢 Current Vault: ${currentVault.name} (${vaultId})\n`);
     console.log(`Path: ${currentVault.path}`);
     console.log(`Created: ${new Date(currentVault.created).toLocaleDateString()}`);
-    console.log(`Last accessed: ${new Date(currentVault.last_accessed).toLocaleDateString()}`);
+    console.log(
+      `Last accessed: ${new Date(currentVault.last_accessed).toLocaleDateString()}`
+    );
     if (currentVault.description) {
       console.log(`Description: ${currentVault.description}`);
     }
@@ -329,7 +371,8 @@ GLOBAL CONFIG:
 
     const updates: { name?: string; description?: string } = {};
     if (options.name) updates.name = options.name as string;
-    if (options.description !== undefined) updates.description = options.description as string;
+    if (options.description !== undefined)
+      updates.description = options.description as string;
 
     if (Object.keys(updates).length === 0) {
       throw new Error('No updates provided. Specify --name and/or --description.');
@@ -349,13 +392,16 @@ GLOBAL CONFIG:
     const currentDir = process.cwd();
     const dirName = path.basename(currentDir);
 
-    const id = (options.id as string) || dirName.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const id =
+      (options.id as string) || dirName.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
     const name = (options.name as string) || dirName;
     const description = options.description as string;
 
     // Validate vault ID
     if (!this.#globalConfig.isValidVaultId(id)) {
-      throw new Error(`Invalid vault ID '${id}'. Must contain only letters, numbers, hyphens, and underscores.`);
+      throw new Error(
+        `Invalid vault ID '${id}'. Must contain only letters, numbers, hyphens, and underscores.`
+      );
     }
 
     // Check if vault already exists
@@ -375,7 +421,9 @@ GLOBAL CONFIG:
     }
 
     if (vaultExists && !options.force) {
-      throw new Error('Directory already contains a jade-note vault. Use --force to reinitialize.');
+      throw new Error(
+        'Directory already contains a jade-note vault. Use --force to reinitialize.'
+      );
     }
 
     // Add vault to registry
@@ -401,7 +449,9 @@ GLOBAL CONFIG:
     if (currentVault) {
       const vaults = this.#globalConfig.listVaults();
       const currentVaultEntry = vaults.find(v => v.is_current);
-      console.log(`Current vault: ${currentVault.name} (${currentVaultEntry?.id || 'unknown'})`);
+      console.log(
+        `Current vault: ${currentVault.name} (${currentVaultEntry?.id || 'unknown'})`
+      );
     } else {
       console.log('Current vault: None');
     }

@@ -22,6 +22,7 @@ import { NoteTypeManager } from './core/note-types.ts';
 import { SearchManager } from './core/search.ts';
 import { LinkManager } from './core/links.ts';
 import { GlobalConfigManager, initializeVaultSystem } from './utils/global-config.ts';
+import { resolvePath, isPathSafe } from './utils/path.ts';
 import type { LinkRelationship } from './types/index.ts';
 import type { MetadataSchema } from './core/metadata-schema.ts';
 import fs from 'fs/promises';
@@ -1233,16 +1234,29 @@ A welcome note has been created in your vault root directory to help you get sta
         throw new Error(`Vault with ID '${args.id}' already exists`);
       }
 
+      // Resolve path with tilde expansion
+      const resolvedPath = resolvePath(args.path);
+
+      // Validate path safety
+      if (!isPathSafe(args.path)) {
+        throw new Error(`Invalid or unsafe path: ${args.path}`);
+      }
+
       // Ensure directory exists
-      await fs.mkdir(args.path, { recursive: true });
+      await fs.mkdir(resolvedPath, { recursive: true });
 
       // Add vault to registry
-      await this.#globalConfig.addVault(args.id, args.name, args.path, args.description);
+      await this.#globalConfig.addVault(
+        args.id,
+        args.name,
+        resolvedPath,
+        args.description
+      );
 
       let initMessage = '';
       if (args.initialize !== false) {
         // Initialize the vault with default note types
-        const workspace = new Workspace(args.path);
+        const workspace = new Workspace(resolvedPath);
         await workspace.initializeVault();
         initMessage =
           '\n\n✅ Vault initialized with default note types (daily, reading, todos, projects, goals, games, movies)';
@@ -1263,7 +1277,7 @@ A welcome note has been created in your vault root directory to help you get sta
         content: [
           {
             type: 'text',
-            text: `✅ Created vault '${args.name}' (${args.id}) at: ${args.path}${initMessage}${switchMessage}`
+            text: `✅ Created vault '${args.name}' (${args.id}) at: ${resolvedPath}${initMessage}${switchMessage}`
           }
         ]
       };
