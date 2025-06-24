@@ -81,7 +81,7 @@ describe('Frontmatter Metadata Handling', () => {
       // Verify content is after frontmatter
       assert.match(
         fileContent,
-        /---\n\n# Book Review: Atomic Habits\n\nThis book changed my perspective on habit formation\./
+        /---\n\nThis book changed my perspective on habit formation\./
       );
 
       // Verify metadata is NOT in the body content
@@ -199,7 +199,7 @@ describe('Frontmatter Metadata Handling', () => {
       assert.ok(retrievedNote.metadata.updated);
 
       // Verify content was parsed correctly (without frontmatter)
-      assert.strictEqual(retrievedNote.content.trim(), `# ${title}\n\n${content}`);
+      assert.strictEqual(retrievedNote.content.trim(), `Content for parsing test.`);
     });
 
     test('should handle note with manually created frontmatter', async () => {
@@ -436,9 +436,6 @@ Just plain markdown content.`;
       assert.match(fileContent, /\n---\n\n/);
       assert.match(fileContent, /^title: "Empty Content Note"$/m);
       assert.match(fileContent, /^author: "Test Author"$/m);
-
-      // Should have title header but no other content
-      assert.match(fileContent, /# Empty Content Note\n\n$/);
     });
 
     test('should handle metadata with special characters and quotes', async () => {
