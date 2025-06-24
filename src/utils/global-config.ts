@@ -464,8 +464,9 @@ export async function getCurrentVaultPath(): Promise<string | null> {
 
 /**
  * Helper function to initialize vault system and get current vault path
+ * Returns null if no vault is configured
  */
-export async function initializeVaultSystem(): Promise<string> {
+export async function initializeVaultSystem(): Promise<string | null> {
   const globalConfig = new GlobalConfigManager();
   await globalConfig.load();
 
@@ -474,23 +475,6 @@ export async function initializeVaultSystem(): Promise<string> {
     return currentPath;
   }
 
-  // No current vault - use current working directory
-  const legacyPath = process.cwd();
-
-  // Check if legacy path has a flint-note workspace
-  const legacyFlintNoteDir = path.join(legacyPath, '.flint-note');
-  try {
-    await fs.access(legacyFlintNoteDir);
-    // Legacy workspace exists - migrate it to vault system
-    await globalConfig.addVault(
-      'default',
-      'Default Vault',
-      legacyPath,
-      'Migrated from legacy workspace'
-    );
-    return legacyPath;
-  } catch {
-    // No legacy workspace - use CWD as default
-    return legacyPath;
-  }
+  // No current vault configured
+  return null;
 }

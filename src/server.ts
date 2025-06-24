@@ -144,51 +144,66 @@ export class FlintNoteServer {
 
   async initialize(): Promise<void> {
     try {
-      // Use provided workspace path or initialize vault system
-      const workspacePath = this.#config.workspacePath || (await initializeVaultSystem());
+      // Load global config first
+      await this.#globalConfig.load();
 
-      this.#workspace = new Workspace(workspacePath);
+      // If workspace path is provided explicitly, use it
+      if (this.#config.workspacePath) {
+        const workspacePath = this.#config.workspacePath;
+        this.#workspace = new Workspace(workspacePath);
 
-      // Check if workspace has any note type descriptions
-      const flintNoteDir = path.join(workspacePath, '.flint-note');
-      let hasDescriptions = false;
+        // Check if workspace has any note type descriptions
+        const flintNoteDir = path.join(workspacePath, '.flint-note');
+        let hasDescriptions = false;
 
-      try {
-        const files = await fs.readdir(flintNoteDir);
-        hasDescriptions = files.some(entry => entry.endsWith('_description.md'));
-      } catch {
-        // .flint-note directory doesn't exist or is empty
-        hasDescriptions = false;
-      }
+        try {
+          const files = await fs.readdir(flintNoteDir);
+          hasDescriptions = files.some(entry => entry.endsWith('_description.md'));
+        } catch {
+          // .flint-note directory doesn't exist or is empty
+          hasDescriptions = false;
+        }
 
-      if (!hasDescriptions) {
-        // No note type descriptions found - initialize as a vault with default note types
-        await this.#workspace.initializeVault();
+        if (!hasDescriptions) {
+          // No note type descriptions found - initialize as a vault with default note types
+          await this.#workspace.initializeVault();
+        } else {
+          // Existing workspace with note types - just initialize
+          await this.#workspace.initialize();
+        }
+
+        this.#noteManager = new NoteManager(this.#workspace);
+        this.#noteTypeManager = new NoteTypeManager(this.#workspace);
+        this.#searchManager = new SearchManager(this.#workspace);
+        this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
+
+        console.error(
+          `flint-note server initialized successfully with workspace: ${workspacePath}`
+        );
       } else {
-        // Existing workspace with note types - just initialize
-        await this.#workspace.initialize();
-      }
-
-      this.#noteManager = new NoteManager(this.#workspace);
-      this.#noteTypeManager = new NoteTypeManager(this.#workspace);
-      this.#searchManager = new SearchManager(this.#workspace);
-      this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
-
-      // Load global config (skip if using explicit workspace path)
-      if (!this.#config.workspacePath) {
-        await this.#globalConfig.load();
+        // No explicit workspace - check for current vault
         const currentVault = this.#globalConfig.getCurrentVault();
+
         if (currentVault) {
+          // Initialize with current vault
+          this.#workspace = new Workspace(currentVault.path);
+          await this.#workspace.initialize();
+
+          this.#noteManager = new NoteManager(this.#workspace);
+          this.#noteTypeManager = new NoteTypeManager(this.#workspace);
+          this.#searchManager = new SearchManager(this.#workspace);
+          this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
+
           console.error(
             `flint-note server initialized successfully with vault: ${currentVault.name}`
           );
         } else {
-          console.error('flint-note server initialized successfully (no vault selected)');
+          // No vault configured - start without workspace
+          console.error(
+            'flint-note server initialized successfully (no vault configured)'
+          );
+          console.error('Use vault management tools to create and switch to a vault.');
         }
-      } else {
-        console.error(
-          `flint-note server initialized successfully with workspace: ${workspacePath}`
-        );
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -703,8 +718,21 @@ export class FlintNoteServer {
     });
   }
 
+  /**
+   * Helper method to ensure a workspace is available
+   * Throws an error if no workspace is configured
+   */
+  #requireWorkspace(): void {
+    if (!this.#workspace) {
+      throw new Error(
+        'No vault configured. Use the create_vault tool to create a new vault, or list_vaults and switch_vault to use an existing one.'
+      );
+    }
+  }
+
   // Tool handlers
   #handleCreateNoteType = async (args: CreateNoteTypeArgs) => {
+    this.#requireWorkspace();
     if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
@@ -734,6 +762,7 @@ export class FlintNoteServer {
   };
 
   #handleCreateNote = async (args: CreateNoteArgs) => {
+    this.#requireWorkspace();
     if (!this.#noteManager || !this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
@@ -777,6 +806,7 @@ export class FlintNoteServer {
   };
 
   #handleGetNote = async (args: GetNoteArgs) => {
+    this.#requireWorkspace();
     if (!this.#noteManager) {
       throw new Error('Server not initialized');
     }
@@ -793,6 +823,7 @@ export class FlintNoteServer {
   };
 
   #handleUpdateNote = async (args: UpdateNoteArgs) => {
+    this.#requireWorkspace();
     if (!this.#noteManager) {
       throw new Error('Server not initialized');
     }
@@ -809,6 +840,7 @@ export class FlintNoteServer {
   };
 
   #handleSearchNotes = async (args: SearchNotesArgs) => {
+    this.#requireWorkspace();
     if (!this.#searchManager) {
       throw new Error('Server not initialized');
     }
@@ -829,7 +861,8 @@ export class FlintNoteServer {
     };
   };
 
-  #handleListNoteTypes = async (_args: ListNoteTypesArgs) => {
+  #handleListNoteTypes = async (args: ListNoteTypesArgs) => {
+    this.#requireWorkspace();
     if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
@@ -846,6 +879,7 @@ export class FlintNoteServer {
   };
 
   #handleLinkNotes = async (args: LinkNotesArgs) => {
+    this.#requireWorkspace();
     if (!this.#linkManager) {
       throw new Error('Server not initialized');
     }
@@ -862,6 +896,7 @@ export class FlintNoteServer {
   };
 
   #handleUpdateNoteType = async (args: UpdateNoteTypeArgs) => {
+    this.#requireWorkspace();
     if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
@@ -955,6 +990,7 @@ export class FlintNoteServer {
   };
 
   #handleGetNoteTypeInfo = async (args: GetNoteTypeInfoArgs) => {
+    this.#requireWorkspace();
     if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
@@ -983,6 +1019,7 @@ export class FlintNoteServer {
 
   // Resource handlers
   #handleTypesResource = async () => {
+    this.#requireWorkspace();
     if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
     }
@@ -1000,6 +1037,7 @@ export class FlintNoteServer {
   };
 
   #handleRecentResource = async () => {
+    this.#requireWorkspace();
     if (!this.#noteManager) {
       throw new Error('Server not initialized');
     }
@@ -1017,6 +1055,7 @@ export class FlintNoteServer {
   };
 
   #handleStatsResource = async () => {
+    this.#requireWorkspace();
     if (!this.#workspace) {
       throw new Error('Server not initialized');
     }
