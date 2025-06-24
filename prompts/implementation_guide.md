@@ -7,7 +7,7 @@ This guide provides everything needed to successfully implement jade-note with w
 ### For Very Weak Models (Simple Pattern Matching)
 Use: `simple_models_basic.md`
 - Ultra-simple 4-step workflow
-- Template-based responses
+- Structured responses
 - Minimal decision making required
 
 ### For Moderately Weak Models (Can Follow Procedures)
@@ -224,7 +224,7 @@ Every implementation MUST pass these scenarios from `training_examples.md`:
 
 ### For Better Accuracy
 1. Use more specific pattern matching rules
-2. Add domain-specific note type templates
+2. Add domain-specific note type examples
 3. Include more extraction examples
 4. Implement confidence scoring for decisions
 
@@ -251,8 +251,8 @@ Every implementation MUST pass these scenarios from `training_examples.md`:
 **Fix**: Add explicit examples of following agent instructions
 
 ### Model Gives Generic Responses
-**Diagnosis**: Lacks conversational templates
-**Fix**: Include specific response templates for each scenario
+**Diagnosis**: Lacks conversational examples
+**Fix**: Include specific response examples for each scenario
 
 ### Model Gets Confused by Complex Input
 **Diagnosis**: Needs simpler decision-making process

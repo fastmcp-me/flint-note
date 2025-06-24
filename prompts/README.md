@@ -106,7 +106,7 @@ Every implementation should pass scenarios from `training_examples.md`:
 - **Model skips note type checking** → Use more explicit prompts
 - **Creates note types without permission** → Emphasize user confirmation
 - **Ignores agent instructions** → Add explicit examples
-- **Poor information extraction** → Include extraction templates
+- **Poor information extraction** → Include extraction examples
 - **Robotic responses** → Use conversational examples
 
 ### Getting Help
@@ -120,7 +120,7 @@ Every implementation should pass scenarios from `training_examples.md`:
 ### Regular Updates
 - Monitor user feedback across integrations
 - Update agent instruction examples based on real usage
-- Add new platform templates as needed
+- Add new platform examples as needed
 - Improve error handling based on common issues
 
 ### Contributing

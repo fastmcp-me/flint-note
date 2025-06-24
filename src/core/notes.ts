@@ -89,7 +89,6 @@ export class NoteManager {
     typeName: string,
     title: string,
     content: string,
-    useTemplate: boolean = false,
     metadata: Record<string, unknown> = {}
   ): Promise<NoteInfo> {
     try {
@@ -128,12 +127,11 @@ export class NoteManager {
         );
       }
 
-      // Prepare note content with metadata and optional template
+      // Prepare note content with metadata
       const noteContent = await this.formatNoteContent(
         trimmedTitle,
         content,
         typeName,
-        useTemplate,
         metadata
       );
 
@@ -227,13 +225,12 @@ export class NoteManager {
   }
 
   /**
-   * Format note content with metadata frontmatter and optional template
+   * Format note content with metadata frontmatter
    */
   async formatNoteContent(
     title: string,
     content: string,
     typeName: string,
-    useTemplate: boolean = false,
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
     const timestamp = new Date().toISOString();
@@ -273,61 +270,11 @@ export class NoteManager {
 
     formattedContent += '---\n\n';
 
-    if (useTemplate) {
-      try {
-        const template = await this.#noteTypeManager.getNoteTypeTemplate(typeName);
-        const hasContentPlaceholder = template.includes('{{content}}');
-
-        const templateVars = {
-          title,
-          type: typeName,
-          created: timestamp,
-          updated: timestamp,
-          date: new Date().toLocaleDateString(),
-          time: new Date().toLocaleTimeString(),
-          content: hasContentPlaceholder ? content : '',
-          ...metadata
-        };
-
-        const processedTemplate = this.processTemplate(template, templateVars);
-
-        // If template doesn't include title header, add it
-        if (!processedTemplate.includes(`# ${title}`)) {
-          formattedContent += `# ${title}\n\n`;
-        }
-
-        formattedContent += processedTemplate;
-
-        // Add user content if provided and template doesn't have content placeholder
-        if (content && !hasContentPlaceholder) {
-          formattedContent += `\n\n${content}`;
-        }
-      } catch {
-        // Fall back to default format if template fails
-        formattedContent += `# ${title}\n\n`;
-        formattedContent += content;
-      }
-    } else {
-      formattedContent += `# ${title}\n\n`;
-      formattedContent += content;
-    }
+    // Simple format with title and content
+    formattedContent += `# ${title}\n\n`;
+    formattedContent += content;
 
     return formattedContent;
-  }
-
-  /**
-   * Process template variables with substitutions
-   */
-  private processTemplate(template: string, variables: Record<string, string>): string {
-    let processed = template;
-
-    // Replace template variables
-    for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      processed = processed.replace(regex, value);
-    }
-
-    return processed;
   }
 
   /**

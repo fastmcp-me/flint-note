@@ -176,7 +176,7 @@ I recommend this structure:
 - Business vault: Your general business operations
 - Client-A vault: All Client A materials (confidential)
 - Client-B vault: All Client B materials (confidential)
-- Templates vault: Reusable methodologies and templates
+- Methodologies vault: Reusable processes and methodologies
 
 Each client vault will have completely separate note types and agent instructions. Would you like me to set these up?
 ```

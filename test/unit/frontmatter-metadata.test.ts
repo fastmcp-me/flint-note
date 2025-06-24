@@ -45,7 +45,6 @@ describe('Frontmatter Metadata Handling', () => {
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         content,
-        false,
         metadata
       );
 
@@ -111,7 +110,6 @@ describe('Frontmatter Metadata Handling', () => {
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         content,
-        false,
         metadata
       );
 
@@ -156,13 +154,12 @@ describe('Frontmatter Metadata Handling', () => {
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         content,
-        false,
         metadata
       );
 
       const fileContent = await fs.readFile(noteInfo.path, 'utf-8');
 
-      // Verify custom tags are preserved
+      // Verify custom tags are properly set
       assert.match(fileContent, /^tags: \["custom", "important", "test"\]$/m);
       // Should not have default empty tags
       assert.ok(!fileContent.match(/^tags: \[\]$/m));
@@ -184,7 +181,6 @@ describe('Frontmatter Metadata Handling', () => {
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         content,
-        false,
         metadata
       );
 
@@ -277,7 +273,6 @@ Some content here.`;
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         originalContent,
-        false,
         metadata
       );
 
@@ -314,11 +309,10 @@ Some content here.`;
         tags: ['original']
       };
 
-      const noteInfo = await context.noteManager.createNote(
+      const updatedNote = await context.noteManager.createNote(
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         content,
-        false,
         originalMetadata
       );
 
@@ -329,10 +323,14 @@ Some content here.`;
       };
 
       // Update with new metadata
-      await context.noteManager.updateNoteWithMetadata(noteInfo.id, content, newMetadata);
+      await context.noteManager.updateNoteWithMetadata(
+        updatedNote.id,
+        content,
+        newMetadata
+      );
 
       // Read the updated file
-      const fileContent = await fs.readFile(noteInfo.path, 'utf-8');
+      const fileContent = await fs.readFile(updatedNote.path, 'utf-8');
 
       // Verify original author is preserved (now that we fixed the merge logic)
       assert.match(fileContent, /^author: "Original Author"$/m);
@@ -428,7 +426,6 @@ Just plain markdown content.`;
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         '', // Empty content
-        false,
         metadata
       );
 
@@ -459,7 +456,6 @@ Just plain markdown content.`;
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         title,
         content,
-        false,
         metadata
       );
 

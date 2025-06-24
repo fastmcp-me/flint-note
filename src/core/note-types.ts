@@ -14,14 +14,12 @@ import type { MetadataSchema } from './metadata-schema.ts';
 interface NoteTypeInfo {
   name: string;
   path: string;
-  hasTemplate: boolean;
   created: string;
 }
 
 interface ParsedNoteTypeDescription {
   purpose: string;
   agentInstructions: string[];
-  template: string;
   metadataSchema: string[];
   parsedMetadataSchema: MetadataSchema;
 }
@@ -30,9 +28,7 @@ interface NoteTypeDescription {
   name: string;
   path: string;
   description: string;
-  template: string | null;
   parsed: ParsedNoteTypeDescription;
-  hasTemplate: boolean;
   metadataSchema: MetadataSchema;
 }
 
@@ -42,14 +38,12 @@ interface NoteTypeListItem {
   purpose: string;
   agentInstructions: string[];
   hasDescription: boolean;
-  hasTemplate: boolean;
   noteCount: number;
   lastModified: string;
 }
 
 interface NoteTypeUpdateRequest {
   description?: string;
-  template?: string | null;
 }
 
 interface DeleteResult {
@@ -66,12 +60,11 @@ export class NoteTypeManager {
   }
 
   /**
-   * Create a new note type with description and optional template
+   * Create a new note type with description
    */
   async createNoteType(
     name: string,
     description: string,
-    template: string | null = null,
     agentInstructions: string[] | null = null,
     metadataSchema: MetadataSchema | null = null
   ): Promise<NoteTypeInfo> {
@@ -89,22 +82,14 @@ export class NoteTypeManager {
       const descriptionContent = this.formatNoteTypeDescription(
         name,
         description,
-        template,
         agentInstructions,
         metadataSchema
       );
       await fs.writeFile(descriptionPath, descriptionContent, 'utf-8');
 
-      // Create template file if provided
-      if (template) {
-        const templatePath = path.join(typePath, '_template.md');
-        await fs.writeFile(templatePath, template, 'utf-8');
-      }
-
       return {
         name,
         path: typePath,
-        hasTemplate: !!template,
         created: new Date().toISOString()
       };
     } catch (error) {
@@ -119,7 +104,6 @@ export class NoteTypeManager {
   formatNoteTypeDescription(
     name: string,
     description: string,
-    template: string | null = null,
     agentInstructions: string[] | null = null,
     metadataSchema: MetadataSchema | null = null
   ): string {
@@ -173,10 +157,6 @@ export class NoteTypeManager {
     }
     content += '\n';
 
-    if (template) {
-      content += `## Template\n${template}\n\n`;
-    }
-
     if (metadataSchema && metadataSchema.fields.length > 0) {
       content += MetadataSchemaParser.generateSchemaSection(metadataSchema);
     } else {
@@ -218,28 +198,14 @@ export class NoteTypeManager {
         }
       }
 
-      // Check for template file
-      const templatePath = path.join(typePath, '_template.md');
-      let template: string | null = null;
-      try {
-        template = await fs.readFile(templatePath, 'utf-8');
-      } catch {
-        // Template is optional, ignore if not found
-      }
-
-      // Parse description content
       const parsed = this.parseNoteTypeDescription(description);
-
-      // Parse metadata schema
-      const metadataSchema = MetadataSchemaParser.parseFromDescription(description);
+      const metadataSchema = parsed.parsedMetadataSchema;
 
       return {
         name: typeName,
         path: typePath,
         description,
-        template,
         parsed,
-        hasTemplate: !!template,
         metadataSchema
       };
     } catch (error) {
@@ -257,7 +223,6 @@ export class NoteTypeManager {
     const sections: ParsedNoteTypeDescription = {
       purpose: '',
       agentInstructions: [],
-      template: '',
       metadataSchema: [],
       parsedMetadataSchema: MetadataSchemaParser.parseFromDescription(content)
     };
@@ -280,12 +245,6 @@ export class NoteTypeManager {
           this.addSectionContent(sections, currentSection, sectionContent);
         }
         currentSection = 'agentInstructions';
-        sectionContent = [];
-      } else if (trimmed.startsWith('## Template')) {
-        if (currentSection) {
-          this.addSectionContent(sections, currentSection, sectionContent);
-        }
-        currentSection = 'template';
         sectionContent = [];
       } else if (trimmed.startsWith('## Metadata Schema')) {
         if (currentSection) {
@@ -325,13 +284,8 @@ export class NoteTypeManager {
           .filter(line => line.trim().startsWith('-'))
           .map(line => line.trim().substring(1).trim());
         break;
-      case 'template':
-        sections.template = text;
-        break;
       case 'metadataSchema':
-        sections.metadataSchema = content
-          .filter(line => line.trim().startsWith('-'))
-          .map(line => line.trim().substring(1).trim());
+        sections.metadataSchema = content.filter(line => line.trim().length > 0);
         break;
     }
   }
@@ -365,7 +319,6 @@ export class NoteTypeManager {
           if (hasNotes || hasDescription) {
             // Get basic info about the note type
             let purpose = '';
-            let hasTemplate = false;
             let noteCount = 0;
 
             let agentInstructions: string[] = [];
@@ -378,13 +331,12 @@ export class NoteTypeManager {
                 agentInstructions = parsed.agentInstructions;
               }
 
-              hasTemplate = typeEntries.includes('_template.md');
               noteCount = typeEntries.filter(
                 file =>
-                  file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_')
+                  file.endsWith('.md') && !file.startsWith('_') && !file.startsWith('.')
               ).length;
             } catch {
-              // Continue with default values if there's an error reading details
+              // Ignore errors for individual entries
             }
 
             noteTypes.push({
@@ -393,7 +345,6 @@ export class NoteTypeManager {
               purpose: purpose || `Notes of type '${entry.name}'`,
               agentInstructions,
               hasDescription,
-              hasTemplate,
               noteCount,
               lastModified: (await fs.stat(typePath)).mtime.toISOString()
             });
@@ -426,25 +377,9 @@ export class NoteTypeManager {
         const descriptionPath = path.join(noteType.path, '_description.md');
         const newDescription = this.formatNoteTypeDescription(
           typeName,
-          updates.description,
-          updates.template || noteType.template
+          updates.description
         );
         await fs.writeFile(descriptionPath, newDescription, 'utf-8');
-      }
-
-      // Update template if provided
-      if (updates.template !== undefined) {
-        const templatePath = path.join(noteType.path, '_template.md');
-        if (updates.template) {
-          await fs.writeFile(templatePath, updates.template, 'utf-8');
-        } else {
-          // Remove template if set to null/empty
-          try {
-            await fs.unlink(templatePath);
-          } catch {
-            // Ignore if template doesn't exist
-          }
-        }
       }
 
       return await this.getNoteTypeDescription(typeName);
@@ -493,32 +428,6 @@ export class NoteTypeManager {
   }
 
   /**
-   * Get the template for a note type
-   */
-  async getNoteTypeTemplate(typeName: string): Promise<string> {
-    try {
-      const noteType = await this.getNoteTypeDescription(typeName);
-
-      if (noteType.template) {
-        return noteType.template;
-      }
-
-      // Return parsed template from description if no separate template file
-      if (noteType.parsed.template) {
-        return noteType.parsed.template;
-      }
-
-      // Return a basic template
-      return `# ${typeName.charAt(0).toUpperCase() + typeName.slice(1)} Note\n\n## Content\n\n`;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(
-        `Failed to get template for note type '${typeName}': ${errorMessage}`
-      );
-    }
-  }
-
-  /**
    * Get metadata schema for a note type
    */
   async getMetadataSchema(typeName: string): Promise<MetadataSchema> {
@@ -544,7 +453,6 @@ export class NoteTypeManager {
       const newDescription = this.formatNoteTypeDescription(
         typeName,
         noteType.parsed.purpose,
-        noteType.template,
         noteType.parsed.agentInstructions,
         schema
       );

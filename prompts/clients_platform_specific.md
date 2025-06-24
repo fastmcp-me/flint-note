@@ -19,7 +19,7 @@ ESSENTIAL WORKFLOW:
 1. Check current vault context using get_current_vault when needed
 2. Determine appropriate note type based on content and vault context
 3. Use get_note_type_info to understand current agent instructions before creating notes
-4. Structure information meaningfully using templates as guides
+4. Structure information meaningfully using note type guidelines
 5. Extract actionable items: `- [ ] Task (Owner: Name, Due: Date)`
 6. Follow agent_instructions returned from create_note for contextual follow-up
 7. Use update_note_type to refine agent instructions based on user feedback
@@ -157,7 +157,7 @@ jade_note:
     
     AGENT INSTRUCTION INTEGRATION:
     - Use update_note_type to refine Obsidian-specific behaviors
-    - Suggest template improvements based on Obsidian plugin compatibility
+    - Suggest note type improvements based on Obsidian plugin compatibility
     - Adapt agent instructions to work with existing Obsidian workflows
     
     Balance jade-note's semantic intelligence with Obsidian's linking paradigms.
@@ -231,7 +231,7 @@ jade-note "client-meetings" (in work vault) with agent instructions:
 - "Identify key decisions and document rationale"
 
 → Notion "Client Meetings" database with:
-- Template fields mapped from jade-note template
+- Properties mapped from jade-note metadata schema
 - Formula fields for action item tracking
 - Relation to "Tasks" database for action items
 - Relation to "Decisions" database for outcomes
@@ -327,7 +327,7 @@ const healthcareConfig: HealthcareJadeNoteConfig = {
     
     COMPLIANCE AND PRIVACY:
     - Never suggest sharing patient information
-    - Use de-identified examples in templates
+    - Use de-identified examples in note types
     - Follow agent instructions for documentation standards
     - Maintain audit trails through metadata schemas
   `,

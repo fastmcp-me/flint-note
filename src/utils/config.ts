@@ -28,7 +28,6 @@ interface WorkspaceConfig {
   note_types: {
     auto_create_directories: boolean;
     require_descriptions: boolean;
-    allow_custom_templates: boolean;
   };
   features: {
     auto_linking: boolean;
@@ -117,8 +116,7 @@ export class ConfigManager {
       },
       note_types: {
         auto_create_directories: true,
-        require_descriptions: true,
-        allow_custom_templates: true
+        require_descriptions: true
       },
       features: {
         auto_linking: false,

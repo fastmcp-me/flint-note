@@ -161,7 +161,7 @@ User: "switch to work vault"
 AI: Changes context, adapts to work-focused behavior
 
 User: "create project note" (in work vault)
-AI: Uses work-specific project templates and agent instructions
+AI: Uses work-specific project note types and agent instructions
 ```
 
 ### Vault Organization Patterns

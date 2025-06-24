@@ -39,7 +39,6 @@ interface WorkspaceStats {
 interface DefaultNoteType {
   name: string;
   purpose: string;
-  template: string;
   agentInstructions: string[];
   metadataSchema: MetadataSchema;
 }
@@ -219,22 +218,6 @@ General-purpose notes for miscellaneous thoughts, ideas, and information that do
 - Link to related notes when appropriate
 - Extract actionable items when present
 
-## Template (Optional)
-# Title
-
-## Context
-Brief context or background information.
-
-## Content
-Main content goes here.
-
-## Related
-- Links to related notes
-- References
-
-## Actions
-- [ ] Any action items extracted from the content
-
 ## Metadata Schema (Optional)
 Expected frontmatter fields:
 - tags: List of relevant tags
@@ -396,17 +379,6 @@ Expected frontmatter fields:
       {
         name: 'daily',
         purpose: 'Track daily events, reflections, and activities',
-        template: `# {{date}}
-
-## Today's Events
-
-
-## Reflections
-
-
-## Tomorrow's Focus
-
-`,
         agentInstructions: [
           'Ask about key events and accomplishments from the day',
           'Encourage reflection on lessons learned or insights gained',
@@ -420,7 +392,9 @@ Expected frontmatter fields:
               type: 'date',
               description: 'Date of entry',
               required: true,
-              constraints: { format: 'YYYY-MM-DD' }
+              constraints: {
+                format: 'YYYY-MM-DD'
+              }
             },
             {
               name: 'mood',
@@ -436,7 +410,10 @@ Expected frontmatter fields:
               type: 'number',
               description: 'Energy level',
               required: false,
-              constraints: { min: 1, max: 10 }
+              constraints: {
+                min: 1,
+                max: 10
+              }
             },
             {
               name: 'tags',
@@ -450,23 +427,6 @@ Expected frontmatter fields:
       {
         name: 'reading',
         purpose: 'Track articles, papers, books, and other reading material',
-        template: `# {{title}}
-
-**Author**: {{author}}
-**Type**: {{type}}
-**Status**: {{status}}
-
-## Summary
-
-
-## Key Insights
-
-
-## Personal Rating: {{rating}}/5
-
-## Notes
-
-`,
         agentInstructions: [
           'Always ask for author information and publication context',
           'Extract and organize key insights and takeaways',
@@ -541,22 +501,6 @@ Expected frontmatter fields:
       {
         name: 'todos',
         purpose: 'Track tasks, action items, and things that need to be done',
-        template: `# {{title}}
-
-**Priority**: {{priority}}
-**Due Date**: {{due_date}}
-**Status**: {{status}}
-
-## Description
-
-
-## Action Items
-
-- [ ]
-
-## Notes
-
-`,
         agentInstructions: [
           'Help break down large tasks into smaller, actionable items',
           'Ask about priorities and deadlines',
@@ -619,29 +563,6 @@ Expected frontmatter fields:
       {
         name: 'projects',
         purpose: 'Track ongoing projects, goals, and long-term initiatives',
-        template: `# {{title}}
-
-**Status**: {{status}}
-**Priority**: {{priority}}
-**Start Date**: {{start_date}}
-**Target Date**: {{target_date}}
-
-## Project Goals
-
-
-## Current Status
-
-
-## Action Items
-
-- [ ]
-
-## Resources & Links
-
-
-## Notes
-
-`,
         agentInstructions: [
           'Ask about project scope, goals, and success criteria',
           'Help identify key milestones and deadlines',
@@ -703,27 +624,6 @@ Expected frontmatter fields:
       {
         name: 'goals',
         purpose: 'Track long-term personal and professional goals',
-        template: `# {{title}}
-
-**Category**: {{category}}
-**Timeline**: {{timeline}}
-**Status**: {{status}}
-
-## Goal Description
-
-
-## Why This Matters
-
-
-## Success Criteria
-
-
-## Action Plan
-
-
-## Progress Updates
-
-`,
         agentInstructions: [
           'Help define specific, measurable, achievable goals',
           'Ask about motivation and personal significance',
@@ -798,25 +698,6 @@ Expected frontmatter fields:
       {
         name: 'games',
         purpose: 'Track video games played, progress, and experiences',
-        template: `# {{title}}
-
-**Platform**: {{platform}}
-**Genre**: {{genre}}
-**Status**: {{status}}
-**Rating**: {{rating}}/5
-
-## Game Info
-
-
-## My Experience
-
-
-## Highlights & Memorable Moments
-
-
-## Final Thoughts
-
-`,
         agentInstructions: [
           'Ask about platform, genre, and gameplay style preferences',
           'Encourage documenting memorable moments and achievements',
@@ -885,25 +766,6 @@ Expected frontmatter fields:
       {
         name: 'movies',
         purpose: 'Track movies watched, reviews, and recommendations',
-        template: `# {{title}}
-
-**Director**: {{director}}
-**Year**: {{year}}
-**Genre**: {{genre}}
-**Rating**: {{rating}}/5
-
-## Plot Summary
-
-
-## My Thoughts
-
-
-## Memorable Scenes
-
-
-## Would I Recommend?
-
-`,
         agentInstructions: [
           'Ask about what drew them to watch this particular movie',
           'Encourage discussing themes, cinematography, and performances',
@@ -983,10 +845,6 @@ Expected frontmatter fields:
     const descriptionPath = path.join(typePath, '_description.md');
     const descriptionContent = this.formatNoteTypeDescription(noteType);
     await fs.writeFile(descriptionPath, descriptionContent, 'utf-8');
-
-    // Create template file
-    const templatePath = path.join(typePath, '_template.md');
-    await fs.writeFile(templatePath, noteType.template, 'utf-8');
   }
 
   /**
@@ -1003,8 +861,6 @@ Expected frontmatter fields:
       content += `- ${instruction}\n`;
     }
     content += '\n';
-
-    content += `## Template\n${noteType.template}\n`;
 
     content += '## Metadata Schema\n';
     for (const field of noteType.metadataSchema.fields) {

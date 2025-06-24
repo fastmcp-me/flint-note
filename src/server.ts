@@ -36,7 +36,6 @@ interface ServerConfig {
 interface CreateNoteTypeArgs {
   type_name: string;
   description: string;
-  template?: string;
   agent_instructions?: string[];
   metadata_schema?: MetadataSchema;
 }
@@ -45,7 +44,6 @@ interface CreateNoteArgs {
   type: string;
   title: string;
   content: string;
-  use_template?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -78,13 +76,9 @@ interface LinkNotesArgs {
   context?: string;
 }
 
-interface GetNoteTypeTemplateArgs {
-  type_name: string;
-}
-
 interface UpdateNoteTypeArgs {
   type_name: string;
-  field: 'instructions' | 'description' | 'template' | 'metadata_schema';
+  field: 'instructions' | 'description' | 'metadata_schema';
   value: string;
 }
 
@@ -197,7 +191,7 @@ export class JadeNoteServer {
           {
             name: 'create_note_type',
             description:
-              'Create a new note type with description, optional template, agent instructions, and metadata schema',
+              'Create a new note type with description, agent instructions, and metadata schema',
             inputSchema: {
               type: 'object',
               properties: {
@@ -208,10 +202,6 @@ export class JadeNoteServer {
                 description: {
                   type: 'string',
                   description: 'Description of the note type purpose and usage'
-                },
-                template: {
-                  type: 'string',
-                  description: 'Optional template content for new notes of this type'
                 },
                 agent_instructions: {
                   type: 'array',
@@ -294,11 +284,7 @@ export class JadeNoteServer {
                   type: 'string',
                   description: 'Content of the note in markdown format'
                 },
-                use_template: {
-                  type: 'boolean',
-                  description: 'Whether to use the note type template for structure',
-                  default: false
-                },
+
                 metadata: {
                   type: 'object',
                   description:
@@ -423,20 +409,7 @@ export class JadeNoteServer {
               required: ['source', 'target']
             }
           },
-          {
-            name: 'get_note_type_template',
-            description: 'Get the template for a note type for preview or inspection',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                type_name: {
-                  type: 'string',
-                  description: 'Name of the note type to get template for'
-                }
-              },
-              required: ['type_name']
-            }
-          },
+
           {
             name: 'update_note_type',
             description: 'Update a specific field of an existing note type',
@@ -450,7 +423,7 @@ export class JadeNoteServer {
                 field: {
                   type: 'string',
                   description: 'Field to update',
-                  enum: ['instructions', 'description', 'template', 'metadata_schema']
+                  enum: ['instructions', 'description', 'metadata_schema']
                 },
                 value: {
                   type: 'string',
@@ -463,7 +436,7 @@ export class JadeNoteServer {
           {
             name: 'get_note_type_info',
             description:
-              'Get comprehensive information about a note type including instructions, description, and template',
+              'Get comprehensive information about a note type including instructions and description',
             inputSchema: {
               type: 'object',
               properties: {
@@ -621,10 +594,7 @@ export class JadeNoteServer {
             return await this.#handleListNoteTypes(args as unknown as ListNoteTypesArgs);
           case 'link_notes':
             return await this.#handleLinkNotes(args as unknown as LinkNotesArgs);
-          case 'get_note_type_template':
-            return await this.#handleGetNoteTypeTemplate(
-              args as unknown as GetNoteTypeTemplateArgs
-            );
+
           case 'update_note_type':
             return await this.#handleUpdateNoteType(
               args as unknown as UpdateNoteTypeArgs
@@ -723,7 +693,6 @@ export class JadeNoteServer {
     await this.#noteTypeManager.createNoteType(
       args.type_name,
       args.description,
-      args.template,
       args.agent_instructions,
       args.metadata_schema
     );
@@ -754,7 +723,6 @@ export class JadeNoteServer {
       args.type,
       args.title,
       args.content,
-      args.use_template || false,
       args.metadata || {}
     );
 
@@ -874,38 +842,6 @@ export class JadeNoteServer {
     };
   };
 
-  #handleGetNoteTypeTemplate = async (args: GetNoteTypeTemplateArgs) => {
-    if (!this.#noteTypeManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const template = await this.#noteTypeManager.getNoteTypeTemplate(args.type_name);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              type_name: args.type_name,
-              template: template,
-              available_variables: [
-                '{{title}}',
-                '{{type}}',
-                '{{created}}',
-                '{{updated}}',
-                '{{date}}',
-                '{{time}}',
-                '{{content}}'
-              ]
-            },
-            null,
-            2
-          )
-        }
-      ]
-    };
-  };
-
   #handleUpdateNoteType = async (args: UpdateNoteTypeArgs) => {
     if (!this.#noteTypeManager) {
       throw new Error('Server not initialized');
@@ -918,7 +854,6 @@ export class JadeNoteServer {
 
     // Update based on field type
     let updatedDescription: string;
-    let updatedTemplate: string | null = currentInfo.template;
 
     switch (args.field) {
       case 'instructions': {
@@ -942,16 +877,6 @@ export class JadeNoteServer {
       case 'description':
         updatedDescription = this.#noteTypeManager.formatNoteTypeDescription(
           args.type_name,
-          args.value,
-          currentInfo.template
-        );
-        break;
-
-      case 'template':
-        updatedTemplate = args.value;
-        updatedDescription = this.#noteTypeManager.formatNoteTypeDescription(
-          args.type_name,
-          currentInfo.parsed.purpose,
           args.value
         );
         break;
@@ -981,13 +906,6 @@ export class JadeNoteServer {
     const descriptionPath = path.join(currentInfo.path, '_description.md');
     await fs.writeFile(descriptionPath, updatedDescription, 'utf-8');
 
-    // Update template if needed
-    if (updatedTemplate !== currentInfo.template) {
-      await this.#noteTypeManager.updateNoteType(args.type_name, {
-        template: updatedTemplate
-      });
-    }
-
     // Get the updated note type info
     const result = await this.#noteTypeManager.getNoteTypeDescription(args.type_name);
 
@@ -1003,9 +921,7 @@ export class JadeNoteServer {
               updated_info: {
                 name: result.name,
                 purpose: result.parsed.purpose,
-                agent_instructions: result.parsed.agentInstructions,
-                has_template: result.hasTemplate,
-                template: result.template
+                agent_instructions: result.parsed.agentInstructions
               }
             },
             null,
@@ -1032,9 +948,7 @@ export class JadeNoteServer {
               type_name: info.name,
               description: info.parsed.purpose,
               agent_instructions: info.parsed.agentInstructions,
-              template: info.template,
               metadata_schema: info.parsed.parsedMetadataSchema,
-              has_template: info.hasTemplate,
               path: info.path
             },
             null,

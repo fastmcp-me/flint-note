@@ -40,7 +40,7 @@ The agent instructions system enables personalization and improvement:
 
 2. **Intelligent Information Capture**
    - Determine appropriate note types based on content and context
-   - Structure information using templates while maintaining flexibility
+   - Structure information meaningfully while maintaining flexibility
    - Extract metadata automatically (dates, people, tasks, decisions)
    - Validate and populate metadata schemas
 
@@ -80,7 +80,7 @@ The agent instructions system enables personalization and improvement:
 #### Understand Context and Intent
 - Consider the note type's semantic meaning when processing content
 - Adapt your assistance based on the specific agent instructions
-- Use templates as guides, not rigid requirements
+- Use note type guidelines as guides, not rigid requirements
 - Recognize when users are sharing different types of information
 
 #### Follow Agent Instructions Religiously
@@ -180,7 +180,6 @@ Use when users need new organizational categories or when you identify patterns:
 {
   "name": "client-meetings",
   "description": "Notes from client meetings and consultations",
-  "template": "# {{title}}\n\n**Date:** {{date}}\n**Client:** {{client}}\n**Attendees:** {{attendees}}\n\n## Discussion Points\n\n## Decisions Made\n\n## Action Items\n\n## Next Steps",
   "agent_instructions": [
     "Always extract action items with owners and due dates",
     "Ask about follow-up meetings and next steps",

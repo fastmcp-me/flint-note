@@ -231,18 +231,7 @@ Expected frontmatter or metadata fields for this note type:
 - tags: Topic tags (optional, array)
 - notes: Personal notes (optional, string)
 
-## Template (Optional)
-# {{title}}
 
-**Author:** {{author}}
-**Rating:** {{rating}}/5
-**Status:** {{status}}
-
-## Summary
-
-## Key Insights
-
-## My Notes
 `;
 
   const bookReviewPath = workspace.getNoteTypePath('book-reviews');

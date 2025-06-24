@@ -20,8 +20,7 @@ Create a note-taking system where:
 1. **Agent-First**: Design every feature with AI agent interaction as the primary interface
 2. **User Ownership**: All data stored as simple files in user-controlled directories
 3. **Semantic Organization**: Note types carry meaning that agents can understand and act upon
-4. **Template-Driven**: Consistent structure through customizable templates with variable substitution
-5. **Extensible**: Easy to add new note types and agent behaviors
+4. **Extensible**: Easy to add new note types and agent behaviors
 6. **Portable**: No vendor lock-in, works with standard file systems and version control
 
 ## Multi-Vault System
@@ -32,7 +31,7 @@ jade-note supports multiple vaults, allowing you to organize different collectio
 
 - **Platform-specific storage**: Configuration stored in appropriate system directories (`~/.config/jade-note` on Unix, `%APPDATA%\jade-note` on Windows)
 - **Easy switching**: Switch between vaults instantly without restarting the server
-- **Independent workspaces**: Each vault has its own note types, templates, and configuration
+- **Independent workspaces**: Each vault has its own note types and configuration
 - **Legacy support**: Automatically migrates existing workspaces to the vault system
 
 ### Vault Management
@@ -195,7 +194,6 @@ jade-note-workspace/
 │   └── mcp-server.log         # MCP server logs
 ├── {note-type-1}/
 │   ├── _description.md        # Type definition, agent instructions, and metadata schema
-│   ├── _template.md          # Optional default template
 │   ├── note-1.md
 │   └── note-2.md
 ├── {note-type-2}/
@@ -222,17 +220,7 @@ Brief description of what this note type is for.
 - Linking suggestions (e.g., "link to related project notes")
 - Content enhancement suggestions
 
-## Template (Optional)
-# {{title}}
 
-**Created:** {{date}} at {{time}}
-**Type:** {{type}}
-
-## Content
-{{content}}
-
-## Actions
-- [ ] Review and process
 
 ## Metadata Schema
 Expected frontmatter or metadata fields for this note type:
@@ -293,15 +281,14 @@ The jade-note MCP server exposes the following tools and resources:
 | `update_vault` | Update vault name or description | `vault_id`, `name?`, `description?` |
 | `remove_vault` | Remove vault from registry (files preserved) | `vault_id` |
 | **Note Management** | | |
-| `create_note_type` | Create new note type with description | `type_name`, `description`, `template?`, `agent_instructions?`, `metadata_schema?` |
-| `create_note` | Create new note of specified type | `type`, `title`, `content`, `use_template?`, `metadata?` |
+| `create_note_type` | Create new note type with description | `type_name`, `description`, `agent_instructions?`, `metadata_schema?` |
+| `create_note` | Create new note of specified type | `type`, `title`, `content`, `metadata?` |
 | `get_note` | Retrieve specific note | `identifier` |
 | `update_note` | Update existing note | `identifier`, `content` |
 | `search_notes` | Search notes by content/type | `query`, `type_filter?`, `limit?`, `use_regex?` |
 | `list_note_types` | List all available note types | none |
 | `link_notes` | Create explicit links between notes | `source`, `target`, `relationship?` |
-| `get_note_type_template` | Get template for a note type | `type_name` |
-| `update_note_type` | Update specific field of existing note type | `type_name`, `field` (instructions\|description\|template\|metadata_schema), `value` |
+| `update_note_type` | Update specific field of existing note type | `type_name`, `field` (instructions\|description\|metadata_schema), `value` |
 | `get_note_type_info` | Get comprehensive note type information including agent instructions | `type_name` |
 | `analyze_note` | Get AI analysis/suggestions for a note | `identifier` |
 
@@ -323,9 +310,8 @@ The jade-note MCP server exposes the following tools and resources:
 - [x] Basic MCP server with CRUD operations
 - [x] Simple search functionality
 - [x] Integration with MCP-compatible clients
-- [x] Template-based note creation with variable substitution
 - [x] Agent instruction management and integration
-- [x] Note type field updates (instructions, description, template, metadata)
+- [x] Note type field updates (instructions, description, metadata)
 - [x] Structured metadata schema system with validation
 - [x] Rich field types (string, number, boolean, date, array, select)
 - [x] Constraint validation and error handling
@@ -350,26 +336,13 @@ The jade-note MCP server exposes the following tools and resources:
 
 ## Vault Initialization
 
-When jade-note initializes a new vault, it automatically creates several default note types to provide a comprehensive foundation for knowledge management. These pre-configured note types come with optimized agent instructions, templates, and metadata schemas.
+When jade-note initializes a new vault, it automatically creates several default note types to provide a comprehensive foundation for knowledge management. These pre-configured note types come with optimized agent instructions and metadata schemas.
 
 ### Default Note Types
 
 #### Daily Notes
 **Purpose**: Track daily events, reflections, and activities  
 **Directory**: `daily/`  
-**Template**:
-```markdown
-# {{date}}
-
-## Today's Events
-
-
-## Reflections
-
-
-## Tomorrow's Focus
-
-```
 **Agent Instructions**:
 - Ask about key events and accomplishments from the day
 - Encourage reflection on lessons learned or insights gained
@@ -385,25 +358,6 @@ When jade-note initializes a new vault, it automatically creates several default
 #### Reading Notes
 **Purpose**: Track articles, papers, books, and other reading material  
 **Directory**: `reading/`  
-**Template**:
-```markdown
-# {{title}}
-
-**Author**: {{author}}  
-**Type**: {{type}}  
-**Status**: {{status}}
-
-## Summary
-
-
-## Key Insights
-
-
-## Personal Rating: {{rating}}/5
-
-## Notes
-
-```
 **Agent Instructions**:
 - Always ask for author information and publication context
 - Extract and organize key insights and takeaways
@@ -425,24 +379,6 @@ When jade-note initializes a new vault, it automatically creates several default
 #### Todo Lists
 **Purpose**: Track tasks, action items, and things that need to be done  
 **Directory**: `todos/`  
-**Template**:
-```markdown
-# {{title}}
-
-**Priority**: {{priority}}  
-**Due Date**: {{due_date}}  
-**Status**: {{status}}
-
-## Description
-
-
-## Action Items
-
-- [ ] 
-
-## Notes
-
-```
 **Agent Instructions**:
 - Help break down large tasks into smaller, actionable items
 - Ask about priorities and deadlines
@@ -461,31 +397,6 @@ When jade-note initializes a new vault, it automatically creates several default
 #### Project Tracking
 **Purpose**: Track ongoing projects, goals, and long-term initiatives  
 **Directory**: `projects/`  
-**Template**:
-```markdown
-# {{title}}
-
-**Status**: {{status}}  
-**Priority**: {{priority}}  
-**Start Date**: {{start_date}}  
-**Target Date**: {{target_date}}
-
-## Project Goals
-
-
-## Current Status
-
-
-## Action Items
-
-- [ ] 
-
-## Resources & Links
-
-
-## Notes
-
-```
 **Agent Instructions**:
 - Ask about project scope, goals, and success criteria
 - Help identify key milestones and deadlines
@@ -505,29 +416,6 @@ When jade-note initializes a new vault, it automatically creates several default
 #### Goals Tracking
 **Purpose**: Track long-term personal and professional goals  
 **Directory**: `goals/`  
-**Template**:
-```markdown
-# {{title}}
-
-**Category**: {{category}}  
-**Timeline**: {{timeline}}  
-**Status**: {{status}}
-
-## Goal Description
-
-
-## Why This Matters
-
-
-## Success Criteria
-
-
-## Action Plan
-
-
-## Progress Updates
-
-```
 **Agent Instructions**:
 - Help define specific, measurable, achievable goals
 - Ask about motivation and personal significance
@@ -548,27 +436,6 @@ When jade-note initializes a new vault, it automatically creates several default
 #### Games Tracking
 **Purpose**: Track video games played, progress, and experiences  
 **Directory**: `games/`  
-**Template**:
-```markdown
-# {{title}}
-
-**Platform**: {{platform}}  
-**Genre**: {{genre}}  
-**Status**: {{status}}  
-**Rating**: {{rating}}/5
-
-## Game Info
-
-
-## My Experience
-
-
-## Highlights & Memorable Moments
-
-
-## Final Thoughts
-
-```
 **Agent Instructions**:
 - Ask about platform, genre, and gameplay style preferences
 - Encourage documenting memorable moments and achievements
@@ -589,27 +456,6 @@ When jade-note initializes a new vault, it automatically creates several default
 #### Movies Tracking
 **Purpose**: Track movies watched, reviews, and recommendations  
 **Directory**: `movies/`  
-**Template**:
-```markdown
-# {{title}}
-
-**Director**: {{director}}  
-**Year**: {{year}}  
-**Genre**: {{genre}}  
-**Rating**: {{rating}}/5
-
-## Plot Summary
-
-
-## My Thoughts
-
-
-## Memorable Scenes
-
-
-## Would I Recommend?
-
-```
 **Agent Instructions**:
 - Ask about what drew them to watch this particular movie
 - Encourage discussing themes, cinematography, and performances
@@ -632,7 +478,7 @@ When jade-note initializes a new vault, it automatically creates several default
 1. **Create vault structure**: Initialize `.jade-note/` directory with configuration
 2. **Generate default config**: Create `config.yml` with optimal defaults
 3. **Create note type directories**: Set up folders for all default note types
-4. **Generate description files**: Create `_description.md` for each note type with templates, instructions, and schemas
+4. **Generate description files**: Create `_description.md` for each note type with instructions and schemas
 5. **Create welcome note**: Generate an introductory note explaining the vault structure and how to get started
 
 The initialization ensures users have a rich, immediately usable knowledge management system while maintaining full flexibility to customize or add additional note types.
@@ -734,7 +580,7 @@ Agent: Switching to your personal vault now.
 [Uses switch_vault tool with vault_id="personal"]
 
 Now in personal vault. I'll create a reading note for you - what book are you reading?
-[Creates note using personal vault's reading note type and templates]
+[Creates note using personal vault's reading note type]
 ```
 
 ```
@@ -771,12 +617,12 @@ Vault initialized successfully! I've created the following note types for you:
 - **games**: For video games you play
 - **movies**: For movies you watch
 
-Each note type comes with optimized templates, agent instructions, and metadata schemas. You can start creating notes right away or customize any of these note types to better fit your needs.
+Each note type comes with optimized agent instructions and metadata schemas. You can start creating notes right away or customize any of these note types to better fit your needs.
 
 User: "Create my first daily note for today"
 
 Agent: I'll create today's daily note for you. What were the key events from your day?
-[Creates daily note using the pre-configured template and agent instructions]
+[Creates daily note using the pre-configured agent instructions]
 ```
 
 #### Creating a New Note Type
@@ -784,12 +630,12 @@ Agent: I'll create today's daily note for you. What were the key events from you
 User: "I want to create a note type for tracking my reading notes"
 
 Agent: I'll create a new note type for reading notes.
-[Creates directory and _description.md with appropriate template]
+[Creates directory and _description.md with appropriate metadata schema]
 
 User: "Make sure it includes fields for author, key insights, and my rating"
 
-Agent: I'll update the template to include those fields.
-[Updates _description.md with enhanced template]
+Agent: I'll update the metadata schema to include those fields.
+[Updates _description.md with enhanced metadata schema]
 ```
 
 #### Creating Note Type with Custom Agent Instructions
@@ -887,10 +733,10 @@ User: "What guidance do agents have for project notes?"
 Agent: Let me check the agent instructions for project notes.
 [Uses get_note_type_info("project") to retrieve: ["Always ask about project goals", "Extract action items", "Suggest next steps", "Track deadlines"]]
 
-User: "Change the template for meeting notes to include action items"
+User: "Update the agent instructions for meeting notes to emphasize action items"
 
-Agent: I'll update the template for your meeting notes.
-[Uses update_note_type("meetings", "template", "# {{title}}\n\n**Date:** {{date}}\n\n## Action Items\n\n")]
+Agent: I'll update the agent instructions for your meeting notes.
+[Uses update_note_type("meetings", "instructions", "Always extract and highlight action items from meeting discussions")]
 
 User: "Add a priority field to my project notes schema"
 
@@ -1029,7 +875,7 @@ The project has a comprehensive design document and core implementation with MCP
 
 #### **6. Agent Instructions System Enhancement**
 - Implement dynamic agent instruction loading
-- Create template library for common note types (meetings, books, projects)
+- Create instruction library for common note types (meetings, books, projects)
 - Test agent instruction effectiveness with multiple AI assistants
 - Add instruction versioning and rollback
 
@@ -1057,7 +903,7 @@ From the original roadmap:
 #### **10. Community & Adoption**
 - Create example workspaces for different use cases
 - Build integrations with popular AI tools beyond MCP
-- Develop community template and schema library
+- Develop community instruction and schema library
 - Establish contribution guidelines and developer documentation
 
 ### Development Priorities by Impact

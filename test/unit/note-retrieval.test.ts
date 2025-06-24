@@ -363,7 +363,6 @@ function example() {
           type,
           `${type} Note`,
           `This is a note in ${type} type.`,
-          false,
           metadata
         );
         createdNotes.push(noteInfo);

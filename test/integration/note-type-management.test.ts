@@ -150,55 +150,6 @@ describe('Note Type Management Integration', () => {
       );
     });
 
-    test('should create note type with template', async () => {
-      const noteTypeData = {
-        type_name: 'book-reviews',
-        description: 'Reviews and notes about books I have read.',
-        template: `# {{title}}
-
-## Summary
-Brief summary of the book.
-
-## Key Insights
-- Main insight 1
-- Main insight 2
-
-## My Rating: {{rating}}/5
-
-## Notes
-Additional thoughts and notes.`
-      };
-
-      const result = await client.callTool('create_note_type', noteTypeData);
-      assert.ok(
-        result.content[0].text.includes('Created note type'),
-        'Should confirm creation'
-      );
-
-      // Verify template file was created
-      const templatePath = join(context.tempDir, 'book-reviews', '_template.md');
-      const templateExists = await fs
-        .access(templatePath)
-        .then(() => true)
-        .catch(() => false);
-      assert.ok(templateExists, 'Template file should exist');
-
-      // Verify template content
-      const templateContent = await fs.readFile(templatePath, 'utf8');
-      assert.ok(
-        templateContent.includes('{{title}}'),
-        'Template should contain title placeholder'
-      );
-      assert.ok(
-        templateContent.includes('{{rating}}'),
-        'Template should contain rating placeholder'
-      );
-      assert.ok(
-        templateContent.includes('## Summary'),
-        'Template should contain structure'
-      );
-    });
-
     test('should create note type with agent instructions', async () => {
       const noteTypeData = {
         type_name: 'project-tasks',
@@ -245,24 +196,6 @@ Additional thoughts and notes.`
       const noteTypeData = {
         type_name: 'research-papers',
         description: 'Academic papers and research documents with structured analysis.',
-        template: `# {{title}}
-
-**Authors:** {{authors}}
-**Journal:** {{journal}}
-**Year:** {{year}}
-
-## Abstract
-{{abstract}}
-
-## Key Findings
-- Finding 1
-- Finding 2
-
-## Methodology
-Description of research methodology.
-
-## Personal Notes
-My thoughts and analysis.`,
         agent_instructions: [
           'Always include full citation information',
           'Summarize methodology clearly',
@@ -281,23 +214,13 @@ My thoughts and analysis.`,
       // Verify files were created (agent instructions are stored in description file)
       const typePath = join(context.tempDir, 'research-papers');
       const descriptionPath = join(typePath, '_description.md');
-      const templatePath = join(typePath, '_template.md');
 
-      const filesExist = await Promise.all([
-        fs
-          .access(descriptionPath)
-          .then(() => true)
-          .catch(() => false),
-        fs
-          .access(templatePath)
-          .then(() => true)
-          .catch(() => false)
-      ]);
+      const descriptionExists = await fs
+        .access(descriptionPath)
+        .then(() => true)
+        .catch(() => false);
 
-      assert.ok(
-        filesExist.every(exists => exists),
-        'All note type files should exist'
-      );
+      assert.ok(descriptionExists, 'Description file should exist');
 
       // Verify description file contains agent instructions
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
@@ -341,8 +264,6 @@ My thoughts and analysis.`,
       const result = await client.callTool('create_note_type', {
         type_name: 'book-reviews',
         description: 'Reviews and notes about books I have read',
-        template:
-          '# {{title}}\n\n## Summary\n\n## Key Insights\n\n## My Rating: {{rating}}/5',
         agent_instructions: [
           'Always include a brief summary of the book',
           'Highlight the most important insights or takeaways',
@@ -437,7 +358,6 @@ My thoughts and analysis.`,
       await client.callTool('create_note_type', {
         type_name: 'updateable',
         description: 'Original description for testing updates.',
-        template: 'Original template content',
         agent_instructions: ['Original instruction 1', 'Original instruction 2']
       });
     });
@@ -464,42 +384,28 @@ My thoughts and analysis.`,
       );
     });
 
-    test('should update note type template', async () => {
-      const newTemplate = `# {{title}}
-
-## Updated Template Structure
-
-**Date:** {{date}}
-**Category:** {{category}}
-
-## Content
-{{content}}
-
-## Updated Section
-This section was added in the update.`;
+    test('should update note type description', async () => {
+      const newDescription =
+        'Updated description for comprehensive testing of note type modifications.';
 
       const result = await client.callTool('update_note_type', {
         type_name: 'updateable',
-        field: 'template',
-        value: newTemplate
+        field: 'description',
+        value: newDescription
       });
 
       assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
 
-      // Verify template was updated
-      const templatePath = join(context.tempDir, 'updateable', '_template.md');
-      const templateContent = await fs.readFile(templatePath, 'utf8');
+      // Verify description was updated
+      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
+      const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
-        templateContent.includes('Updated Template Structure'),
-        'Template should be updated'
+        descriptionContent.includes('Updated description for comprehensive testing'),
+        'Description should be updated'
       );
       assert.ok(
-        templateContent.includes('{{category}}'),
-        'Template should contain new placeholders'
-      );
-      assert.ok(
-        !templateContent.includes('Original template'),
-        'Old template should be replaced'
+        !descriptionContent.includes('Original description'),
+        'Old description should be replaced'
       );
     });
 
@@ -596,16 +502,6 @@ completed: boolean`;
       await client.callTool('create_note_type', {
         type_name: 'comprehensive',
         description: 'A comprehensive note type with all components for testing.',
-        template: `# {{title}}
-
-## Overview
-{{overview}}
-
-## Details
-{{details}}
-
-## Conclusion
-{{conclusion}}`,
         agent_instructions: [
           'Always start with a clear overview',
           'Provide detailed analysis in the details section',
@@ -641,8 +537,7 @@ reviewed: boolean`
         info.description.includes('comprehensive note type'),
         'Should include description'
       );
-      assert.ok(info.template.includes('{{title}}'), 'Should include template');
-      assert.ok(info.template.includes('## Overview'), 'Template should have structure');
+
       assert.ok(
         Array.isArray(info.agent_instructions),
         'Should include agent instructions'
@@ -659,39 +554,8 @@ reviewed: boolean`
       );
     });
 
-    test('should retrieve note type template separately', async () => {
-      const result = await client.callTool('get_note_type_template', {
-        type_name: 'comprehensive'
-      });
-
-      assert.ok(result.content, 'Should return content array');
-      const template = result.content[0].text;
-
-      assert.ok(template.includes('# {{title}}'), 'Should return template content');
-      assert.ok(template.includes('## Overview'), 'Should include template structure');
-      assert.ok(template.includes('{{overview}}'), 'Should include placeholders');
-      assert.ok(template.includes('{{conclusion}}'), 'Should include all placeholders');
-    });
-
     test('should handle non-existent note type info request', async () => {
       const result = await client.callTool('get_note_type_info', {
-        type_name: 'non-existent'
-      });
-
-      // Server returns error response in content
-      assert.ok(result.isError, 'Should return error response');
-      assert.ok(
-        result.content[0].text.includes('Error:'),
-        'Should contain error message'
-      );
-      assert.ok(
-        result.content[0].text.includes('does not exist'),
-        'Error should mention note type not found'
-      );
-    });
-
-    test('should handle non-existent template request', async () => {
-      const result = await client.callTool('get_note_type_template', {
         type_name: 'non-existent'
       });
 
@@ -808,7 +672,6 @@ reviewed: boolean`
       await client.callTool('create_note_type', {
         type_name: 'structured',
         description: 'Testing file system structure.',
-        template: 'Template content',
         agent_instructions: ['Instruction 1', 'Instruction 2']
       });
 
@@ -817,7 +680,7 @@ reviewed: boolean`
       const files = await fs.readdir(typePath);
 
       // Agent instructions are stored in description file, not separate file
-      const expectedFiles = ['_description.md', '_template.md'];
+      const expectedFiles = ['_description.md'];
       for (const expectedFile of expectedFiles) {
         assert.ok(files.includes(expectedFile), `Should contain ${expectedFile}`);
       }
