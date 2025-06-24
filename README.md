@@ -78,6 +78,15 @@ jade-note remove work
 3. **Switch between vaults**: Use `switch_vault` tool or `jade-note switch` command
 4. **Organize by purpose**: Create separate vaults for work, personal, research, projects, etc.
 
+### System Prompts and Multi-Vault Context
+
+When working with multi-vault systems, jade-note automatically provides context to AI agents about the current vault and its purpose. This enables intelligent, vault-aware assistance:
+
+- **Current Vault Context**: All MCP tool responses include information about which vault is currently active
+- **Vault-Specific Behavior**: Agents understand the purpose and context of each vault (work, personal, research, etc.)
+- **Cross-Vault Awareness**: When switching vaults, agents maintain awareness of the transition and can help organize content appropriately
+- **Contextual Suggestions**: Note creation and management suggestions are tailored to the current vault's purpose and existing content
+
 ## Agent Instructions System
 
 The agent instructions system is a core feature that enables users to define specific behaviors and guidance for AI agents when working with different note types. This creates a personalized, context-aware experience where agents understand the purpose and conventions of each note category.
@@ -88,6 +97,8 @@ The agent instructions system is a core feature that enables users to define spe
 2. **Automatic Context**: When agents work with notes, they automatically receive relevant instructions
 3. **User-Customizable**: Instructions can be easily updated using natural language through the MCP interface
 4. **Contextual Responses**: Note creation responses include agent instructions and helpful suggestions
+5. **Vault-Aware Context**: Agent instructions automatically include current vault information and context
+6. **Cross-Vault Intelligence**: When switching vaults, agents understand the transition and adapt their behavior accordingly
 
 ### Example Agent Instructions
 
@@ -274,6 +285,14 @@ The jade-note MCP server exposes the following tools and resources:
 
 | Tool Name | Purpose | Parameters |
 |:----------|:--------|:-----------|
+| **Vault Management** | | |
+| `list_vaults` | List all configured vaults | none |
+| `create_vault` | Create a new vault | `vault_id`, `name`, `path`, `description?` |
+| `switch_vault` | Switch to a different vault | `vault_id` |
+| `get_current_vault` | Show current vault information | none |
+| `update_vault` | Update vault name or description | `vault_id`, `name?`, `description?` |
+| `remove_vault` | Remove vault from registry (files preserved) | `vault_id` |
+| **Note Management** | | |
 | `create_note_type` | Create new note type with description | `type_name`, `description`, `template?`, `agent_instructions?`, `metadata_schema?` |
 | `create_note` | Create new note of specified type | `type`, `title`, `content`, `use_template?`, `metadata?` |
 | `get_note` | Retrieve specific note | `identifier` |
@@ -290,6 +309,8 @@ The jade-note MCP server exposes the following tools and resources:
 
 | Resource URI | Description | Content |
 |:-------------|:------------|:--------|
+| `jade-note://vaults` | All configured vaults | JSON list of vault configurations |
+| `jade-note://current-vault` | Current active vault information | JSON with vault details and stats |
 | `jade-note://types` | Available note types and descriptions | JSON list of types |
 | `jade-note://recent` | Recently modified notes | JSON list of recent notes |
 | `jade-note://stats` | Workspace statistics | JSON with counts, types, etc. |
@@ -627,13 +648,35 @@ The initialization ensures users have a rich, immediately usable knowledge manag
 
 ### Configuration Schema
 
+#### Global Configuration (~/.jade-note/config.yml)
 ```yaml
-# .jade-note/config.yml
-workspace_root: "."
-default_note_type: "general"
+# Global vault registry
+vaults:
+  work:
+    name: "Work Notes"
+    path: "~/work-notes"
+    description: "Professional projects and meeting notes"
+    last_used: "2024-01-15T10:30:00Z"
+  personal:
+    name: "Personal Journal"
+    path: "~/personal-notes"
+    description: "Personal thoughts, goals, and interests"
+    last_used: "2024-01-14T20:15:00Z"
+
+current_vault: "work"  # Currently active vault
+
 mcp_server:
   port: 3000
   log_level: "info"
+  auto_switch_vault: true  # Switch vault context based on MCP client requests
+```
+
+#### Per-Vault Configuration (.jade-note/config.yml in each vault)
+```yaml
+# Individual vault configuration
+vault_id: "work"
+workspace_root: "."
+default_note_type: "general"
 search:
   index_enabled: true
   index_path: ".jade-note/search-index.json"
@@ -668,6 +711,49 @@ metadata:
 ## User Experience
 
 ### Typical Workflows
+
+#### Managing Multiple Vaults
+```
+User: "I want to set up separate vaults for work and personal notes"
+
+Agent: I'll help you create and manage multiple vaults for better organization.
+
+[Uses create_vault tool]
+Created vault "work" at ~/work-notes with description "Professional projects and meeting notes"
+Created vault "personal" at ~/personal-notes with description "Personal thoughts, goals, and interests"
+
+You now have two vaults configured:
+- **work**: For professional content (currently active)
+- **personal**: For personal content
+
+You can switch between them anytime using the switch_vault tool or by asking me to switch contexts.
+
+User: "Switch to my personal vault and create a reading note"
+
+Agent: Switching to your personal vault now.
+[Uses switch_vault tool with vault_id="personal"]
+
+Now in personal vault. I'll create a reading note for you - what book are you reading?
+[Creates note using personal vault's reading note type and templates]
+```
+
+```
+User: "Show me all my vaults and their current status"
+
+Agent: [Uses list_vaults tool]
+
+Here are your configured vaults:
+- **work** (~/work-notes): Professional projects and meeting notes
+  - 45 notes, last used yesterday
+- **personal** (~/personal-notes): Personal thoughts, goals, and interests  
+  - 23 notes, currently active
+- **research** (~/research): Academic research and paper notes
+  - 12 notes, last used last week
+
+Currently active: **personal**
+
+Would you like to switch to a different vault or create a new one?
+```
 
 #### Initializing a New Vault
 ```
