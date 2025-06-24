@@ -10,7 +10,7 @@ This directory contains all prompt files for flint-note AI integrations, organiz
 - **`_overview.md`** - Complete system overview and integration guide
 
 ### Simple/Weak Model Support
-- **`simple_models_basic.md`** - Ultra-simple 4-step workflow for very weak models
+- **`simple_models_basic.md`** - Ultra-simple 7-step workflow for very weak models (includes agent instruction checking)
 - **`simple_models_detailed.md`** - Step-by-step instructions for moderately weak models
 - **`training_examples.md`** - Comprehensive test scenarios and validation examples
 - **`implementation_guide.md`** - Complete deployment guide for weak model integrations
@@ -26,8 +26,8 @@ This directory contains all prompt files for flint-note AI integrations, organiz
 3. Use **`clients_platform_specific.md`** for platform adaptations
 
 ### For Weak/Simple AI Models
-1. **Very Basic Models**: Use **`simple_models_basic.md`** (4-step workflow)
-2. **Moderately Weak Models**: Use **`simple_models_detailed.md`** (detailed procedures)
+1. **Very Basic Models**: Use **`simple_models_basic.md`** (7-step workflow with agent instructions)
+2. **Moderately Weak Models**: Use **`simple_models_detailed.md`** (detailed procedures with agent instructions)
 3. **Training/Validation**: Use **`training_examples.md`** for testing
 4. **Implementation**: Follow **`implementation_guide.md`** for deployment
 
@@ -41,10 +41,10 @@ This directory contains all prompt files for flint-note AI integrations, organiz
 
 | Model Capability | Recommended Prompts | Key Features |
 |-----------------|-------------------|--------------|
-| **GPT-4, Claude 3.5+** | `system_core.md` | Natural conversation, implicit workflow |
-| **GPT-3.5, Claude 3** | `system_core.md` + `instructions_comprehensive.md` | Explicit guidance for complex scenarios |
-| **Smaller Models** | `simple_models_detailed.md` | Step-by-step procedures, decision trees |
-| **Very Basic Models** | `simple_models_basic.md` | Template responses, minimal decisions |
+| **GPT-4, Claude 3.5+** | `system_core.md` | Natural conversation, agent instruction checking |
+| **GPT-3.5, Claude 3** | `system_core.md` + `instructions_comprehensive.md` | Explicit guidance, mandatory agent instruction checking |
+| **Smaller Models** | `simple_models_detailed.md` | Step-by-step procedures, agent instruction workflows |
+| **Very Basic Models** | `simple_models_basic.md` | Template responses, mandatory agent instruction checking |
 
 ## 🔄 Integration Workflow
 
@@ -89,12 +89,14 @@ Iterate based on user feedback
 Every implementation should pass scenarios from `training_examples.md`:
 - ✅ Cold start (no note types exist)
 - ✅ Warm system (note types exist)  
+- ✅ **Agent instruction checking before every note creation**
 - ✅ User permission for new note types
 - ✅ Agent instruction following
 - ✅ Error handling and recovery
 
 ### Success Criteria
 - Models follow mandatory workflow steps
+- **Models ALWAYS check agent instructions before creating notes**
 - Users give permission before new note types created
 - Agent instructions are followed consistently
 - Information extraction works accurately
@@ -103,9 +105,10 @@ Every implementation should pass scenarios from `training_examples.md`:
 ## 🔧 Troubleshooting
 
 ### Common Issues
+- **Model skips agent instruction checking** → Add mandatory get_note_type_info step
 - **Model skips note type checking** → Use more explicit prompts
 - **Creates note types without permission** → Emphasize user confirmation
-- **Ignores agent instructions** → Add explicit examples
+- **Ignores agent instructions** → Add explicit examples and mandatory checking
 - **Poor information extraction** → Include extraction examples
 - **Robotic responses** → Use conversational examples
 
@@ -145,8 +148,9 @@ All prompts in this directory follow these core principles:
 
 1. **Agent-First Design** - Users interact through conversation, not UI
 2. **Semantic Intelligence** - Note types define behavior through agent instructions
-3. **User Permission** - Always ask before creating new note types
-4. **Mandatory Workflows** - Consistent steps ensure reliable behavior
-5. **Conversational Tone** - Natural, helpful responses that explain actions
+3. **Mandatory Agent Instruction Checking** - ALWAYS check agent instructions before creating notes
+4. **User Permission** - Always ask before creating new note types
+5. **Mandatory Workflows** - Consistent steps ensure reliable behavior
+6. **Conversational Tone** - Natural, helpful responses that explain actions
 
 Remember: The goal is to create intelligent, personalized note-taking experiences that truly augment human thinking and knowledge work, regardless of the AI model's complexity level.

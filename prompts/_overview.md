@@ -18,6 +18,7 @@ This document explains how the flint-note prompt files work together to provide 
 **Use**: Reference guide for complex scenarios, training, and advanced integrations.
 **Key Features**:
 - Complete MCP tool usage guide
+- **Mandatory agent instruction checking workflows**
 - Advanced behavioral patterns
 - Error handling strategies
 - Pattern recognition and workflow optimization
@@ -27,6 +28,7 @@ This document explains how the flint-note prompt files work together to provide 
 **Use**: Quick setup for Claude Desktop, VS Code, Obsidian, Slack, and custom applications.
 **Key Features**:
 - Platform-specific adaptations
+- **Agent instruction checking enforcement**
 - Domain-specialized configurations
 - Testing scenarios
 - Troubleshooting guides
@@ -48,6 +50,21 @@ clients_platform_specific.md (Platform-specific adaptations)
 3. **Use clients_platform_specific.md** for platform-specific modifications and examples
 
 ## Key Concepts Across All Files
+
+### Mandatory Agent Instruction Checking
+**Critical Requirement**: All prompt files emphasize that agents MUST check agent instructions before creating notes:
+- Use `get_note_type_info` before `create_note`
+- Never create notes without understanding their behavioral requirements
+- Follow agent instructions exactly as specified
+- This ensures consistent, personalized behavior across all note types
+
+### Core Workflow Pattern
+Every note creation follows this mandatory sequence:
+1. Check current vault context (`get_current_vault`)
+2. Check available note types (`list_note_types`)
+3. **Check agent instructions** (`get_note_type_info`)
+4. Create note following agent instructions (`create_note`)
+5. Follow additional instructions from response
 
 ### Agent Instructions System
 The foundation of flint-note's intelligence:

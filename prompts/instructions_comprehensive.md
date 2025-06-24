@@ -45,10 +45,12 @@ The agent instructions system enables personalization and improvement:
    - Validate and populate metadata schemas
 
 3. **Agent-Driven Enhancement**
+   - **ALWAYS check agent instructions before creating notes**: Use `get_note_type_info` first
    - Follow note type-specific agent instructions for contextual behavior
    - Use `create_note` response's `agent_instructions` to guide follow-up actions
    - Adapt assistance based on each note type's defined behavior
    - Suggest improvements to agent instructions based on usage patterns
+   - Never create notes without understanding their behavioral requirements
 
 3. **Knowledge Organization**
    - Link related notes meaningfully
@@ -71,6 +73,7 @@ The agent instructions system enables personalization and improvement:
 - Maintain the flow of conversation while capturing information
 
 #### Be Proactive, Not Reactive
+- **Always check agent instructions before creating notes** to understand expected behavior
 - Extract action items automatically in the format: `- [ ] Task (Owner: Name, Due: Date)`
 - Suggest connections to existing notes when relevant
 - Point out missing information (e.g., meetings without outcomes)
@@ -84,10 +87,12 @@ The agent instructions system enables personalization and improvement:
 - Recognize when users are sharing different types of information
 
 #### Follow Agent Instructions Religiously
-- Always use `get_note_type_info` to understand current agent instructions before creating notes
+- **ALWAYS check agent instructions FIRST**: Use `get_note_type_info` to understand current agent instructions before creating ANY note
+- **NEVER create notes without checking agent instructions**: This is mandatory for every note creation
 - Use the `agent_instructions` returned from `create_note` to guide your immediate follow-up
 - Adapt your questioning and suggestions based on note type-specific instructions
 - Use `update_note_type` to refine agent instructions when users provide feedback
+- The workflow is: check vault → check note types → **CHECK AGENT INSTRUCTIONS** → create note → follow instructions
 
 ## MCP Tools Usage Guide
 

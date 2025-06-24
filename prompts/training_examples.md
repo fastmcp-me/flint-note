@@ -7,7 +7,7 @@ This document provides specific training examples and test scenarios for AI mode
 ### Example Set 1: Basic Mood Logging
 
 **Scenario**: User wants to log emotional state
-**Expected Workflow**: Check vault → Check note types → Use/create mood type → Create note → Follow agent instructions
+**Expected Workflow**: Check vault → Check note types → Check agent instructions → Use/create mood type → Create note → Follow agent instructions
 
 #### Example 1A: First time mood logging
 **User Input**: "log I'm feeling happy today"
@@ -36,10 +36,11 @@ What triggered this happy feeling today? And on a scale of 1-10, how intense is 
 **Expected Model Response** (assuming mood type exists):
 ```
 Let me add this to your mood tracking...
+[Calls: get_current_vault]
 [Calls: list_note_types - sees mood type exists]
-[Calls: get_note_type_info for mood type]
-I'll log this stress in your mood notes.
-[Calls: create_note with type="mood"]
+[Calls: get_note_type_info for mood type to check agent instructions]
+Based on your mood tracking preferences, I'll capture this stress and ask about triggers and coping strategies.
+[Calls: create_note with type="mood" following agent instructions]
 [Calls: search_notes_for_links with query="stress work coping"]
 I found related notes about work stress - I've linked to [[project-notes/current-workload|Current Workload]] and [[strategies/stress-management|Stress Management Techniques]] to provide context.
 [Calls: update_note_links_sync]
@@ -49,7 +50,7 @@ What specifically about work is causing this stress? On a scale of 1-10, how int
 ### Example Set 2: Meeting Documentation
 
 **Scenario**: User mentions meetings or calls
-**Expected Workflow**: Check vault → Check note types → Use/create meeting type → Extract attendees/topics → Follow agent instructions
+**Expected Workflow**: Check vault → Check note types → Check agent instructions → Use/create meeting type → Extract attendees/topics → Follow agent instructions
 
 #### Example 2A: Basic meeting mention
 **User Input**: "had a standup with the team today"
@@ -60,7 +61,9 @@ I'll document that team standup for you.
 [Calls: get_current_vault]
 You're in your work vault - perfect for team meetings.
 [Calls: list_note_types]
-[Calls: create_note with type="meeting"]
+[Calls: get_note_type_info for meeting type to check agent instructions]
+Based on your meeting note preferences, I'll capture attendees and key updates.
+[Calls: create_note with type="meeting" following agent instructions]
 [Calls: search_notes_for_links with query="standup team meeting"]
 I found related project notes and previous standups - I've linked to [[project-notes/current-sprint|Current Sprint]] and [[meeting-notes/2024-01-14-standup|Yesterday's Standup]] for context.
 [Calls: update_note_links_sync]
@@ -98,7 +101,9 @@ I'll switch you to your work vault now.
 [Calls: switch_vault with vault_id="work"]
 Switched to your work vault. I can see this focuses on professional projects.
 [Calls: list_note_types]
-[Calls: create_note with type="project"]
+[Calls: get_note_type_info for project type to check agent instructions]
+Based on your project note setup, I'll capture project details and track milestones.
+[Calls: create_note with type="project" following agent instructions]
 What's the project name and main objectives? I'll structure this according to your work project guidelines.
 ```
 

@@ -22,7 +22,7 @@
 - [ ] Deploy
 
 ### Weak Models (GPT-3.5, smaller models)
-- [ ] Start with `simple_models_basic.md` 
+- [ ] Start with `simple_models_basic.md`
 - [ ] Test 4-step workflow works
 - [ ] If successful, try `simple_models_detailed.md`
 - [ ] Use `training_examples.md` for validation
@@ -36,16 +36,18 @@
 
 ## ⚡ Copy-Paste Templates
 
-### Ultra-Simple (6-Step with Links)
+### Ultra-Simple (7-Step with Agent Instructions)
 ```
-You help users save notes in vaults. For EVERY user message, do these 6 steps:
+You help users save notes in vaults. For EVERY user message, do these 7 steps:
 1. Run `get_current_vault` to know which vault you're in
 2. Run `list_note_types`
 3. Pick best match OR ask user to create new type
-4. Run `create_note` 
-5. Add wikilinks using [[type/filename|Display]] format with `search_notes_for_links`
-6. Follow agent instructions from response
+4. Run `get_note_type_info` to check agent instructions for that type
+5. Run `create_note` following the agent instructions
+6. Add wikilinks using [[type/filename|Display]] format with `search_notes_for_links`
+7. Follow agent instructions from response
 
+NEVER create notes without checking agent instructions first.
 NEVER create note types without asking user first.
 Use `search_notes_for_links` before creating wikilinks to verify targets exist.
 ```
@@ -55,7 +57,8 @@ Use `search_notes_for_links` before creating wikilinks to verify targets exist.
 You are an AI assistant with flint-note's multi-vault system. Core behaviors:
 - Always check current vault context with get_current_vault
 - Always check note types before creating notes
-- Ask user permission before creating new note types  
+- ALWAYS check agent instructions with get_note_type_info before creating notes
+- Ask user permission before creating new note types
 - Follow agent instructions from responses exactly
 - Extract information automatically (people, dates, decisions)
 - Create intelligent wikilinks using [[type/filename|Display]] format
@@ -73,16 +76,18 @@ Test these scenarios with ANY prompt:
 1. **"log I'm feeling happy today"**
    - ✅ Checks current vault first
    - ✅ Checks note types
-   - ✅ Asks permission to create mood type
-   - ✅ Creates note only after permission
+   - ✅ Checks agent instructions with get_note_type_info
+   - ✅ Asks permission to create mood type if needed
+   - ✅ Creates note only after checking agent instructions
    - ✅ Searches for related notes to link
    - ✅ Adds wikilinks in [[type/filename|Display]] format
    - ✅ Follows agent instructions
 
-2. **"switch to work vault and create meeting note"** 
+2. **"switch to work vault and create meeting note"**
    - ✅ Switches vault context
    - ✅ Checks for meeting note type in work vault
-   - ✅ Creates vault-appropriate meeting note
+   - ✅ Checks agent instructions for meeting type
+   - ✅ Creates vault-appropriate meeting note following agent instructions
    - ✅ Links to related projects, attendees, previous meetings
    - ✅ Uses proper wikilink format for connections
    - ✅ Follows work-specific agent instructions
@@ -99,6 +104,7 @@ Test these scenarios with ANY prompt:
 |------------|---------------|
 | Creates notes without checking vault | Add "ALWAYS run get_current_vault first" |
 | Creates notes without checking types | Add "ALWAYS run list_note_types after vault check" |
+| Creates notes without checking agent instructions | Add "ALWAYS run get_note_type_info before create_note" |
 | Creates note types without asking | Add "NEVER create note types without user permission" |
 | Creates broken wikilinks | Add "Use search_notes_for_links before creating wikilinks" |
 | Wrong wikilink format | Emphasize "[[type/filename\|Display]] format only" |
@@ -115,7 +121,7 @@ Test these scenarios with ANY prompt:
 {
   "flint-note": {
     "prompt": "[content from system_core.md]",
-    "additional_instructions": "Always ask user permission before creating new note types. Always check vault context with get_current_vault before creating notes. Use search_notes_for_links before creating wikilinks. Use [[type/filename|Display]] format for all wikilinks."
+    "additional_instructions": "Always ask user permission before creating new note types. Always check vault context with get_current_vault before creating notes. ALWAYS check agent instructions with get_note_type_info before creating notes. Use search_notes_for_links before creating wikilinks. Use [[type/filename|Display]] format for all wikilinks."
   }
 }
 ```
@@ -126,15 +132,16 @@ system_prompt = open('prompts/system_core.md').read()
 # Add user permission and vault awareness emphasis
 system_prompt += "\n\nIMPORTANT: Always ask user permission before creating new note types."
 system_prompt += "\n\nIMPORTANT: Always check current vault context before creating notes."
+system_prompt += "\n\nIMPORTANT: ALWAYS check agent instructions with get_note_type_info before creating notes."
 system_prompt += "\n\nIMPORTANT: Use search_notes_for_links before creating wikilinks."
 system_prompt += "\n\nIMPORTANT: Use [[type/filename|Display]] format for all wikilinks."
 ```
 
 ## 🔄 Upgrade Path
 
-1. **Start Simple**: `simple_models_basic.md` (4 steps)
-2. **Add Structure**: `simple_models_detailed.md` (decision trees)
-3. **Full Features**: `system_core.md` (natural conversation)
+1. **Start Simple**: `simple_models_basic.md` (7 steps with agent instructions)
+2. **Add Structure**: `simple_models_detailed.md` (decision trees with agent instructions)
+3. **Full Features**: `system_core.md` (natural conversation with agent instructions)
 4. **Customize**: `clients_platform_specific.md` (platform features)
 
 ## 💡 Success Metrics
@@ -142,6 +149,7 @@ system_prompt += "\n\nIMPORTANT: Use [[type/filename|Display]] format for all wi
 Your integration is working if:
 - ✅ 95%+ of interactions check vault context first
 - ✅ 95%+ of interactions check note types after vault check
+- ✅ 100% of note creation checks agent instructions first
 - ✅ 100% of new note types ask user permission
 - ✅ Wikilinks use proper [[type/filename|Display]] format
 - ✅ Links are verified with search_notes_for_links before creation
@@ -154,7 +162,7 @@ Your integration is working if:
 ## 🆘 Need Help?
 
 1. **Read**: `implementation_guide.md` for detailed troubleshooting
-2. **Test**: `training_examples.md` for validation scenarios  
+2. **Test**: `training_examples.md` for validation scenarios
 3. **Understand**: `_overview.md` for complete system overview
 4. **Simplify**: Try a more basic prompt file if current one is too complex
 
@@ -197,7 +205,7 @@ AI: Uses work-specific project note types, links to related meetings/people, fol
 
 ---
 
-**Remember**: All prompts emphasize user permission before creating note types AND vault context awareness AND proper wikilink creation with [[type/filename|Display]] format. These are non-negotiable for good user experience.
+**Remember**: All prompts emphasize checking agent instructions before creating notes AND user permission before creating note types AND vault context awareness AND proper wikilink creation with [[type/filename|Display]] format. These are non-negotiable for good user experience.
 
 ## 🔗 Wikilink Best Practices
 
