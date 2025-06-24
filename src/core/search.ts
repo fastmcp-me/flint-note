@@ -260,10 +260,10 @@ export class SearchManager {
           regex.lastIndex = 0;
 
           // Calculate score based on match types
-          let score = 0;
-          if (titleMatches) score += 10;
-          if (contentMatches) score += 5;
-          if (tagMatches) score += 3;
+          let _score = 0;
+          if (titleMatches) _score += 10;
+          if (contentMatches) _score += 5;
+          if (tagMatches) _score += 3;
 
           // Parse note path to get identifier
           const identifier = this.pathToIdentifier(notePath);

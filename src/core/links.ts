@@ -14,7 +14,6 @@ import type {
   NoteLink,
   LinkRelationship,
   LinkResult,
-  WikiLink,
   NoteLookupResult,
   LinkSuggestion
 } from '../types/index.ts';
@@ -29,14 +28,21 @@ interface LinkNotesArgs {
 }
 
 export class LinkManager implements NoteLinkingManager {
-  #workspace: Workspace;
+  #_workspace: Workspace;
   #noteManager: NoteManager;
   #linkingUtils: NoteLinkingUtils;
 
   constructor(workspace: Workspace, noteManager: NoteManager) {
-    this.#workspace = workspace;
+    this.#_workspace = workspace;
     this.#noteManager = noteManager;
     this.#linkingUtils = new NoteLinkingUtils(this);
+  }
+
+  /**
+   * Get the workspace instance
+   */
+  get workspace(): Workspace {
+    return this.#_workspace;
   }
 
   /**

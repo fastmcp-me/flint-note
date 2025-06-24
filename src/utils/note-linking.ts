@@ -5,7 +5,6 @@
  * validation, and automatic link management.
  */
 
-import path from 'path';
 import { WikilinkParser } from '../core/wikilink-parser.ts';
 import type {
   WikiLink,
