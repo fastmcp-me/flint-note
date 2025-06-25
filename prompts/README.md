@@ -6,36 +6,22 @@ This directory contains all prompt files for flint-note AI integrations, organiz
 
 ### Core System Prompts
 - **`system_core.md`** - Main system prompt for standard AI models
-- **`instructions_comprehensive.md`** - Detailed behavioral guidelines and advanced features
-- **`_overview.md`** - Complete system overview and integration guide
 
 ### Simple/Weak Model Support
 - **`simple_models_basic.md`** - Ultra-simple 7-step workflow for very weak models (includes agent instruction checking)
 - **`simple_models_detailed.md`** - Step-by-step instructions for moderately weak models
 - **`training_examples.md`** - Comprehensive test scenarios and validation examples
-- **`implementation_guide.md`** - Complete deployment guide for weak model integrations
-
-### Platform Integration
-- **`clients_platform_specific.md`** - Ready-to-use prompts for specific platforms (Claude, VS Code, etc.)
 
 ## 🎯 Quick Start Guide
 
 ### For Standard AI Models
 1. Start with **`system_core.md`** - core behaviors and principles
 2. Reference **`instructions_comprehensive.md`** for advanced scenarios
-3. Use **`clients_platform_specific.md`** for platform adaptations
 
 ### For Weak/Simple AI Models
 1. **Very Basic Models**: Use **`simple_models_basic.md`** (7-step workflow with agent instructions)
 2. **Moderately Weak Models**: Use **`simple_models_detailed.md`** (detailed procedures with agent instructions)
 3. **Training/Validation**: Use **`training_examples.md`** for testing
-4. **Implementation**: Follow **`implementation_guide.md`** for deployment
-
-### For Custom Integrations
-1. Read **`_overview.md`** for complete system understanding
-2. Choose appropriate base prompt from above
-3. Customize using **`clients_platform_specific.md`** examples
-4. Test with scenarios from **`training_examples.md`**
 
 ## 📊 Model Complexity Guide
 
@@ -52,7 +38,6 @@ This directory contains all prompt files for flint-note AI integrations, organiz
 ```
 Standard Model → system_core.md
 Weak Model → simple_models_basic.md or simple_models_detailed.md
-Custom Platform → clients_platform_specific.md
 ```
 
 ### 2. Test and Validate
@@ -60,13 +45,6 @@ Custom Platform → clients_platform_specific.md
 Use training_examples.md scenarios
 Verify core behaviors work correctly
 Test error handling and edge cases
-```
-
-### 3. Deploy and Monitor
-```
-Follow implementation_guide.md checklist
-Monitor success metrics
-Iterate based on user feedback
 ```
 
 ## 🎨 Customization Guidelines
@@ -77,18 +55,12 @@ Iterate based on user feedback
 3. Include relevant metadata schemas
 4. Test with domain-specific scenarios
 
-### Platform Adaptations  
-1. Use `clients_platform_specific.md` as template
-2. Adapt for platform-specific features
-3. Maintain core flint-note intelligence
-4. Test cross-platform compatibility
-
 ## 🧪 Testing and Validation
 
 ### Required Test Scenarios
 Every implementation should pass scenarios from `training_examples.md`:
 - ✅ Cold start (no note types exist)
-- ✅ Warm system (note types exist)  
+- ✅ Warm system (note types exist)
 - ✅ **Agent instruction checking before every note creation**
 - ✅ User permission for new note types
 - ✅ Agent instruction following
@@ -101,70 +73,3 @@ Every implementation should pass scenarios from `training_examples.md`:
 - Agent instructions are followed consistently
 - Information extraction works accurately
 - Conversations feel natural and helpful
-
-## 🔧 Troubleshooting
-
-### Common Issues
-- **Model skips agent instruction checking** → Add mandatory get_note_type_info step
-- **Model skips note type checking** → Use more explicit prompts
-- **Creates note types without permission** → Emphasize user confirmation
-- **Ignores agent instructions** → Add explicit examples and mandatory checking
-- **Poor information extraction** → Include extraction examples
-- **Robotic responses** → Use conversational examples
-
-### Getting Help
-1. Check `implementation_guide.md` for detailed troubleshooting
-2. Review `training_examples.md` for expected behaviors
-3. Try simpler prompt if current approach too complex
-4. Test incrementally with one feature at a time
-
-## 📈 Evolution and Maintenance
-
-### Regular Updates
-- Monitor user feedback across integrations
-- Update agent instruction examples based on real usage
-- Add new platform examples as needed
-- Improve error handling based on common issues
-
-### Contributing
-- Follow existing naming conventions
-- Test thoroughly before submitting
-- Document changes and rationale
-- Maintain backward compatibility where possible
-
-## 🏗️ File Naming Convention
-
-- **`system_*`** - Core system prompts for standard models
-- **`simple_models_*`** - Prompts for weak/simple models
-- **`instructions_*`** - Detailed behavioral guidance
-- **`clients_*`** - Platform-specific integrations
-- **`training_*`** - Test scenarios and examples
-- **`implementation_*`** - Deployment and troubleshooting guides
-- **`_overview`** - Meta-documentation (prefixed with underscore)
-
-## 💡 Key Principles
-
-All prompts in this directory follow these core principles:
-
-1. **Agent-First Design** - Users interact through conversation, not UI
-2. **Semantic Intelligence** - Note types define behavior through agent instructions
-3. **Mandatory Agent Instruction Checking** - ALWAYS check agent instructions before creating notes
-4. **User Permission** - Always ask before creating new note types
-5. **Dual Link Formatting** - Use [[type/filename|Display]] in notes, _human-friendly names_ in italics in responses
-6. **Mandatory Workflows** - Consistent steps ensure reliable behavior
-7. **Conversational Tone** - Natural, helpful responses that explain actions
-
-## 🔗 Link Formatting Standards
-
-### In Note Content
-- ✅ Use `[[type/filename|Display Name]]` format for wikilinks
-- ✅ Example: `[[reading-notes/atomic-habits|Atomic Habits]]`
-- ✅ Example: `[[project-notes/website-redesign|Website Project]]`
-
-### In User Responses
-- ✅ Use `_human-friendly names_` in markdown italics
-- ✅ Example: "I've connected this to your _Atomic Habits_ notes"
-- ✅ Example: "This relates to your _Website Project_ work"
-- ❌ Don't use wikilinks in responses: `[[reading-notes/atomic-habits|Atomic Habits]]`
-
-Remember: The goal is to create intelligent, personalized note-taking experiences that truly augment human thinking and knowledge work, regardless of the AI model's complexity level.

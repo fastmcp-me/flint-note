@@ -1,8 +1,8 @@
-# flint-note
+# Flint Note
 
 **NOTE: Experimental! This is very work in progress. Do not trust it yet!**
 
-A Model Context Protocol (MCP) server that provides an agent-first note-taking system designed from the ground up for AI collaboration. Instead of adding AI features to traditional notes, flint-note treats AI agents as your primary interface for creating, organizing, and connecting your knowledge.
+Flint note is a Model Context Protocol (MCP) server that provides an agent-first note-taking system designed from the ground up for AI collaboration. Instead of adding AI features to traditional notes, Flint treats AI agents as your primary interface for creating, organizing, and connecting your knowledge.
 
 ## Key features
 
@@ -192,3 +192,11 @@ Agent: I'll modify your project note instructions to emphasize deadline tracking
        and proactive blocker identification.
        [Updates projects/_description.md accordingly]
 ```
+
+## Tutorial
+
+Check out our [tutorial](./TUTORIAL.md) for a more detailed guide on how to use Flint Note.
+
+## Design
+
+See [design.md](./design.md) for design and architecture of the system.
