@@ -40,9 +40,7 @@ Add flint-note to your client's MCP config:
 
 #### Adding Custom Prompts for Better AI Behavior
 
-For the best experience, add a custom prompt that makes your AI assistant understand flint-note's agent-first design. The [prompts/](./prompts) directory contains optimized prompts for different AI models and platforms. If you want to get started quickly, just start your conversation with the following prompt:
-
-<details><summary>core prompt</summary>
+For the best experience, add a custom prompt that makes your AI assistant understand flint-note's agent-first design. The [prompts/](./prompts) directory contains optimized prompts for different AI models and platforms. If you want to get started quickly, just start your conversation by pasting in the following prompt:
 
 ```
 You have access to flint-note, an intelligent note-taking system with multi-vault support designed for natural conversation-based knowledge management.
@@ -84,8 +82,6 @@ AGENT INSTRUCTIONS SYSTEM:
 
 Focus on making note-taking effortless while building a valuable, adaptive knowledge base across multiple organized vaults.
 ```
-
-</details>
 
 ## Example Agent Conversations
 
