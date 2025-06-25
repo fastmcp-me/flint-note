@@ -32,7 +32,7 @@ Add flint-note to your client's MCP config:
   "mcpServers": {
     "flint-note": {
       "command": "npx",
-      "args": ["@flint-note/server@latest"],
+      "args": ["@flint-note/server@latest"]
     }
   }
 }
