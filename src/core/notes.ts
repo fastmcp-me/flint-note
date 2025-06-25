@@ -13,7 +13,14 @@ import { SearchManager } from './search.js';
 import { MetadataValidator } from './metadata-schema.js';
 import type { ValidationResult } from './metadata-schema.js';
 import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.js';
-import type { NoteLink, NoteMetadata, FlintNoteError, DeletionValidation, BackupInfo, WikiLink } from '../types/index.js';
+import type {
+  NoteLink,
+  NoteMetadata,
+  FlintNoteError,
+  DeletionValidation,
+  BackupInfo,
+  WikiLink
+} from '../types/index.js';
 import { WikilinkParser } from './wikilink-parser.js';
 
 interface ParsedNote {
@@ -624,7 +631,10 @@ export class NoteManager {
   /**
    * Delete a note
    */
-  async deleteNote(identifier: string, confirm: boolean = false): Promise<DeleteNoteResult> {
+  async deleteNote(
+    identifier: string,
+    confirm: boolean = false
+  ): Promise<DeleteNoteResult> {
     try {
       const config = this.#workspace.getConfig();
 
@@ -710,7 +720,9 @@ export class NoteManager {
       return validation;
     } catch (error) {
       validation.can_delete = false;
-      validation.errors.push(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      validation.errors.push(
+        `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       return validation;
     }
   }
@@ -754,7 +766,10 @@ export class NoteManager {
   async createNoteBackup(notePath: string): Promise<BackupInfo> {
     try {
       const config = this.#workspace.getConfig();
-      const backupDir = path.resolve(this.#workspace.rootPath, config?.deletion?.backup_path || '.flint-note/backups');
+      const backupDir = path.resolve(
+        this.#workspace.rootPath,
+        config?.deletion?.backup_path || '.flint-note/backups'
+      );
 
       // Ensure backup directory exists
       await fs.mkdir(backupDir, { recursive: true });
@@ -777,7 +792,9 @@ export class NoteManager {
         size: stats.size
       };
     } catch (error) {
-      throw new Error(`Failed to create backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create backup: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -802,7 +819,7 @@ export class NoteManager {
       if (matchingNotes.length > (config?.deletion?.max_bulk_delete || 10)) {
         throw new Error(
           `Bulk delete limit exceeded: attempting to delete ${matchingNotes.length} notes, ` +
-          `maximum allowed is ${config?.deletion?.max_bulk_delete || 10}`
+            `maximum allowed is ${config?.deletion?.max_bulk_delete || 10}`
         );
       }
 
@@ -825,14 +842,18 @@ export class NoteManager {
             id: noteIdentifier,
             deleted: false,
             timestamp: new Date().toISOString(),
-            warnings: [`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`]
+            warnings: [
+              `Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`
+            ]
           });
         }
       }
 
       return results;
     } catch (error) {
-      throw new Error(`Bulk delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Bulk delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -842,7 +863,7 @@ export class NoteManager {
   async findNotesMatchingCriteria(criteria: {
     type?: string;
     tags?: string[];
-    pattern?: string
+    pattern?: string;
   }): Promise<string[]> {
     try {
       const notes = await this.listNotes();
@@ -885,7 +906,9 @@ export class NoteManager {
 
       return matching;
     } catch (error) {
-      throw new Error(`Failed to find matching notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to find matching notes: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 

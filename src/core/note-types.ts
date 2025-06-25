@@ -10,7 +10,12 @@ import fs from 'fs/promises';
 import { Workspace } from './workspace.js';
 import { MetadataSchemaParser } from './metadata-schema.js';
 import type { MetadataSchema } from './metadata-schema.js';
-import type { DeletionAction, NoteTypeDeleteResult, DeletionValidation, BackupInfo } from '../types/index.js';
+import type {
+  DeletionAction,
+  NoteTypeDeleteResult,
+  DeletionValidation,
+  BackupInfo
+} from '../types/index.js';
 
 interface NoteTypeInfo {
   name: string;
@@ -418,14 +423,20 @@ export class NoteTypeManager {
       }
 
       // Validate deletion
-      const validation = await this.validateNoteTypeDeletion(typeName, action, targetType);
+      const validation = await this.validateNoteTypeDeletion(
+        typeName,
+        action,
+        targetType
+      );
       if (!validation.can_delete) {
         throw new Error(`Cannot delete note type: ${validation.errors.join(', ')}`);
       }
 
       // Check confirmation requirement
       if (config?.deletion?.require_confirmation && !confirm) {
-        throw new Error(`Note type deletion requires confirmation. Set confirm=true to proceed.`);
+        throw new Error(
+          `Note type deletion requires confirmation. Set confirm=true to proceed.`
+        );
       }
 
       const typePath = this.workspace.getNoteTypePath(typeName);
@@ -551,7 +562,9 @@ export class NoteTypeManager {
       return validation;
     } catch (error) {
       validation.can_delete = false;
-      validation.errors.push(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      validation.errors.push(
+        `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       return validation;
     }
   }
@@ -567,12 +580,16 @@ export class NoteTypeManager {
   /**
    * Get all notes in a specific note type
    */
-  async getNotesInType(typeName: string): Promise<Array<{ filename: string; path: string }>> {
+  async getNotesInType(
+    typeName: string
+  ): Promise<Array<{ filename: string; path: string }>> {
     try {
       const typePath = this.workspace.getNoteTypePath(typeName);
       const entries = await fs.readdir(typePath);
       const notes = entries
-        .filter(file => file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_'))
+        .filter(
+          file => file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_')
+        )
         .map(filename => ({
           filename,
           path: path.join(typePath, filename)
@@ -580,17 +597,25 @@ export class NoteTypeManager {
 
       return notes;
     } catch (error) {
-      throw new Error(`Failed to get notes in type '${typeName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get notes in type '${typeName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Create a backup of all notes in a note type
    */
-  async createNoteTypeBackup(typeName: string, notes: Array<{ filename: string; path: string }>): Promise<BackupInfo> {
+  async createNoteTypeBackup(
+    typeName: string,
+    notes: Array<{ filename: string; path: string }>
+  ): Promise<BackupInfo> {
     try {
       const config = this.workspace.getConfig();
-      const backupDir = path.resolve(this.workspace.rootPath, config?.deletion?.backup_path || '.flint-note/backups');
+      const backupDir = path.resolve(
+        this.workspace.rootPath,
+        config?.deletion?.backup_path || '.flint-note/backups'
+      );
 
       // Ensure backup directory exists
       await fs.mkdir(backupDir, { recursive: true });
@@ -632,14 +657,19 @@ export class NoteTypeManager {
         size: totalSize
       };
     } catch (error) {
-      throw new Error(`Failed to create backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create backup: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Migrate notes from one type to another
    */
-  async migrateNotesToType(notes: Array<{ filename: string; path: string }>, targetType: string): Promise<void> {
+  async migrateNotesToType(
+    notes: Array<{ filename: string; path: string }>,
+    targetType: string
+  ): Promise<void> {
     try {
       const targetTypePath = this.workspace.getNoteTypePath(targetType);
 
@@ -658,20 +688,26 @@ export class NoteTypeManager {
         await fs.writeFile(newPath, updatedContent, 'utf-8');
       }
     } catch (error) {
-      throw new Error(`Failed to migrate notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to migrate notes: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Delete all notes in a note type
    */
-  async deleteNotesInType(notes: Array<{ filename: string; path: string }>): Promise<void> {
+  async deleteNotesInType(
+    notes: Array<{ filename: string; path: string }>
+  ): Promise<void> {
     try {
       for (const note of notes) {
         await fs.unlink(note.path);
       }
     } catch (error) {
-      throw new Error(`Failed to delete notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete notes: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 

@@ -5,7 +5,12 @@
  * Supports the format [[type/filename|Display Name]] for stable linking.
  */
 
-import type { WikiLink, LinkParseResult, NoteLookupResult, LinkSuggestion } from '../types/index.js';
+import type {
+  WikiLink,
+  LinkParseResult,
+  NoteLookupResult,
+  LinkSuggestion
+} from '../types/index.js';
 
 export class WikilinkParser {
   // Regex to match wikilinks in format [[type/filename|Display Name]] or [[filename|Display Name]]
@@ -99,17 +104,16 @@ export class WikilinkParser {
   /**
    * Replace wikilinks in content with new format
    */
-  static replaceWikilinks(
-    content: string,
-    replacements: Map<string, string>
-  ): string {
+  static replaceWikilinks(content: string, replacements: Map<string, string>): string {
     let updatedContent = content;
 
     // Parse existing wikilinks
     const parseResult = this.parseWikilinks(content);
 
     // Sort by position (descending) to avoid position shifts during replacement
-    const sortedLinks = parseResult.wikilinks.sort((a, b) => b.position.start - a.position.start);
+    const sortedLinks = parseResult.wikilinks.sort(
+      (a, b) => b.position.start - a.position.start
+    );
 
     for (const link of sortedLinks) {
       const replacement = replacements.get(link.target);
@@ -194,8 +198,8 @@ export class WikilinkParser {
   private static isInsideWikilink(content: string, start: number, end: number): boolean {
     const parseResult = this.parseWikilinks(content);
 
-    return parseResult.wikilinks.some(link =>
-      start >= link.position.start && end <= link.position.end
+    return parseResult.wikilinks.some(
+      link => start >= link.position.start && end <= link.position.end
     );
   }
 
@@ -253,8 +257,10 @@ export class WikilinkParser {
    */
   static containsLinkToTarget(content: string, target: string): boolean {
     const parseResult = this.parseWikilinks(content);
-    return parseResult.wikilinks.some(link =>
-      link.target === target || this.normalizeTarget(link.target) === this.normalizeTarget(target)
+    return parseResult.wikilinks.some(
+      link =>
+        link.target === target ||
+        this.normalizeTarget(link.target) === this.normalizeTarget(target)
     );
   }
 
