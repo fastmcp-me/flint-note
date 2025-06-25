@@ -8,7 +8,8 @@ flint-note is a note-taking system where AI agents understand your note types an
 
 - **Agent-first design** - AI agents understand your note types and guide you through creating structured content
 - **Local markdown storage** - Your notes are plain markdown files you own and control forever
-- **Intelligent note types** - Define custom schemas and agent instructions for different kinds of notes
+- **Intelligent note types** - Each note type has its own agent instructions and metadata schema
+- **Customizable AI behavior** - Tell agents how to behave for each note type using natural language
 - **Natural language interface** - Talk to AI about your notes instead of clicking through menus
 
 ## Why use flint-note?
@@ -80,12 +81,76 @@ Agent: Got it! I'll create meetings/standup-2024-01-15.md with those attendees a
        meeting for easy filtering later.
 ```
 
+## How Note Types Work
+
+flint-note organizes your knowledge using **note types** - each with its own purpose, agent instructions, and metadata schema. Your workspace looks like this:
+
+```
+my-notes/
+├── .flint-note/
+│   └── config.yml
+├── reading/
+│   ├── _description.md          # Defines how agents help with reading notes
+│   ├── atomic-habits.md
+│   └── psychology-of-money.md
+├── projects/
+│   ├── _description.md          # Defines how agents help with projects
+│   ├── website-redesign.md
+│   └── mobile-app.md
+├── meetings/
+│   ├── _description.md          # Defines how agents handle meeting notes
+│   └── team-standup-2024-01-15.md
+└── daily/
+    ├── _description.md          # Defines daily note format and prompts
+    └── 2024-01-15.md
+```
+
+Each `_description.md` file tells agents how to behave for that note type:
+
+```markdown
+# Reading Notes
+
+## Purpose
+Track books, articles, and papers with structured insights and ratings.
+
+## Agent Instructions
+- Always ask for the author's background and credentials
+- Extract key insights and actionable takeaways  
+- Request a personal rating (1-5 stars) and what made it memorable
+- Suggest connections to other readings in the vault
+- Encourage specific quotes with page references
+
+## Metadata Schema
+- title: Book/article title (required, string)
+- author: Author name (required, string)
+- rating: Personal rating (required, number, min: 1, max: 5)
+- status: Reading progress (required, select: to_read|reading|completed)
+- tags: Topic categories (optional, array)
+- isbn: ISBN for books (optional, string)
+```
+
+### Customizing Agent Behavior
+
+You can modify how agents work with any note type just by talking to them:
+
+```
+You: Update my reading notes so agents always ask about the book's publication year
+Agent: I'll update your reading note instructions to include asking about publication year.
+       [Updates reading/_description.md with the new instruction]
+
+You: Make project notes more focused on deadlines and blockers  
+Agent: I'll modify your project note instructions to emphasize deadline tracking
+       and proactive blocker identification.
+       [Updates projects/_description.md accordingly]
+```
+
 ## Getting Started
 
 1. **Install flint-note** and initialize your workspace with default note types
 2. **Start the MCP server** to enable AI agent communication
 3. **Connect your AI client** (Claude Desktop, etc.) to the flint-note server
 4. **Create your first note** by talking to the AI - it understands your note types and schemas
+5. **Customize agent instructions** by simply asking the AI to modify how it helps with different note types
 
 ## Documentation
 
