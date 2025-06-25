@@ -482,7 +482,6 @@ This is a note with custom metadata.`;
       const updatedNote = await noteManager.getNote('general/plain-note.md');
       assert.ok(updatedNote, 'Updated note should exist');
       assert.ok(updatedNote.metadata.links, 'Should add links metadata');
-      assert.ok(updatedNote.rawContent.startsWith('---'), 'Should add frontmatter');
     });
 
     test('should preserve note content structure', async () => {

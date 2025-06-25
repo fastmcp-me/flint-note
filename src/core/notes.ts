@@ -37,7 +37,6 @@ interface Note {
   title: string;
   content: string;
   metadata: NoteMetadata;
-  rawContent: string;
   created: string;
   modified: string;
   updated: string;
@@ -321,7 +320,6 @@ export class NoteManager {
         title: parsed.metadata.title || this.extractTitleFromFilename(filename),
         content: parsed.content,
         metadata: parsed.metadata,
-        rawContent: content,
         created: parsed.metadata.created || stats.birthtime.toISOString(),
         modified: parsed.metadata.updated || stats.mtime.toISOString(),
         updated: parsed.metadata.updated || stats.mtime.toISOString(),
@@ -372,7 +370,6 @@ export class NoteManager {
         title: parsed.metadata.title || this.extractTitleFromFilename(filename),
         content: parsed.content,
         metadata: parsed.metadata,
-        rawContent: content,
         created: parsed.metadata.created || stats.birthtime.toISOString(),
         modified: parsed.metadata.updated || stats.mtime.toISOString(),
         updated: parsed.metadata.updated || stats.mtime.toISOString(),
