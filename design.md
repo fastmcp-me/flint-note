@@ -1,7 +1,5 @@
 # flint-note Design Document
 
-**NOTE: Experimental! This is very work in progress. Do not trust it yet!**
-
 ## Overview
 
 **flint-note** is an agent-first note-taking application designed to help users maintain and interact with their personal knowledge base through natural language interfaces. Unlike traditional note-taking apps that add AI features as an afterthought, flint-note is architected from the ground up to be agent-native.
@@ -459,17 +457,11 @@ metadata:
 ## Development Roadmap
 
 ### Current Status
-The project has a comprehensive design document and core implementation with MCP server, note management, and metadata systems. However, several integration tests are failing and need immediate attention.
+The project has a comprehensive design document and core implementation with MCP server, note management, and metadata systems.
 
 ### Immediate Priorities (Fix Foundation)
 
-#### **1. Resolve Test Failures**
-- **Issue**: Integration tests showing compilation errors in metadata system
-- **Action**: Fix TypeScript compilation issues, imports, and runtime errors
-- **Timeline**: 1-2 weeks
-- **Success Criteria**: All tests passing, CI/CD pipeline green
-
-#### **2. Verify Core Functionality**
+#### **1. Verify Core Functionality**
 - **Action**: Manual testing of all MVP features through MCP interface
 - **Verify**: Note CRUD operations, note type management, search, metadata validation
 - **Timeline**: 1 week
@@ -477,21 +469,21 @@ The project has a comprehensive design document and core implementation with MCP
 
 ### Short-term Development (Next 2-4 weeks)
 
-#### **3. Complete Phase 1 MVP Features**
+#### **2. Complete Phase 1 MVP Features**
 - ✅ Basic note creation/reading/updating (implemented)
 - ✅ Note type system (implemented)
 - ✅ File-based storage (implemented)
 - ✅ MCP server interface (implemented)
-- ❓ **Verify** metadata validation works correctly
-- ❓ **Verify** search indexing functions properly
+- ✅ metadata validation (implemented)
+- ✅ search indexing (implemented)
 
-#### **4. Improve Documentation with Real Examples**
+#### **3. Improve Documentation with Real Examples**
 - Add working copy-paste example commands
 - Create troubleshooting guide with actual error messages
 - Include screenshots/GIFs of system in action
 - Test setup guide with fresh user
 
-#### **5. Add Error Handling & Validation**
+#### **4. Add Error Handling & Validation**
 - Implement robust error messages for common mistakes
 - Add validation for note type schemas
 - Ensure graceful handling of malformed files
@@ -499,19 +491,19 @@ The project has a comprehensive design document and core implementation with MCP
 
 ### Medium-term Goals (1-2 months)
 
-#### **6. Agent Instructions System Enhancement**
+#### **5. Agent Instructions System Enhancement**
 - Implement dynamic agent instruction loading
 - Create instruction library for common note types (meetings, books, projects)
 - Test agent instruction effectiveness with multiple AI assistants
 - Add instruction versioning and rollback
 
-#### **7. Search & Discovery Improvements**
+#### **6. Search & Discovery Improvements**
 - Implement full-text search with relevance ranking
 - Add tag-based filtering and faceted search
 - Create smart suggestions for note connections
 - Optimize search index performance
 
-#### **8. User Experience Polish**
+#### **7. User Experience Polish**
 - Add progress feedback for long operations
 - Improve error messages with actionable suggestions
 - Create guided onboarding flow for new users
@@ -519,14 +511,14 @@ The project has a comprehensive design document and core implementation with MCP
 
 ### Long-term Vision (3+ months)
 
-#### **9. Advanced Features**
+#### **8. Advanced Features**
 - Full-text search with semantic similarity
 - Note relationship visualization
 - Batch operations on note collections
 - Export/import functionality
 - Plugin system for custom note types
 
-#### **10. Community & Adoption**
+#### **9. Community & Adoption**
 - Create example workspaces for different use cases
 - Build integrations with popular AI tools beyond MCP
 - Develop community instruction and schema library

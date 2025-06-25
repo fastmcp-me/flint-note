@@ -1,10 +1,10 @@
 # flint-note
 
-An agent-first note-taking system designed from the ground up for AI collaboration. Instead of adding AI features to traditional notes, flint-note treats AI agents as your primary interface for creating, organizing, and connecting your knowledge.
+**NOTE: Experimental! This is very work in progress. Do not trust it yet!**
 
-## What is flint-note?
+A Model Context Protocol (MCP) server that provides an agent-first note-taking system designed from the ground up for AI collaboration. Instead of adding AI features to traditional notes, flint-note treats AI agents as your primary interface for creating, organizing, and connecting your knowledge.
 
-flint-note is a note-taking system where AI agents understand your note types and help you create structured, consistent content. All your notes are stored as plain markdown files with YAML frontmatter - completely portable and future-proof.
+## Key features
 
 - **Agent-first design** - AI agents understand your note types and guide you through creating structured content
 - **Local markdown storage** - Your notes are plain markdown files you own and control forever
@@ -12,28 +12,30 @@ flint-note is a note-taking system where AI agents understand your note types an
 - **Intelligent note types** - Each note type has its own agent instructions and metadata schema
 - **Customizable AI behavior** - Tell agents how to behave for each note type using natural language
 
-## Why use flint-note?
+## Pre-requisites
 
-- **Universal AI integration**: Works with Claude Desktop, Continue, and any MCP-compatible AI client
-- **AI collaboration that makes sense**: Agents understand the context and purpose of each note type
-- **Your data, your control**: Everything stored as portable markdown files on your local machine
-- **Structured but flexible**: Define schemas for consistency while keeping the freedom to write naturally
-- **Future-proof**: No vendor lock-in, works with any text editor, integrates with version control
+- Node.js 18+
+- Any [MCP capable client](https://github.com/punkpeye/awesome-mcp-clients) (e.g., Claude Desktop, Cursor, Raycast, etc.)
 
-## Quick Start
+### How It Works
 
-```bash
-# Install flint-note
-npm install -g flint-note
+1. **flint-note server** runs locally on your machine, managing your markdown files
+2. **AI clients** (like Claude Desktop) connect to the server via MCP
+3. **AI agents** can read your note types, understand their schemas, and help create content
 
-# Initialize your workspace
-flint-note init ~/my-notes
+### Getting Started
 
-# Start the agent server
-flint-note serve
+Add flint-note to your client's MCP config:
 
-# Now connect your AI client to the MCP server
-# Add flint-note to Claude Desktop, Continue, or other MCP clients
+```json
+{
+  "mcpServers": {
+    "flint-note": {
+      "command": "npx",
+      "args": ["@flint-note/server"],
+    }
+  }
+}
 ```
 
 ## Example Agent Conversations
@@ -144,62 +146,6 @@ You: Make project notes more focused on deadlines and blockers
 Agent: I'll modify your project note instructions to emphasize deadline tracking
        and proactive blocker identification.
        [Updates projects/_description.md accordingly]
-```
-
-## MCP Server Integration
-
-flint-note runs as a **Model Context Protocol (MCP) server**, which means it can connect to any AI client that supports MCP. This gives you flexibility to use your preferred AI interface while keeping your notes local.
-
-### How It Works
-
-1. **flint-note server** runs locally on your machine, managing your markdown files
-2. **AI clients** (like Claude Desktop) connect to the server via MCP
-3. **AI agents** can read your note types, understand their schemas, and help create content
-
-### Supported AI Clients
-
-- **Claude Desktop** - Anthropic's official desktop app with MCP support
-- **Continue** - VS Code extension for AI-powered development
-- **Any [MCP-compatible client](https://github.com/punkpeye/awesome-mcp-clients)** - The protocol is open and growing
-
-### Configuration Example (Claude Desktop)
-
-Add flint-note to your Claude Desktop MCP settings:
-
-```json
-{
-  "mcpServers": {
-    "flint-note": {
-      "command": "flint-note",
-      "args": ["serve"],
-      "env": {}
-    }
-  }
-}
-```
-
-Now Claude can help you create notes, understand your note types, and follow your custom agent instructions - all while your data stays completely under your control.
-
-## Getting Started
-
-1. **Install flint-note** and initialize your workspace with default note types
-2. **Configure your AI client** to connect to the flint-note MCP server
-3. **Start creating notes** by talking to the AI - it understands your note types and schemas
-4. **Customize agent instructions** by simply asking the AI to modify how it helps with different note types
-
-The AI agents work through the MCP connection, so you get intelligent note assistance while keeping complete control over your local markdown files.
-
-## Documentation
-
-- [Design Document](./design.md) - Architecture and technical details
-- [Configuration Guide](./docs/configuration.md) - Customizing your setup
-- [Note Types Reference](./docs/note-types.md) - Available note types and schemas
-- [Agent Instructions](./docs/agent-instructions.md) - Customizing AI behavior
-
-## Installation
-
-```bash
-npm install -g flint-note
 ```
 
 ## License
