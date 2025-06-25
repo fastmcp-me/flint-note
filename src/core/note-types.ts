@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import { Workspace } from './workspace.js';
 import { MetadataSchemaParser } from './metadata-schema.js';
 import type { MetadataSchema } from './metadata-schema.js';
+import type { DeletionAction, NoteTypeDeleteResult, DeletionValidation, BackupInfo } from '../types/index.js';
 
 interface NoteTypeInfo {
   name: string;
@@ -50,6 +51,9 @@ interface DeleteResult {
   name: string;
   deleted: boolean;
   timestamp: string;
+  backup_path?: string;
+  notes_affected?: number;
+  migration_target?: string;
 }
 
 export class NoteTypeManager {
@@ -371,9 +375,9 @@ export class NoteTypeManager {
   }
 
   /**
-   * Update an existing note type description
+   * Update an existing note type description (legacy method)
    */
-  async updateNoteType(
+  async updateNoteTypeLegacy(
     typeName: string,
     updates: NoteTypeUpdateRequest
   ): Promise<NoteTypeDescription> {
@@ -401,27 +405,76 @@ export class NoteTypeManager {
   }
 
   /**
-   * Delete a note type (only if it has no notes)
+   * Delete a note type with advanced options
    */
-  async deleteNoteType(typeName: string): Promise<DeleteResult> {
+  async deleteNoteType(
+    typeName: string,
+    action: DeletionAction = 'error',
+    targetType?: string,
+    confirm: boolean = false
+  ): Promise<NoteTypeDeleteResult> {
     try {
-      const typePath = this.workspace.getNoteTypePath(typeName);
+      const config = this.workspace.getConfig();
 
-      // Check if note type exists
-      try {
-        await fs.access(typePath);
-      } catch {
-        throw new Error(`Note type '${typeName}' does not exist`);
+      // Check if note type deletion is allowed
+      if (!config?.deletion?.allow_note_type_deletion) {
+        throw new Error('Note type deletion is disabled in configuration');
       }
 
-      // Check if there are any notes in this type
-      const entries = await fs.readdir(typePath);
-      const notes = entries.filter(file => file.endsWith('.md') && !file.startsWith('.'));
+      // Check if this is a protected built-in type
+      if (config?.deletion?.protect_builtin_types && this.isBuiltinType(typeName)) {
+        throw new Error(`Cannot delete built-in note type '${typeName}'`);
+      }
 
-      if (notes.length > 0) {
-        throw new Error(
-          `Cannot delete note type '${typeName}': contains ${notes.length} notes`
-        );
+      // Validate deletion
+      const validation = await this.validateNoteTypeDeletion(typeName, action, targetType);
+      if (!validation.can_delete) {
+        throw new Error(`Cannot delete note type: ${validation.errors.join(', ')}`);
+      }
+
+      // Check confirmation requirement
+      if (config?.deletion?.require_confirmation && !confirm) {
+        throw new Error(`Note type deletion requires confirmation. Set confirm=true to proceed.`);
+      }
+
+      const typePath = this.workspace.getNoteTypePath(typeName);
+      const notes = await this.getNotesInType(typeName);
+      let backupPath: string | undefined;
+
+      // Create backup if enabled
+      if (config?.deletion?.create_backups && notes.length > 0) {
+        const backup = await this.createNoteTypeBackup(typeName, notes);
+        backupPath = backup.path;
+      }
+
+      // Execute the deletion action
+      let migrationTarget: string | undefined;
+      switch (action) {
+        case 'error':
+          if (notes.length > 0) {
+            throw new Error(
+              `Cannot delete note type '${typeName}': contains ${notes.length} notes`
+            );
+          }
+          break;
+
+        case 'migrate':
+          if (!targetType) {
+            throw new Error('Migration target type is required for migrate action');
+          }
+          migrationTarget = targetType;
+          await this.migrateNotesToType(notes, targetType);
+          break;
+
+        case 'delete':
+          // Check bulk delete limit
+          if (notes.length > (config?.deletion?.max_bulk_delete || 10)) {
+            throw new Error(
+              `Cannot delete ${notes.length} notes: exceeds bulk delete limit of ${config?.deletion?.max_bulk_delete || 10}`
+            );
+          }
+          await this.deleteNotesInType(notes);
+          break;
       }
 
       // Remove the directory and all its contents
@@ -430,11 +483,222 @@ export class NoteTypeManager {
       return {
         name: typeName,
         deleted: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        action,
+        notes_affected: notes.length,
+        backup_path: backupPath,
+        migration_target: migrationTarget
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to delete note type '${typeName}': ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Validate if a note type can be deleted
+   */
+  async validateNoteTypeDeletion(
+    typeName: string,
+    action: DeletionAction,
+    targetType?: string
+  ): Promise<DeletionValidation> {
+    const validation: DeletionValidation = {
+      can_delete: true,
+      warnings: [],
+      errors: []
+    };
+
+    try {
+      const typePath = this.workspace.getNoteTypePath(typeName);
+
+      // Check if note type exists
+      try {
+        await fs.access(typePath);
+      } catch {
+        validation.can_delete = false;
+        validation.errors.push(`Note type '${typeName}' does not exist`);
+        return validation;
+      }
+
+      // Get notes in this type
+      const notes = await this.getNotesInType(typeName);
+      validation.note_count = notes.length;
+      validation.affected_notes = notes.map(note => note.filename);
+
+      // Validate based on action
+      switch (action) {
+        case 'error':
+          if (notes.length > 0) {
+            validation.can_delete = false;
+            validation.errors.push(`Note type contains ${notes.length} notes`);
+          }
+          break;
+
+        case 'migrate':
+          if (!targetType) {
+            validation.can_delete = false;
+            validation.errors.push('Migration target type is required');
+          } else {
+            // Check if target type exists
+            try {
+              await this.getNoteTypeDescription(targetType);
+            } catch {
+              validation.can_delete = false;
+              validation.errors.push(`Target type '${targetType}' does not exist`);
+            }
+          }
+          break;
+
+        case 'delete':
+          if (notes.length > 0) {
+            validation.warnings.push(`Will permanently delete ${notes.length} notes`);
+          }
+          break;
+      }
+
+      return validation;
+    } catch (error) {
+      validation.can_delete = false;
+      validation.errors.push(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return validation;
+    }
+  }
+
+  /**
+   * Check if a note type is a built-in type
+   */
+  isBuiltinType(typeName: string): boolean {
+    const builtinTypes = ['daily', 'reading', 'project', 'meeting', 'todo', 'goals'];
+    return builtinTypes.includes(typeName);
+  }
+
+  /**
+   * Get all notes in a specific note type
+   */
+  async getNotesInType(typeName: string): Promise<Array<{ filename: string; path: string }>> {
+    try {
+      const typePath = this.workspace.getNoteTypePath(typeName);
+      const entries = await fs.readdir(typePath);
+      const notes = entries
+        .filter(file => file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_'))
+        .map(filename => ({
+          filename,
+          path: path.join(typePath, filename)
+        }));
+
+      return notes;
+    } catch (error) {
+      throw new Error(`Failed to get notes in type '${typeName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Create a backup of all notes in a note type
+   */
+  async createNoteTypeBackup(typeName: string, notes: Array<{ filename: string; path: string }>): Promise<BackupInfo> {
+    try {
+      const config = this.workspace.getConfig();
+      const backupDir = path.resolve(this.workspace.rootPath, config?.deletion?.backup_path || '.flint-note/backups');
+
+      // Ensure backup directory exists
+      await fs.mkdir(backupDir, { recursive: true });
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const typeBackupDir = path.join(backupDir, `${timestamp}_${typeName}`);
+      await fs.mkdir(typeBackupDir, { recursive: true });
+
+      let totalSize = 0;
+      const backedUpFiles: string[] = [];
+
+      for (const note of notes) {
+        const backupPath = path.join(typeBackupDir, note.filename);
+        await fs.copyFile(note.path, backupPath);
+
+        const stats = await fs.stat(backupPath);
+        totalSize += stats.size;
+        backedUpFiles.push(note.path);
+      }
+
+      // Create a manifest file
+      const manifest = {
+        type: typeName,
+        timestamp: new Date().toISOString(),
+        notes: notes.map(n => n.filename),
+        total_size: totalSize
+      };
+
+      await fs.writeFile(
+        path.join(typeBackupDir, '_manifest.json'),
+        JSON.stringify(manifest, null, 2),
+        'utf-8'
+      );
+
+      return {
+        path: typeBackupDir,
+        timestamp: new Date().toISOString(),
+        notes: backedUpFiles,
+        size: totalSize
+      };
+    } catch (error) {
+      throw new Error(`Failed to create backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Migrate notes from one type to another
+   */
+  async migrateNotesToType(notes: Array<{ filename: string; path: string }>, targetType: string): Promise<void> {
+    try {
+      const targetTypePath = this.workspace.getNoteTypePath(targetType);
+
+      // Ensure target type directory exists
+      await fs.mkdir(targetTypePath, { recursive: true });
+
+      for (const note of notes) {
+        // Read the note content
+        const content = await fs.readFile(note.path, 'utf-8');
+
+        // Update the type in frontmatter
+        const updatedContent = this.updateNoteTypeInContent(content, targetType);
+
+        // Write to new location
+        const newPath = path.join(targetTypePath, note.filename);
+        await fs.writeFile(newPath, updatedContent, 'utf-8');
+      }
+    } catch (error) {
+      throw new Error(`Failed to migrate notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Delete all notes in a note type
+   */
+  async deleteNotesInType(notes: Array<{ filename: string; path: string }>): Promise<void> {
+    try {
+      for (const note of notes) {
+        await fs.unlink(note.path);
+      }
+    } catch (error) {
+      throw new Error(`Failed to delete notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Update the type field in a note's frontmatter
+   */
+  updateNoteTypeInContent(content: string, newType: string): string {
+    // Simple implementation - in practice, this would use the YAML parser
+    const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+    const match = content.match(frontmatterRegex);
+
+    if (match) {
+      const frontmatter = match[1];
+      const updatedFrontmatter = frontmatter.replace(/^type:\s*.*$/m, `type: ${newType}`);
+      return content.replace(frontmatterRegex, `---\n${updatedFrontmatter}\n---`);
+    } else {
+      // Add frontmatter if it doesn't exist
+      return `---\ntype: ${newType}\n---\n\n${content}`;
     }
   }
 

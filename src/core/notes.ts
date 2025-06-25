@@ -13,7 +13,8 @@ import { SearchManager } from './search.js';
 import { MetadataValidator } from './metadata-schema.js';
 import type { ValidationResult } from './metadata-schema.js';
 import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.js';
-import type { NoteLink, NoteMetadata, FlintNoteError } from '../types/index.js';
+import type { NoteLink, NoteMetadata, FlintNoteError, DeletionValidation, BackupInfo } from '../types/index.js';
+import { WikilinkParser } from './wikilink-parser.js';
 
 interface ParsedNote {
   metadata: NoteMetadata;
@@ -49,10 +50,12 @@ interface UpdateResult {
   timestamp: string;
 }
 
-interface DeleteResult {
+interface DeleteNoteResult {
   id: string;
   deleted: boolean;
   timestamp: string;
+  backup_path?: string;
+  warnings?: string[];
 }
 
 interface NoteListItem {
@@ -83,10 +86,12 @@ interface ParsedIdentifier {
 export class NoteManager {
   #workspace: Workspace;
   #noteTypeManager: NoteTypeManager;
+  #searchManager: SearchManager;
 
   constructor(workspace: Workspace) {
     this.#workspace = workspace;
     this.#noteTypeManager = new NoteTypeManager(workspace);
+    this.#searchManager = new SearchManager(workspace);
   }
 
   /**
@@ -619,19 +624,33 @@ export class NoteManager {
   /**
    * Delete a note
    */
-  async deleteNote(identifier: string): Promise<DeleteResult> {
+  async deleteNote(identifier: string, confirm: boolean = false): Promise<DeleteNoteResult> {
     try {
+      const config = this.#workspace.getConfig();
+
+      // Validate deletion
+      const validation = await this.validateNoteDeletion(identifier);
+      if (!validation.can_delete) {
+        throw new Error(`Cannot delete note: ${validation.errors.join(', ')}`);
+      }
+
+      // Check confirmation requirement
+      if (config?.deletion?.require_confirmation && !confirm) {
+        throw new Error(`Deletion requires confirmation. Set confirm=true to proceed.`);
+      }
+
       const {
         typeName: _typeName,
         filename: _filename,
         notePath
       } = this.parseNoteIdentifier(identifier);
 
-      // Check if note exists
-      try {
-        await fs.access(notePath);
-      } catch {
-        throw new Error(`Note '${identifier}' does not exist`);
+      let backupPath: string | undefined;
+
+      // Create backup if enabled
+      if (config?.deletion?.create_backups) {
+        const backup = await this.createNoteBackup(notePath);
+        backupPath = backup.path;
       }
 
       // Remove from search index first
@@ -643,11 +662,230 @@ export class NoteManager {
       return {
         id: identifier,
         deleted: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        backup_path: backupPath,
+        warnings: validation.warnings
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to delete note '${identifier}': ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Validate if a note can be deleted
+   */
+  async validateNoteDeletion(identifier: string): Promise<DeletionValidation> {
+    const validation: DeletionValidation = {
+      can_delete: true,
+      warnings: [],
+      errors: []
+    };
+
+    try {
+      const {
+        typeName: _typeName,
+        filename: _filename,
+        notePath
+      } = this.parseNoteIdentifier(identifier);
+
+      // Check if note exists
+      try {
+        await fs.access(notePath);
+      } catch {
+        validation.can_delete = false;
+        validation.errors.push(`Note '${identifier}' does not exist`);
+        return validation;
+      }
+
+      // Check for incoming links from other notes
+      const incomingLinks = await this.findIncomingLinks(identifier);
+      if (incomingLinks.length > 0) {
+        validation.warnings.push(
+          `Note has ${incomingLinks.length} incoming links that will become orphaned`
+        );
+        validation.incoming_links = incomingLinks;
+      }
+
+      return validation;
+    } catch (error) {
+      validation.can_delete = false;
+      validation.errors.push(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return validation;
+    }
+  }
+
+  /**
+   * Find incoming links to a note
+   */
+  async findIncomingLinks(identifier: string): Promise<string[]> {
+    try {
+      const incomingLinks: string[] = [];
+      const notes = await this.listNotes();
+
+      for (const note of notes) {
+        try {
+          const noteContent = await fs.readFile(note.path, 'utf-8');
+          const { wikilinks } = WikilinkParser.parseWikilinks(noteContent);
+
+          const hasLinkToTarget = wikilinks.some((link: any) => {
+            const linkIdentifier = `${link.type || note.type}/${link.filename || link.target}`;
+            return linkIdentifier === identifier || link.target === identifier;
+          });
+
+          if (hasLinkToTarget) {
+            incomingLinks.push(`${note.type}/${note.filename}`);
+          }
+        } catch {
+          // Skip notes that can't be read
+          continue;
+        }
+      }
+
+      return incomingLinks;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Create a backup of a note before deletion
+   */
+  async createNoteBackup(notePath: string): Promise<BackupInfo> {
+    try {
+      const config = this.#workspace.getConfig();
+      const backupDir = path.resolve(this.#workspace.rootPath, config?.deletion?.backup_path || '.flint-note/backups');
+
+      // Ensure backup directory exists
+      await fs.mkdir(backupDir, { recursive: true });
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = path.basename(notePath);
+      const backupFilename = `${timestamp}_${filename}`;
+      const backupPath = path.join(backupDir, backupFilename);
+
+      // Copy the note file
+      await fs.copyFile(notePath, backupPath);
+
+      // Get file stats for size
+      const stats = await fs.stat(backupPath);
+
+      return {
+        path: backupPath,
+        timestamp: new Date().toISOString(),
+        notes: [notePath],
+        size: stats.size
+      };
+    } catch (error) {
+      throw new Error(`Failed to create backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Bulk delete notes matching criteria
+   */
+  async bulkDeleteNotes(
+    criteria: { type?: string; tags?: string[]; pattern?: string },
+    confirm: boolean = false
+  ): Promise<DeleteNoteResult[]> {
+    try {
+      const config = this.#workspace.getConfig();
+
+      // Find notes matching criteria
+      const matchingNotes = await this.findNotesMatchingCriteria(criteria);
+
+      if (matchingNotes.length === 0) {
+        return [];
+      }
+
+      // Check bulk delete limit
+      if (matchingNotes.length > (config?.deletion?.max_bulk_delete || 10)) {
+        throw new Error(
+          `Bulk delete limit exceeded: attempting to delete ${matchingNotes.length} notes, ` +
+          `maximum allowed is ${config?.deletion?.max_bulk_delete || 10}`
+        );
+      }
+
+      // Check confirmation requirement
+      if (config?.deletion?.require_confirmation && !confirm) {
+        throw new Error(
+          `Bulk deletion of ${matchingNotes.length} notes requires confirmation. Set confirm=true to proceed.`
+        );
+      }
+
+      // Delete each note
+      const results: DeleteNoteResult[] = [];
+      for (const noteIdentifier of matchingNotes) {
+        try {
+          const result = await this.deleteNote(noteIdentifier, true); // Already confirmed at bulk level
+          results.push(result);
+        } catch (error) {
+          // Continue with other deletions, but record the error
+          results.push({
+            id: noteIdentifier,
+            deleted: false,
+            timestamp: new Date().toISOString(),
+            warnings: [`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`]
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      throw new Error(`Bulk delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Find notes matching deletion criteria
+   */
+  async findNotesMatchingCriteria(criteria: {
+    type?: string;
+    tags?: string[];
+    pattern?: string
+  }): Promise<string[]> {
+    try {
+      const notes = await this.listNotes();
+      const matching: string[] = [];
+
+      for (const note of notes) {
+        let matches = true;
+
+        // Check type filter
+        if (criteria.type && note.type !== criteria.type) {
+          matches = false;
+        }
+
+        // Check tags filter
+        if (criteria.tags && criteria.tags.length > 0) {
+          const noteTags = note.tags || [];
+          const hasAllTags = criteria.tags.every(tag => noteTags.includes(tag));
+          if (!hasAllTags) {
+            matches = false;
+          }
+        }
+
+        // Check pattern filter
+        if (criteria.pattern && matches) {
+          try {
+            const noteContent = await fs.readFile(note.path, 'utf-8');
+            const regex = new RegExp(criteria.pattern, 'i');
+            if (!regex.test(noteContent) && !regex.test(note.title)) {
+              matches = false;
+            }
+          } catch {
+            matches = false;
+          }
+        }
+
+        if (matches) {
+          matching.push(`${note.type}/${note.filename}`);
+        }
+      }
+
+      return matching;
+    } catch (error) {
+      throw new Error(`Failed to find matching notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -766,8 +1004,7 @@ export class NoteManager {
    */
   async updateSearchIndex(notePath: string, content: string): Promise<void> {
     try {
-      const searchManager = new SearchManager(this.#workspace);
-      await searchManager.updateNoteInIndex(notePath, content);
+      await this.#searchManager.updateNoteInIndex(notePath, content);
     } catch (error) {
       // Don't fail note operations if search index update fails
       console.error(
@@ -782,8 +1019,7 @@ export class NoteManager {
    */
   async removeFromSearchIndex(notePath: string): Promise<void> {
     try {
-      const searchManager = new SearchManager(this.#workspace);
-      await searchManager.removeNoteFromIndex(notePath);
+      await this.#searchManager.removeNoteFromIndex(notePath);
     } catch (error) {
       // Don't fail note operations if search index update fails
       console.error(

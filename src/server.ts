@@ -160,6 +160,25 @@ interface GenerateLinkReportArgs {
   identifier: string;
 }
 
+interface DeleteNoteArgs {
+  identifier: string;
+  confirm?: boolean;
+}
+
+interface DeleteNoteTypeArgs {
+  type_name: string;
+  action: 'error' | 'migrate' | 'delete';
+  target_type?: string;
+  confirm?: boolean;
+}
+
+interface BulkDeleteNotesArgs {
+  type?: string;
+  tags?: string[];
+  pattern?: string;
+  confirm?: boolean;
+}
+
 export class FlintNoteServer {
   #server: Server;
   #workspace!: Workspace;
@@ -829,6 +848,82 @@ export class FlintNoteServer {
               },
               required: ['identifier']
             }
+          },
+          {
+            name: 'delete_note',
+            description: 'Delete an existing note permanently',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                identifier: {
+                  type: 'string',
+                  description: 'Note identifier (type/filename format)'
+                },
+                confirm: {
+                  type: 'boolean',
+                  description: 'Explicit confirmation required for deletion',
+                  default: false
+                }
+              },
+              required: ['identifier']
+            }
+          },
+          {
+            name: 'delete_note_type',
+            description: 'Delete a note type and optionally handle existing notes',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type_name: {
+                  type: 'string',
+                  description: 'Name of the note type to delete'
+                },
+                action: {
+                  type: 'string',
+                  enum: ['error', 'migrate', 'delete'],
+                  description: 'Action to take with existing notes: error (prevent deletion), migrate (move to target type), delete (remove all notes)'
+                },
+                target_type: {
+                  type: 'string',
+                  description: 'Target note type for migration (required when action is migrate)'
+                },
+                confirm: {
+                  type: 'boolean',
+                  description: 'Explicit confirmation required for deletion',
+                  default: false
+                }
+              },
+              required: ['type_name', 'action']
+            }
+          },
+          {
+            name: 'bulk_delete_notes',
+            description: 'Delete multiple notes matching criteria',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  description: 'Filter by note type'
+                },
+                tags: {
+                  type: 'array',
+                  items: {
+                    type: 'string'
+                  },
+                  description: 'Filter by tags (all tags must match)'
+                },
+                pattern: {
+                  type: 'string',
+                  description: 'Regex pattern to match note content or title'
+                },
+                confirm: {
+                  type: 'boolean',
+                  description: 'Explicit confirmation required for bulk deletion',
+                  default: false
+                }
+              }
+            }
           }
         ]
       };
@@ -914,6 +1009,16 @@ export class FlintNoteServer {
           case 'generate_link_report':
             return await this.#handleGenerateLinkReport(
               args as unknown as GenerateLinkReportArgs
+            );
+          case 'delete_note':
+            return await this.#handleDeleteNote(args as unknown as DeleteNoteArgs);
+          case 'delete_note_type':
+            return await this.#handleDeleteNoteType(
+              args as unknown as DeleteNoteTypeArgs
+            );
+          case 'bulk_delete_notes':
+            return await this.#handleBulkDeleteNotes(
+              args as unknown as BulkDeleteNotesArgs
             );
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -1633,6 +1738,151 @@ export class FlintNoteServer {
         }
       ]
     };
+  };
+
+  #handleDeleteNote = async (args: DeleteNoteArgs) => {
+    this.#requireWorkspace();
+
+    try {
+      const result = await this.#noteManager.deleteNote(args.identifier, args.confirm);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                message: `Note '${args.identifier}' deleted successfully`,
+                result
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    }
+  };
+
+  #handleDeleteNoteType = async (args: DeleteNoteTypeArgs) => {
+    this.#requireWorkspace();
+
+    try {
+      const result = await this.#noteTypeManager.deleteNoteType(
+        args.type_name,
+        args.action,
+        args.target_type,
+        args.confirm
+      );
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                message: `Note type '${args.type_name}' deleted successfully`,
+                result
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    }
+  };
+
+  #handleBulkDeleteNotes = async (args: BulkDeleteNotesArgs) => {
+    this.#requireWorkspace();
+
+    try {
+      const criteria = {
+        type: args.type,
+        tags: args.tags,
+        pattern: args.pattern
+      };
+
+      const results = await this.#noteManager.bulkDeleteNotes(criteria, args.confirm);
+
+      const successCount = results.filter(r => r.deleted).length;
+      const failureCount = results.length - successCount;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                message: `Bulk delete completed: ${successCount} deleted, ${failureCount} failed`,
+                results,
+                summary: {
+                  total: results.length,
+                  successful: successCount,
+                  failed: failureCount
+                }
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    }
   };
 
   async run(): Promise<void> {

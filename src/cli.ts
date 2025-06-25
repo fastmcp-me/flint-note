@@ -98,6 +98,19 @@ const COMMANDS: CliCommand[] = [
     name: 'config',
     description: 'Show global configuration information',
     args: []
+  },
+  {
+    name: 'delete',
+    description: 'Delete notes or note types',
+    args: ['<type>', '<target>'],
+    options: [
+      { name: '--action', description: 'Action for note type deletion: error, migrate, delete', type: 'string' },
+      { name: '--target-type', description: 'Target note type for migration', type: 'string' },
+      { name: '--confirm', description: 'Confirm deletion without prompting', type: 'boolean' },
+      { name: '--type', description: 'Filter by note type for bulk deletion', type: 'string' },
+      { name: '--tags', description: 'Filter by tags for bulk deletion (comma-separated)', type: 'string' },
+      { name: '--pattern', description: 'Regex pattern for bulk deletion', type: 'string' }
+    ]
   }
 ];
 
@@ -144,6 +157,9 @@ class FlintNoteCli {
           break;
         case 'config':
           await this.showConfig();
+          break;
+        case 'delete':
+          await this.deleteCommand(commandArgs);
           break;
         case 'help':
         case '--help':
@@ -486,6 +502,196 @@ GLOBAL CONFIG:
     }
 
     return options;
+  }
+
+  async deleteCommand(args: string[]): Promise<void> {
+    if (args.length < 1) {
+      console.error('Usage: flint-note delete <type> [target] [options]');
+      console.error('Types: note, note-type, notes');
+      console.error('Examples:');
+      console.error('  flint-note delete note "project/my-note.md"');
+      console.error('  flint-note delete note-type "old-type" --action=error');
+      console.error('  flint-note delete notes --tags bulk-test --confirm');
+      return;
+    }
+
+    const type = args[0];
+    const target = args[1];
+
+    // For 'notes' command, we don't need a target
+    const optionsStartIndex = type === 'notes' ? 1 : 2;
+    const options = this.parseOptions(args.slice(optionsStartIndex));
+
+    const currentVault = this.#globalConfig.getCurrentVault();
+    if (!currentVault) {
+      console.error('❌ No vault is currently selected.');
+      console.error('Use "flint-note switch <vault-id>" to select a vault first.');
+      return;
+    }
+
+    try {
+      const workspace = new Workspace(currentVault.path);
+      await workspace.initialize();
+
+      switch (type) {
+        case 'note':
+          await this.deleteNote(workspace, target, options);
+          break;
+        case 'note-type':
+          await this.deleteNoteType(workspace, target, options);
+          break;
+        case 'notes':
+          await this.bulkDeleteNotes(workspace, options);
+          break;
+        default:
+          console.error(`❌ Unknown delete type: ${type}`);
+          console.error('Valid types: note, note-type, notes');
+          return;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ Delete operation failed: ${errorMessage}`);
+      process.exit(1);
+    }
+  }
+
+  async deleteNote(workspace: Workspace, identifier: string, options: Record<string, string | boolean>): Promise<void> {
+    const { NoteManager } = await import('./core/notes.js');
+    const { NoteTypeManager } = await import('./core/note-types.js');
+    const { SearchManager } = await import('./core/search.js');
+
+    const noteManager = new NoteManager(workspace);
+
+    const confirm = options.confirm as boolean || false;
+
+    if (!confirm) {
+      console.log(`⚠️  About to delete note: ${identifier}`);
+      console.log('Use --confirm to proceed with deletion');
+      return;
+    }
+
+    try {
+
+      const result = await noteManager.deleteNote(identifier, confirm);
+
+      if (result.deleted) {
+        console.log(`✅ Note '${identifier}' deleted successfully`);
+        if (result.backup_path) {
+          console.log(`📁 Backup created at: ${result.backup_path}`);
+        }
+        if (result.warnings && result.warnings.length > 0) {
+          console.log('⚠️  Warnings:');
+          result.warnings.forEach(warning => console.log(`   - ${warning}`));
+        }
+      } else {
+        console.error('❌ Failed to delete note');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ Failed to delete note: ${errorMessage}`);
+    }
+  }
+
+  async deleteNoteType(workspace: Workspace, typeName: string, options: Record<string, string | boolean>): Promise<void> {
+    const { NoteTypeManager } = await import('./core/note-types.js');
+    const noteTypeManager = new NoteTypeManager(workspace);
+
+    const action = (options.action as string) || 'error';
+    const targetType = options['target-type'] as string;
+    const confirm = options.confirm as boolean || false;
+
+    if (!['error', 'migrate', 'delete'].includes(action)) {
+      console.error('❌ Invalid action. Must be: error, migrate, or delete');
+      return;
+    }
+
+    if (action === 'migrate' && !targetType) {
+      console.error('❌ --target-type is required when using --action=migrate');
+      return;
+    }
+
+    if (!confirm) {
+      console.log(`⚠️  About to delete note type: ${typeName}`);
+      console.log(`   Action: ${action}`);
+      if (targetType) {
+        console.log(`   Target type: ${targetType}`);
+      }
+      console.log('Use --confirm to proceed with deletion');
+      return;
+    }
+
+    try {
+      const result = await noteTypeManager.deleteNoteType(typeName, action as any, targetType, confirm);
+
+      if (result.deleted) {
+        console.log(`✅ Note type '${typeName}' deleted successfully`);
+        console.log(`   Action: ${result.action}`);
+        console.log(`   Notes affected: ${result.notes_affected}`);
+
+        if (result.backup_path) {
+          console.log(`📁 Backup created at: ${result.backup_path}`);
+        }
+        if (result.migration_target) {
+          console.log(`📋 Notes migrated to type: ${result.migration_target}`);
+        }
+      } else {
+        console.error('❌ Failed to delete note type');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ Failed to delete note type: ${errorMessage}`);
+    }
+  }
+
+  async bulkDeleteNotes(workspace: Workspace, options: Record<string, string | boolean>): Promise<void> {
+    const { NoteManager } = await import('./core/notes.js');
+    const { NoteTypeManager } = await import('./core/note-types.js');
+    const { SearchManager } = await import('./core/search.js');
+
+    const noteManager = new NoteManager(workspace);
+
+    const type = options.type as string;
+    const tags = options.tags ? (options.tags as string).split(',').map(t => t.trim()) : undefined;
+    const pattern = options.pattern as string;
+    const confirm = options.confirm as boolean || false;
+
+    if (!type && !tags && !pattern) {
+      console.error('❌ At least one filter is required: --type, --tags, or --pattern');
+      return;
+    }
+
+    const criteria = { type, tags, pattern };
+
+    if (!confirm) {
+      console.log('⚠️  About to perform bulk deletion with criteria:');
+      if (type) console.log(`   Type: ${type}`);
+      if (tags) console.log(`   Tags: ${tags.join(', ')}`);
+      if (pattern) console.log(`   Pattern: ${pattern}`);
+      console.log('Use --confirm to proceed with bulk deletion');
+      return;
+    }
+
+    try {
+      const results = await noteManager.bulkDeleteNotes(criteria, confirm);
+
+      const successCount = results.filter(r => r.deleted).length;
+      const failureCount = results.length - successCount;
+
+      console.log(`✅ Bulk deletion completed:`);
+      console.log(`   Total processed: ${results.length}`);
+      console.log(`   Successfully deleted: ${successCount}`);
+      console.log(`   Failed: ${failureCount}`);
+
+      if (failureCount > 0) {
+        console.log('\n❌ Failed deletions:');
+        results.filter(r => !r.deleted).forEach(result => {
+          console.log(`   - ${result.id}: ${result.warnings?.[0] || 'Unknown error'}`);
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ Bulk deletion failed: ${errorMessage}`);
+    }
   }
 }
 

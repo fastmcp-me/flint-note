@@ -66,6 +66,17 @@ flint-note update work --name "Work & Research"
 
 # Remove a vault (files not deleted)
 flint-note remove work
+
+# Delete a specific note
+flint-note delete note "path/to/note.md"
+
+# Delete a note type (with safety options)
+flint-note delete note-type "reading" --action=error
+flint-note delete note-type "old-project" --action=migrate --target="project"
+flint-note delete note-type "deprecated" --action=delete --confirm
+
+# Bulk delete notes matching criteria
+flint-note delete notes --type="draft" --confirm
 ```
 
 ### System Prompts and Multi-Vault Context
@@ -110,7 +121,51 @@ The agent instructions system is a core feature that enables users to define spe
 - Identify follow-up meetings or deadlines
 - Suggest creating linked notes for action items
 - Ask about meeting effectiveness and outcomes
-```
+
+## Note and Note Type Deletion
+
+### Note Deletion
+The system supports safe deletion of individual notes with the following features:
+
+- **Soft deletion option**: Notes can be marked as deleted but preserved on filesystem
+- **Hard deletion**: Permanent removal from filesystem
+- **Confirmation requirement**: Deletion requires explicit confirmation to prevent accidents
+- **Link validation**: Check for incoming links from other notes before deletion
+- **Backup creation**: Automatic backup before deletion (configurable)
+
+#### Deletion Process
+1. Validate note exists and is accessible
+2. Check for incoming links from other notes
+3. Warn user about potential orphaned links
+4. Require confirmation if links exist or if configured
+5. Create backup if enabled
+6. Remove note file and update any indexes
+
+### Note Type Deletion
+Deleting note types is more complex due to potential existing notes of that type:
+
+#### Deletion Strategies
+- **Error mode**: Prevent deletion if notes of this type exist
+- **Migrate mode**: Convert existing notes to a different specified type
+- **Delete mode**: Delete all notes of this type along with the type definition
+
+#### Note Type Deletion Process
+1. Validate note type exists
+2. Count existing notes of this type
+3. Based on selected action:
+   - **Error**: Abort if notes exist, provide count and examples
+   - **Migrate**: Validate target type exists and is compatible, convert all notes
+   - **Delete**: Create backup of all notes, then delete notes and type definition
+4. Update vault configuration to remove note type
+5. Clean up any empty directories
+6. Update search indexes
+
+#### Safety Measures
+- Mandatory confirmation for note type deletion
+- Automatic backup creation before bulk operations
+- Rollback capability for failed migrations
+- Detailed logging of all deletion operations
+- Prevention of deleting built-in note types (configurable)
 
 ## Metadata Schema System
 
@@ -265,6 +320,8 @@ The flint-note MCP server exposes the following tools and resources:
 | `update_note_type` | Update specific field of existing note type | `type_name`, `field` (instructions\|description\|metadata_schema), `value` |
 | `get_note_type_info` | Get comprehensive note type information including agent instructions | `type_name` |
 | `analyze_note` | Get AI analysis/suggestions for a note | `identifier` |
+| `delete_note` | Delete an existing note permanently | `identifier`, `confirm?` |
+| `delete_note_type` | Delete a note type and optionally handle existing notes | `type_name`, `action` (error\|migrate\|delete), `target_type?`, `confirm?` |
 
 #### Resources
 
@@ -433,6 +490,13 @@ metadata:
   validate_on_create: true
   validate_on_update: true
   strict_validation: false  # If true, unknown fields cause errors instead of warnings
+deletion:
+  require_confirmation: true  # Require explicit confirmation for all deletions
+  create_backups: true  # Automatically backup notes before deletion
+  backup_path: ".flint-note/backups"  # Where to store deletion backups
+  allow_note_type_deletion: true  # Allow deletion of custom note types
+  protect_builtin_types: true  # Prevent deletion of built-in note types
+  max_bulk_delete: 10  # Maximum notes to delete in single note type deletion
 ```
 
 ### Error Handling
@@ -444,6 +508,9 @@ metadata:
 - Metadata schema validation with detailed error messages
 - Type coercion and constraint validation
 - Unknown field warnings vs. errors based on configuration
+- Note deletion safety checks and confirmation requirements
+- Note type deletion with dependency validation
+- Orphaned note handling during note type deletion
 
 ### Security Considerations
 - Restrict file operations to workspace directory
@@ -453,6 +520,11 @@ metadata:
 - Sanitize metadata field names and values
 - Validate regex patterns in metadata constraints
 - Prevent schema injection attacks through field definitions
+- Secure deletion operations with proper authorization checks
+- Prevent accidental deletion through confirmation requirements
+- Audit logging for all deletion operations
+- Rate limiting for bulk deletion operations
+- Backup verification before permanent deletion
 
 ## Development Roadmap
 
@@ -476,6 +548,7 @@ The project has a comprehensive design document and core implementation with MCP
 - ✅ MCP server interface (implemented)
 - ✅ metadata validation (implemented)
 - ✅ search indexing (implemented)
+- 🔄 Note and note type deletion with safety checks
 
 #### **3. Improve Documentation with Real Examples**
 - Add working copy-paste example commands
@@ -488,6 +561,8 @@ The project has a comprehensive design document and core implementation with MCP
 - Add validation for note type schemas
 - Ensure graceful handling of malformed files
 - Create user-friendly error reporting
+- Implement safe deletion with confirmation and rollback capabilities
+- Add validation for note dependencies before deletion
 
 ### Medium-term Goals (1-2 months)
 

@@ -107,6 +107,55 @@ export interface LinkSuggestion {
   relevance?: number;
 }
 
+// Deletion types
+export type DeletionAction = 'error' | 'migrate' | 'delete';
+
+export interface DeleteNoteArgs {
+  identifier: string;
+  confirm?: boolean;
+}
+
+export interface DeleteNoteTypeArgs {
+  type_name: string;
+  action: DeletionAction;
+  target_type?: string;
+  confirm?: boolean;
+}
+
+export interface DeleteResult {
+  id: string;
+  deleted: boolean;
+  timestamp: string;
+  backup_path?: string;
+  notes_affected?: number;
+}
+
+export interface NoteTypeDeleteResult {
+  name: string;
+  deleted: boolean;
+  timestamp: string;
+  action: DeletionAction;
+  notes_affected: number;
+  backup_path?: string;
+  migration_target?: string;
+}
+
+export interface BackupInfo {
+  path: string;
+  timestamp: string;
+  notes: string[];
+  size: number;
+}
+
+export interface DeletionValidation {
+  can_delete: boolean;
+  warnings: string[];
+  errors: string[];
+  note_count?: number;
+  affected_notes?: string[];
+  incoming_links?: string[];
+}
+
 // Error types
 export interface FlintNoteError extends Error {
   code?: string;

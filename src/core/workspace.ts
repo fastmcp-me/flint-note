@@ -25,6 +25,14 @@ interface WorkspaceConfig {
     auto_create_directories: boolean;
     require_descriptions: boolean;
   };
+  deletion: {
+    require_confirmation: boolean;
+    create_backups: boolean;
+    backup_path: string;
+    allow_note_type_deletion: boolean;
+    protect_builtin_types: boolean;
+    max_bulk_delete: number;
+  };
   version?: string;
 }
 
@@ -158,6 +166,14 @@ export class Workspace {
       note_types: {
         auto_create_directories: true,
         require_descriptions: true
+      },
+      deletion: {
+        require_confirmation: true,
+        create_backups: true,
+        backup_path: '.flint-note/backups',
+        allow_note_type_deletion: true,
+        protect_builtin_types: true,
+        max_bulk_delete: 10
       }
     };
   }
