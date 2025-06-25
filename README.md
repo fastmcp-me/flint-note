@@ -8,12 +8,13 @@ flint-note is a note-taking system where AI agents understand your note types an
 
 - **Agent-first design** - AI agents understand your note types and guide you through creating structured content
 - **Local markdown storage** - Your notes are plain markdown files you own and control forever
+- **MCP server architecture** - Connects to any AI client that supports the Model Context Protocol
 - **Intelligent note types** - Each note type has its own agent instructions and metadata schema
 - **Customizable AI behavior** - Tell agents how to behave for each note type using natural language
-- **Natural language interface** - Talk to AI about your notes instead of clicking through menus
 
 ## Why use flint-note?
 
+- **Universal AI integration**: Works with Claude Desktop, Continue, and any MCP-compatible AI client
 - **AI collaboration that makes sense**: Agents understand the context and purpose of each note type
 - **Your data, your control**: Everything stored as portable markdown files on your local machine
 - **Structured but flexible**: Define schemas for consistency while keeping the freedom to write naturally
@@ -31,7 +32,8 @@ flint-note init ~/my-notes
 # Start the agent server
 flint-note serve
 
-# Now talk to AI agents through any MCP-compatible client
+# Now connect your AI client to the MCP server
+# Add flint-note to Claude Desktop, Continue, or other MCP clients
 ```
 
 ## Example Agent Conversations
@@ -40,28 +42,28 @@ flint-note serve
 ```
 You: I just finished reading "The Psychology of Money"
 Agent: I'll create a reading note for you. Based on your reading note schema, I need:
-       - Your rating (1-5 stars)  
+       - Your rating (1-5 stars)
        - Key insights that stuck with you
        - The author's name
-       
+
        What would you rate this book?
 You: I'd give it a 4/5. Main insight was how behavior matters more than knowledge in investing.
-Agent: Perfect! I'm creating your reading note with Morgan Housel as author, 4/5 rating, 
+Agent: Perfect! I'm creating your reading note with Morgan Housel as author, 4/5 rating,
        and that key insight. The note will be saved as reading/psychology-of-money.md
 ```
 
-### Intelligent Note Suggestions  
+### Intelligent Note Suggestions
 ```
 You: Create a project note for our website redesign
 Agent: I'll set up a project note. Based on your project schema, I should include:
        - Project goals and success criteria
-       - Key milestones and deadlines  
+       - Key milestones and deadlines
        - Team members and stakeholders
        - Risk assessment
-       
+
        What's the main goal for this redesign?
 You: Improve user engagement and reduce support tickets by 30%
-Agent: Excellent! I'll create projects/website-redesign.md with that goal and template 
+Agent: Excellent! I'll create projects/website-redesign.md with that goal and template
        sections for milestones, team, and risks. Should I link this to any existing notes?
 ```
 
@@ -69,15 +71,15 @@ Agent: Excellent! I'll create projects/website-redesign.md with that goal and te
 ```
 You: Add a meeting note for today's standup
 Agent: Creating your meeting note. I see you have a standup template that includes:
-       - Attendees  
+       - Attendees
        - What did we accomplish yesterday?
        - What are we working on today?
        - Any blockers?
-       
+
        Who attended today's standup?
 You: The whole team - Sarah, Mike, Alex, and me
-Agent: Got it! I'll create meetings/standup-2024-01-15.md with those attendees and 
-       the standup template. The metadata will automatically tag this as a "standup" 
+Agent: Got it! I'll create meetings/standup-2024-01-15.md with those attendees and
+       the standup template. The metadata will automatically tag this as a "standup"
        meeting for easy filtering later.
 ```
 
@@ -115,7 +117,7 @@ Track books, articles, and papers with structured insights and ratings.
 
 ## Agent Instructions
 - Always ask for the author's background and credentials
-- Extract key insights and actionable takeaways  
+- Extract key insights and actionable takeaways
 - Request a personal rating (1-5 stars) and what made it memorable
 - Suggest connections to other readings in the vault
 - Encourage specific quotes with page references
@@ -138,19 +140,54 @@ You: Update my reading notes so agents always ask about the book's publication y
 Agent: I'll update your reading note instructions to include asking about publication year.
        [Updates reading/_description.md with the new instruction]
 
-You: Make project notes more focused on deadlines and blockers  
+You: Make project notes more focused on deadlines and blockers
 Agent: I'll modify your project note instructions to emphasize deadline tracking
        and proactive blocker identification.
        [Updates projects/_description.md accordingly]
 ```
 
+## MCP Server Integration
+
+flint-note runs as a **Model Context Protocol (MCP) server**, which means it can connect to any AI client that supports MCP. This gives you flexibility to use your preferred AI interface while keeping your notes local.
+
+### How It Works
+
+1. **flint-note server** runs locally on your machine, managing your markdown files
+2. **AI clients** (like Claude Desktop) connect to the server via MCP
+3. **AI agents** can read your note types, understand their schemas, and help create content
+
+### Supported AI Clients
+
+- **Claude Desktop** - Anthropic's official desktop app with MCP support
+- **Continue** - VS Code extension for AI-powered development
+- **Any [MCP-compatible client](https://github.com/punkpeye/awesome-mcp-clients)** - The protocol is open and growing
+
+### Configuration Example (Claude Desktop)
+
+Add flint-note to your Claude Desktop MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "flint-note": {
+      "command": "flint-note",
+      "args": ["serve"],
+      "env": {}
+    }
+  }
+}
+```
+
+Now Claude can help you create notes, understand your note types, and follow your custom agent instructions - all while your data stays completely under your control.
+
 ## Getting Started
 
 1. **Install flint-note** and initialize your workspace with default note types
-2. **Start the MCP server** to enable AI agent communication
-3. **Connect your AI client** (Claude Desktop, etc.) to the flint-note server
-4. **Create your first note** by talking to the AI - it understands your note types and schemas
-5. **Customize agent instructions** by simply asking the AI to modify how it helps with different note types
+2. **Configure your AI client** to connect to the flint-note MCP server
+3. **Start creating notes** by talking to the AI - it understands your note types and schemas
+4. **Customize agent instructions** by simply asking the AI to modify how it helps with different note types
+
+The AI agents work through the MCP connection, so you get intelligent note assistance while keeping complete control over your local markdown files.
 
 ## Documentation
 
