@@ -781,11 +781,8 @@ Expected frontmatter fields:
     const typePath = path.join(this.rootPath, noteType.name);
     await this.ensureDirectory(typePath);
 
-    // Create description file in .flint-note config directory
-    const descriptionPath = path.join(
-      this.flintNoteDir,
-      `${noteType.name}_description.md`
-    );
+    // Create description file in the note type directory
+    const descriptionPath = path.join(typePath, '_description.md');
     const descriptionContent = this.formatNoteTypeDescription(noteType);
     await fs.writeFile(descriptionPath, descriptionContent, 'utf-8');
   }

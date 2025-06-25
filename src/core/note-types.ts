@@ -77,11 +77,8 @@ export class NoteTypeManager {
       // Ensure the note type directory exists
       const typePath = await this.workspace.ensureNoteType(name);
 
-      // Create the description file in the .flint-note config directory
-      const descriptionPath = path.join(
-        this.workspace.flintNoteDir,
-        `${name}_description.md`
-      );
+      // Create the description file in the note type directory
+      const descriptionPath = path.join(typePath, '_description.md');
       const descriptionContent = this.formatNoteTypeDescription(
         name,
         description,
@@ -180,10 +177,7 @@ export class NoteTypeManager {
   async getNoteTypeDescription(typeName: string): Promise<NoteTypeDescription> {
     try {
       const typePath = this.workspace.getNoteTypePath(typeName);
-      const descriptionPath = path.join(
-        this.workspace.flintNoteDir,
-        `${typeName}_description.md`
-      );
+      const descriptionPath = path.join(typePath, '_description.md');
 
       // Check if note type exists
       try {
@@ -313,10 +307,7 @@ export class NoteTypeManager {
           entry.name !== 'node_modules'
         ) {
           const typePath = path.join(workspaceRoot, entry.name);
-          const descriptionPath = path.join(
-            this.workspace.flintNoteDir,
-            `${entry.name}_description.md`
-          );
+          const descriptionPath = path.join(typePath, '_description.md');
 
           // Check if this is a valid note type (has notes or description)
           const typeEntries = await fs.readdir(typePath);
@@ -324,7 +315,7 @@ export class NoteTypeManager {
             file => file.endsWith('.md') && !file.startsWith('.') && !file.startsWith('_')
           );
 
-          // Check if description exists in config directory
+          // Check if description exists in note type directory
           let hasDescription = false;
           try {
             await fs.access(descriptionPath);
@@ -392,8 +383,8 @@ export class NoteTypeManager {
       // Update description if provided
       if (updates.description) {
         const descriptionPath = path.join(
-          this.workspace.flintNoteDir,
-          `${typeName}_description.md`
+          this.workspace.getNoteTypePath(typeName),
+          '_description.md'
         );
         const newDescription = this.formatNoteTypeDescription(
           typeName,
@@ -479,8 +470,8 @@ export class NoteTypeManager {
 
       // Write updated description
       const descriptionPath = path.join(
-        this.workspace.flintNoteDir,
-        `${typeName}_description.md`
+        this.workspace.getNoteTypePath(typeName),
+        '_description.md'
       );
       await fs.writeFile(descriptionPath, newDescription, 'utf-8');
     } catch (error) {

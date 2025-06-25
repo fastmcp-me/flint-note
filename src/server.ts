@@ -1220,10 +1220,10 @@ export class FlintNoteServer {
         throw new Error(`Invalid field: ${args.field}`);
     }
 
-    // Write the updated description to the file in .flint-note config directory
+    // Write the updated description to the file in note type directory
     const descriptionPath = path.join(
-      this.#workspace.flintNoteDir,
-      `${args.type_name}_description.md`
+      this.#workspace.getNoteTypePath(args.type_name),
+      '_description.md'
     );
     await fs.writeFile(descriptionPath, updatedDescription, 'utf-8');
 

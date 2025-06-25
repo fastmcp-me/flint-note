@@ -134,12 +134,8 @@ describe('Note Type Management Integration', () => {
         .catch(() => false);
       assert.ok(dirExists, 'Note type directory should exist');
 
-      // Verify description file was created in .flint-note config directory
-      const descriptionPath = join(
-        context.tempDir,
-        '.flint-note',
-        'meetings_description.md'
-      );
+      // Verify description file was created in note type directory
+      const descriptionPath = join(context.tempDir, 'meetings', '_description.md');
       const descExists = await fs
         .access(descriptionPath)
         .then(() => true)
@@ -173,11 +169,7 @@ describe('Note Type Management Integration', () => {
       );
 
       // Verify agent instructions are stored in description file
-      const descriptionPath = join(
-        context.tempDir,
-        '.flint-note',
-        'project-tasks_description.md'
-      );
+      const descriptionPath = join(context.tempDir, 'project-tasks', '_description.md');
       const descriptionExist = await fs
         .access(descriptionPath)
         .then(() => true)
@@ -221,11 +213,7 @@ describe('Note Type Management Integration', () => {
 
       // Verify files were created (agent instructions are stored in description file)
       const _typePath = join(context.tempDir, 'research-papers');
-      const descriptionPath = join(
-        context.tempDir,
-        '.flint-note',
-        'research-papers_description.md'
-      );
+      const descriptionPath = join(context.tempDir, 'research-papers', '_description.md');
 
       const descriptionExists = await fs
         .access(descriptionPath)
@@ -384,11 +372,7 @@ describe('Note Type Management Integration', () => {
       assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
 
       // Verify file was updated
-      const descriptionPath = join(
-        context.tempDir,
-        '.flint-note',
-        'updateable_description.md'
-      );
+      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
       const descContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descContent.includes('Updated description'),
@@ -413,11 +397,7 @@ describe('Note Type Management Integration', () => {
       assert.ok(result.content[0].text.includes('Updated'), 'Should confirm update');
 
       // Verify description was updated
-      const descriptionPath = join(
-        context.tempDir,
-        '.flint-note',
-        'updateable_description.md'
-      );
+      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descriptionContent.includes('Updated description for comprehensive testing'),
@@ -446,12 +426,8 @@ describe('Note Type Management Integration', () => {
       assert.ok(responseData.success, 'Should confirm update');
       assert.strictEqual(responseData.field_updated, 'instructions');
 
-      // Verify instructions were updated in description file
-      const descriptionPath = join(
-        context.tempDir,
-        '.flint-note',
-        'updateable_description.md'
-      );
+      // Verify instructions are stored in description file
+      const descriptionPath = join(context.tempDir, 'updateable', '_description.md');
       const descriptionContent = await fs.readFile(descriptionPath, 'utf8');
       assert.ok(
         descriptionContent.includes('date and timestamp'),
@@ -703,20 +679,24 @@ reviewed: boolean`
       const _typePath = join(context.tempDir, 'structured');
       const files = await fs.readdir(_typePath);
 
-      // Note type directory should be empty since description is in .flint-note
-      assert.strictEqual(files.length, 0, 'Note type directory should be empty');
-
-      // Verify description file exists in .flint-note config directory
-      const descriptionPath = join(
-        context.tempDir,
-        '.flint-note',
-        'structured_description.md'
+      // Note type directory should contain _description.md file
+      assert.strictEqual(
+        files.length,
+        1,
+        'Note type directory should contain description file'
       );
+      assert.ok(
+        files.includes('_description.md'),
+        'Directory should contain _description.md'
+      );
+
+      // Verify description file exists in note type directory
+      const descriptionPath = join(context.tempDir, 'structured', '_description.md');
       const descExists = await fs
         .access(descriptionPath)
         .then(() => true)
         .catch(() => false);
-      assert.ok(descExists, 'Description file should exist in .flint-note directory');
+      assert.ok(descExists, 'Description file should exist in note type directory');
     });
 
     test('should handle concurrent note type operations', async () => {
