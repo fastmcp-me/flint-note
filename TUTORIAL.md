@@ -89,7 +89,6 @@ Traditional note apps organize by folders or tags. flint-note organizes by **not
 - **Purpose**: What kind of information belongs here
 - **Agent Instructions**: Specific behaviors AI should exhibit with these notes
 - **Metadata Schema**: Structured data validation and extraction
-- **Templates**: Default structure for new notes
 - **Behaviors**: Special actions (like extracting action items, asking for ratings, tracking deadlines)
 
 #### Agent Instructions: Your Personal AI Assistant
@@ -130,7 +129,7 @@ Let's start by creating a comprehensive vault system:
 
 **personal-vault** for life management:
 - Goal tracking with progress monitoring
-- Reading notes with insights and ratings  
+- Reading notes with insights and ratings
 - Daily reflections with mood and gratitude
 - Health and fitness tracking
 
@@ -195,7 +194,7 @@ I've set up the meeting template with agent instructions to extract specific act
 
 **Action Items Created:**
 - [ ] Sarah: Create mobile app project plan (Due: Next week)
-- [ ] Mike: Scope backend API updates (Due: This Friday)  
+- [ ] Mike: Scope backend API updates (Due: This Friday)
 - [ ] HR/Management: Hire 2 developers (Due: End of October)
 
 **Cross-Vault Connections:**
@@ -221,7 +220,7 @@ Would you like me to automatically create calendar invites or follow-up notes fo
 - Connect to your goals tracking for implementation
 - Reference your health-tracking notes for wellness habits
 
-**Work Applications:**  
+**Work Applications:**
 - Link to team development notes in work-vault
 - Connect to process improvement discussions from recent meetings
 - Reference any existing notes about team productivity
@@ -499,7 +498,7 @@ Would you like me to start with the full article draft, or focus on a specific s
 
 #### By Life Context
 - **professional**: Work projects, meetings, team management
-- **personal**: Goals, health, relationships, hobbies  
+- **personal**: Goals, health, relationships, hobbies
 - **learning**: Courses, books, research, skill development
 - **creative**: Writing projects, art, music, ideas
 
@@ -533,7 +532,7 @@ Let AI help organize your knowledge:
 
 **Split into 3 Vaults:**
 1. **work-vault**: 89 notes (meetings, work projects, team notes)
-2. **personal-vault**: 45 notes (goals, reading, personal projects)  
+2. **personal-vault**: 45 notes (goals, reading, personal projects)
 3. **learning-vault**: 22 notes (courses, research, skill development)
 
 **Benefits:**
@@ -581,7 +580,7 @@ Let AI handle the heavy lifting of organization, linking, and discovery. Focus o
 
 Combine flint-note with web search, PDF analysis, and code repositories to create a research system that:
 - Automatically discovers relevant sources
-- Extracts and synthesizes key insights  
+- Extracts and synthesizes key insights
 - Creates comprehensive, linked notes
 - Suggests practical applications
 - Tracks learning progress and gaps
