@@ -18,8 +18,6 @@ import {
 
 import { Workspace } from './core/workspace.js';
 import { NoteManager } from './core/notes.js';
-import { fileURLToPath } from 'node:url';
-import { resolve, normalize } from 'node:path';
 import { NoteTypeManager } from './core/note-types.js';
 import { SearchManager } from './core/search.js';
 import { LinkManager } from './core/links.js';
@@ -2076,21 +2074,7 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Check if this module is being run directly (cross-platform compatible)
-function isMainModule(): boolean {
-  try {
-    const currentFile = normalize(resolve(fileURLToPath(import.meta.url)));
-    const mainFile = normalize(resolve(process.argv[1]));
-    return currentFile === mainFile;
-  } catch {
-    // Fallback to original logic if URL parsing fails
-    return import.meta.url === `file://${process.argv[1]}`;
-  }
-}
-
-if (isMainModule()) {
-  main().catch((error: Error) => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-  });
-}
+main().catch((error: Error) => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});

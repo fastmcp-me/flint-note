@@ -1,6 +1,6 @@
 {
   "name": "@flint-note/server",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Agent-first note-taking application with MCP server",
   "main": "dist/server.js",
   "bin": "dist/server.js",
