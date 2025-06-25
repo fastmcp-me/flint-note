@@ -16,17 +16,17 @@ import {
   ReadResourceRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { Workspace } from './core/workspace.ts';
-import { NoteManager } from './core/notes.ts';
+import { Workspace } from './core/workspace.js';
+import { NoteManager } from './core/notes.js';
 import { fileURLToPath } from 'node:url';
 import { resolve, normalize } from 'node:path';
-import { NoteTypeManager } from './core/note-types.ts';
-import { SearchManager } from './core/search.ts';
-import { LinkManager } from './core/links.ts';
-import { GlobalConfigManager } from './utils/global-config.ts';
-import { resolvePath, isPathSafe } from './utils/path.ts';
-import type { LinkRelationship } from './types/index.ts';
-import type { MetadataSchema } from './core/metadata-schema.ts';
+import { NoteTypeManager } from './core/note-types.js';
+import { SearchManager } from './core/search.js';
+import { LinkManager } from './core/links.js';
+import { GlobalConfigManager } from './utils/global-config.js';
+import { resolvePath, isPathSafe } from './utils/path.js';
+import type { LinkRelationship } from './types/index.js';
+import type { MetadataSchema } from './core/metadata-schema.js';
 import fs from 'fs/promises';
 import path from 'path';
 

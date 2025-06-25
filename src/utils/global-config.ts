@@ -9,7 +9,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
 import yaml from 'js-yaml';
-import { resolvePath } from './path.ts';
+import { resolvePath } from './path.js';
 
 interface VaultInfo {
   name: string;

@@ -7,9 +7,9 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import { Workspace } from './workspace.ts';
-import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.ts';
-import type { NoteMetadata } from '../types/index.ts';
+import { Workspace } from './workspace.js';
+import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.js';
+import type { NoteMetadata } from '../types/index.js';
 
 interface SearchIndex {
   version: string;

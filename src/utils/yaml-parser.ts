@@ -6,7 +6,7 @@
  */
 
 import yaml from 'js-yaml';
-import type { NoteMetadata, NoteLink } from '../types/index.ts';
+import type { NoteMetadata, NoteLink } from '../types/index.js';
 
 /**
  * Parse YAML frontmatter string into NoteMetadata

@@ -6,18 +6,18 @@
  */
 
 import path from 'path';
-import { Workspace } from './workspace.ts';
-import { NoteManager } from './notes.ts';
-import { WikilinkParser } from './wikilink-parser.ts';
-import { NoteLinkingUtils } from '../utils/note-linking.ts';
+import { Workspace } from './workspace.js';
+import { NoteManager } from './notes.js';
+import { WikilinkParser } from './wikilink-parser.js';
+import { NoteLinkingUtils } from '../utils/note-linking.js';
 import type {
   NoteLink,
   LinkRelationship,
   LinkResult,
   NoteLookupResult,
   LinkSuggestion
-} from '../types/index.ts';
-import type { NoteLinkingManager } from '../utils/note-linking.ts';
+} from '../types/index.js';
+import type { NoteLinkingManager } from '../utils/note-linking.js';
 
 interface LinkNotesArgs {
   source: string;

@@ -7,9 +7,9 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import { Workspace } from './workspace.ts';
-import { MetadataSchemaParser } from './metadata-schema.ts';
-import type { MetadataSchema } from './metadata-schema.ts';
+import { Workspace } from './workspace.js';
+import { MetadataSchemaParser } from './metadata-schema.js';
+import type { MetadataSchema } from './metadata-schema.js';
 
 interface NoteTypeInfo {
   name: string;

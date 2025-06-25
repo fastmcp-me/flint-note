@@ -88,7 +88,7 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
   return new Promise((resolve, reject) => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
-    const serverProcess = spawn('node', [serverPath, '--workspace', workspacePath], {
+    const serverProcess = spawn('tsx', [serverPath, '--workspace', workspacePath], {
       env: {
         ...process.env,
         ...env

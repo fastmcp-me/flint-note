@@ -5,13 +5,13 @@
  * validation, and automatic link management.
  */
 
-import { WikilinkParser } from '../core/wikilink-parser.ts';
+import { WikilinkParser } from '../core/wikilink-parser.js';
 import type {
   WikiLink,
   NoteLookupResult,
   LinkSuggestion,
   NoteLink
-} from '../types/index.ts';
+} from '../types/index.js';
 
 export interface NoteLinkingManager {
   searchNotes(query: string, type?: string, limit?: number): Promise<NoteLookupResult[]>;

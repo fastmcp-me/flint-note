@@ -7,13 +7,13 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import { Workspace } from './workspace.ts';
-import { NoteTypeManager } from './note-types.ts';
-import { SearchManager } from './search.ts';
-import { MetadataValidator } from './metadata-schema.ts';
-import type { ValidationResult } from './metadata-schema.ts';
-import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.ts';
-import type { NoteLink, NoteMetadata, FlintNoteError } from '../types/index.ts';
+import { Workspace } from './workspace.js';
+import { NoteTypeManager } from './note-types.js';
+import { SearchManager } from './search.js';
+import { MetadataValidator } from './metadata-schema.js';
+import type { ValidationResult } from './metadata-schema.js';
+import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.js';
+import type { NoteLink, NoteMetadata, FlintNoteError } from '../types/index.js';
 
 interface ParsedNote {
   metadata: NoteMetadata;

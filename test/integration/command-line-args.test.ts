@@ -28,7 +28,7 @@ describe('Command Line Arguments Integration', () => {
   test('should start server with --workspace argument', async () => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
-    const serverProcess = spawn('node', [serverPath, '--workspace', context.tempDir], {
+    const serverProcess = spawn('tsx', [serverPath, '--workspace', context.tempDir], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -96,7 +96,7 @@ describe('Command Line Arguments Integration', () => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
     const serverProcess = spawn(
-      'node',
+      'tsx',
       [serverPath, '--workspace-path', context.tempDir],
       {
         stdio: ['pipe', 'pipe', 'pipe']
@@ -156,7 +156,7 @@ describe('Command Line Arguments Integration', () => {
   test('should show help message with --help argument', async () => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
-    const serverProcess = spawn('node', [serverPath, '--help'], {
+    const serverProcess = spawn('tsx', [serverPath, '--help'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -207,7 +207,7 @@ describe('Command Line Arguments Integration', () => {
   test('should show help message with -h argument', async () => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
-    const serverProcess = spawn('node', [serverPath, '-h'], {
+    const serverProcess = spawn('tsx', [serverPath, '-h'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -257,7 +257,7 @@ describe('Command Line Arguments Integration', () => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
     const invalidPath = '/this/path/definitely/does/not/exist/anywhere';
 
-    const serverProcess = spawn('node', [serverPath, '--workspace', invalidPath], {
+    const serverProcess = spawn('tsx', [serverPath, '--workspace', invalidPath], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -306,7 +306,7 @@ describe('Command Line Arguments Integration', () => {
   test('should handle missing workspace argument value', async () => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
-    const serverProcess = spawn('node', [serverPath, '--workspace'], {
+    const serverProcess = spawn('tsx', [serverPath, '--workspace'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -363,7 +363,7 @@ describe('Command Line Arguments Integration', () => {
     const serverPath = join(process.cwd(), 'src', 'server.ts');
 
     // Set environment variable to a different path
-    const serverProcess = spawn('node', [serverPath, '--workspace', context.tempDir], {
+    const serverProcess = spawn('tsx', [serverPath, '--workspace', context.tempDir], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

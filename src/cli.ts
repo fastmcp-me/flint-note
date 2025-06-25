@@ -7,9 +7,9 @@
  * Provides commands for creating, listing, switching, and managing vaults.
  */
 
-import { GlobalConfigManager } from './utils/global-config.ts';
-import { Workspace } from './core/workspace.ts';
-import { resolvePath, isPathSafe } from './utils/path.ts';
+import { GlobalConfigManager } from './utils/global-config.js';
+import { Workspace } from './core/workspace.js';
+import { resolvePath, isPathSafe } from './utils/path.js';
 import fs from 'fs/promises';
 import path from 'path';
 import process from 'process';

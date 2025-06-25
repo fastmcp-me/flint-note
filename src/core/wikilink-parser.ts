@@ -5,7 +5,7 @@
  * Supports the format [[type/filename|Display Name]] for stable linking.
  */
 
-import type { WikiLink, LinkParseResult, NoteLookupResult, LinkSuggestion } from '../types/index.ts';
+import type { WikiLink, LinkParseResult, NoteLookupResult, LinkSuggestion } from '../types/index.js';
 
 export class WikilinkParser {
   // Regex to match wikilinks in format [[type/filename|Display Name]] or [[filename|Display Name]]

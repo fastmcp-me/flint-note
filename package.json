@@ -2,22 +2,27 @@
   "name": "flint-note",
   "version": "0.1.0",
   "description": "Agent-first note-taking application with MCP server",
-  "main": "src/server.ts",
+  "main": "dist/server.js",
   "bin": {
-    "flint-note": "src/cli.ts"
+    "flint-note": "dist/cli.js"
   },
   "type": "module",
   "scripts": {
-    "start": "node src/server.ts",
-    "dev": "node --watch src/server.ts",
-    "cli": "node src/cli.ts",
-    "test": "node --test test/**/*.test.ts",
-    "test:unit": "node --test test/unit/**/*.test.ts",
-    "test:integration": "node --test test/integration/**/*.test.ts",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "start": "npm run build && node dist/server.js",
+    "start:prod": "node dist/server.js",
+    "dev": "tsx --watch src/server.ts",
+    "cli": "tsx src/cli.ts",
+    "cli:prod": "node dist/cli.js",
+    "test": "tsx --test test/**/*.test.ts",
+    "test:unit": "tsx --test test/unit/**/*.test.ts",
+    "test:integration": "tsx --test test/integration/**/*.test.ts",
     "lint": "eslint src/ test/",
     "format": "prettier --write src/**/*.ts test/**/*.ts",
-    "type-check": "tsc --noEmit",
-    "inspector": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector node src/server.ts"
+    "type-check": "tsc --project tsconfig.dev.json --noEmit",
+    "inspector": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector tsx src/server.ts"
   },
   "keywords": [
     "notes",
