@@ -26,7 +26,9 @@ Unit tests focus on testing individual classes and functions in isolation. They:
 - `links.test.ts` - Link management functionality
 - `metadata-schema.test.ts` - Metadata schema parsing and validation
 - `note-creation.test.ts` - Note creation logic and validation
+- `note-deletion.test.ts` - Note deletion logic and validation
 - `note-retrieval.test.ts` - Note retrieval and content parsing
+- `note-type-deletion.test.ts` - Note type deletion with different strategies
 - `regex-search.test.ts` - Regex search functionality
 - `search-unit.test.ts` - Search manager unit tests
 - `template-creation.test.ts` - Template creation and processing logic
@@ -44,6 +46,12 @@ E2E integration tests focus on testing complete workflows and system interaction
 - Test the full stack including MCP protocol communication
 
 **Files:**
+- `command-line-args.test.ts` - Command line argument parsing and workspace setup
+- `deletion-integration.test.ts` - Note and note type deletion through MCP server
+- `error-handling.test.ts` - Error handling and edge cases across all operations
+- `note-operations.test.ts` - Note creation, retrieval, and updates through MCP
+- `note-type-management.test.ts` - Note type creation and management through MCP
+- `search-integration.test.ts` - Search functionality through MCP server
 - `server-basic.test.ts` - Basic server startup, shutdown, and error handling tests
 
 **Shared Helpers:**
