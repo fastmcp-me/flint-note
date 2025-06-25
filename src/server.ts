@@ -2038,7 +2038,7 @@ function parseArgs(args: string[]): ServerConfig {
       console.log(`
 flint-note MCP Server
 
-Usage: node server.ts [options]
+Usage: npx @flint-note/server [options]
 
 Options:
   --workspace, --workspace-path <path>  Specify workspace path (overrides vault system)
@@ -2046,6 +2046,10 @@ Options:
 
 Environment Variables:
   FLINT_NOTE_WORKSPACE                  Workspace path (deprecated, use --workspace instead)
+
+Examples:
+  npx @flint-note/server                    # Start server with vault system
+  npx @flint-note/server --workspace ./     # Start server with specific workspace
 `);
       process.exit(0);
     }
