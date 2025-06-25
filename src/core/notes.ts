@@ -13,7 +13,7 @@ import { SearchManager } from './search.js';
 import { MetadataValidator } from './metadata-schema.js';
 import type { ValidationResult } from './metadata-schema.js';
 import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.js';
-import type { NoteLink, NoteMetadata, FlintNoteError, DeletionValidation, BackupInfo } from '../types/index.js';
+import type { NoteLink, NoteMetadata, FlintNoteError, DeletionValidation, BackupInfo, WikiLink } from '../types/index.js';
 import { WikilinkParser } from './wikilink-parser.js';
 
 interface ParsedNote {
@@ -728,7 +728,7 @@ export class NoteManager {
           const noteContent = await fs.readFile(note.path, 'utf-8');
           const { wikilinks } = WikilinkParser.parseWikilinks(noteContent);
 
-          const hasLinkToTarget = wikilinks.some((link: any) => {
+          const hasLinkToTarget = wikilinks.some((link: WikiLink) => {
             const linkIdentifier = `${link.type || note.type}/${link.filename || link.target}`;
             return linkIdentifier === identifier || link.target === identifier;
           });

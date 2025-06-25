@@ -557,8 +557,6 @@ GLOBAL CONFIG:
 
   async deleteNote(workspace: Workspace, identifier: string, options: Record<string, string | boolean>): Promise<void> {
     const { NoteManager } = await import('./core/notes.js');
-    const { NoteTypeManager } = await import('./core/note-types.js');
-    const { SearchManager } = await import('./core/search.js');
 
     const noteManager = new NoteManager(workspace);
 
@@ -621,7 +619,7 @@ GLOBAL CONFIG:
     }
 
     try {
-      const result = await noteTypeManager.deleteNoteType(typeName, action as any, targetType, confirm);
+      const result = await noteTypeManager.deleteNoteType(typeName, action as 'error' | 'migrate' | 'delete', targetType, confirm);
 
       if (result.deleted) {
         console.log(`✅ Note type '${typeName}' deleted successfully`);
@@ -645,8 +643,6 @@ GLOBAL CONFIG:
 
   async bulkDeleteNotes(workspace: Workspace, options: Record<string, string | boolean>): Promise<void> {
     const { NoteManager } = await import('./core/notes.js');
-    const { NoteTypeManager } = await import('./core/note-types.js');
-    const { SearchManager } = await import('./core/search.js');
 
     const noteManager = new NoteManager(workspace);
 

@@ -47,15 +47,6 @@ interface NoteTypeUpdateRequest {
   description?: string;
 }
 
-interface DeleteResult {
-  name: string;
-  deleted: boolean;
-  timestamp: string;
-  backup_path?: string;
-  notes_affected?: number;
-  migration_target?: string;
-}
-
 export class NoteTypeManager {
   private workspace: Workspace;
 
