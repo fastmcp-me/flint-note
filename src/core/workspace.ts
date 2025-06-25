@@ -369,11 +369,15 @@ Expected frontmatter fields:
         name: 'daily',
         purpose: 'Track daily events, reflections, and activities',
         agentInstructions: [
+          'Each day\'s title should be formatted as "YYYY-MM-DD"',
           'Ask about key events and accomplishments from the day',
           'Encourage reflection on lessons learned or insights gained',
           'Help identify priorities for the next day',
           "When creating other notes types link to today's entry",
-          'Suggest connections to previous daily entries when relevant'
+          'Suggest connections to previous daily entries when relevant',
+          "Capture daily entries with minimal editorializing - stay close to the user's original words and tone.",
+          'Fix obvious typos and improve clarity without changing meaning.',
+          'Create wikilinks to related notes when relevant topics are mentioned'
         ],
         metadataSchema: {
           fields: [
