@@ -3,10 +3,7 @@
   "version": "0.1.2",
   "description": "Agent-first note-taking application with MCP server",
   "main": "dist/server.js",
-  "bin": {
-    "@flint-note/server": "dist/server.js",
-    "flint-note": "dist/cli.js"
-  },
+  "bin": "dist/server.js",
   "type": "module",
   "scripts": {
     "build": "tsc && chmod +x dist/cli.js && chmod +x dist/server.js",
