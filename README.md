@@ -1,10 +1,10 @@
 # flint-note Design Document
 
+**NOTE: Experimental! This is very work in progress. Do not trust it yet!**
+
 ## Overview
 
 **flint-note** is an agent-first note-taking application designed to help users maintain and interact with their personal knowledge base through natural language interfaces. Unlike traditional note-taking apps that add AI features as an afterthought, flint-note is architected from the ground up to be agent-native.
-
-> 🤖 **AI Integration**: Ready-to-use prompts for all AI models are available in the [`prompts/`](./prompts/) directory. See [`prompts/README.md`](./prompts/README.md) for setup instructions.
 
 ## Vision
 
@@ -341,8 +341,8 @@ When flint-note initializes a new vault, it automatically creates several defaul
 ### Default Note Types
 
 #### Daily Notes
-**Purpose**: Track daily events, reflections, and activities  
-**Directory**: `daily/`  
+**Purpose**: Track daily events, reflections, and activities
+**Directory**: `daily/`
 **Agent Instructions**:
 - Ask about key events and accomplishments from the day
 - Encourage reflection on lessons learned or insights gained
@@ -356,8 +356,8 @@ When flint-note initializes a new vault, it automatically creates several defaul
 - `tags`: Topics or themes (optional, array)
 
 #### Reading Notes
-**Purpose**: Track articles, papers, books, and other reading material  
-**Directory**: `reading/`  
+**Purpose**: Track articles, papers, books, and other reading material
+**Directory**: `reading/`
 **Agent Instructions**:
 - Always ask for author information and publication context
 - Extract and organize key insights and takeaways
@@ -377,8 +377,8 @@ When flint-note initializes a new vault, it automatically creates several defaul
 - `published_date`: Publication date (optional, date)
 
 #### Todo Lists
-**Purpose**: Track tasks, action items, and things that need to be done  
-**Directory**: `todos/`  
+**Purpose**: Track tasks, action items, and things that need to be done
+**Directory**: `todos/`
 **Agent Instructions**:
 - Help break down large tasks into smaller, actionable items
 - Ask about priorities and deadlines
@@ -395,8 +395,8 @@ When flint-note initializes a new vault, it automatically creates several defaul
 - `estimated_time`: Time estimate in minutes (optional, number, min: 1)
 
 #### Project Tracking
-**Purpose**: Track ongoing projects, goals, and long-term initiatives  
-**Directory**: `projects/`  
+**Purpose**: Track ongoing projects, goals, and long-term initiatives
+**Directory**: `projects/`
 **Agent Instructions**:
 - Ask about project scope, goals, and success criteria
 - Help identify key milestones and deadlines
@@ -414,8 +414,8 @@ When flint-note initializes a new vault, it automatically creates several defaul
 - `tags`: Project categories or skills (optional, array)
 
 #### Goals Tracking
-**Purpose**: Track long-term personal and professional goals  
-**Directory**: `goals/`  
+**Purpose**: Track long-term personal and professional goals
+**Directory**: `goals/`
 **Agent Instructions**:
 - Help define specific, measurable, achievable goals
 - Ask about motivation and personal significance
@@ -434,8 +434,8 @@ When flint-note initializes a new vault, it automatically creates several defaul
 - `tags`: Related themes or skills (optional, array)
 
 #### Games Tracking
-**Purpose**: Track video games played, progress, and experiences  
-**Directory**: `games/`  
+**Purpose**: Track video games played, progress, and experiences
+**Directory**: `games/`
 **Agent Instructions**:
 - Ask about platform, genre, and gameplay style preferences
 - Encourage documenting memorable moments and achievements
@@ -454,8 +454,8 @@ When flint-note initializes a new vault, it automatically creates several defaul
 - `release_year`: Year released (optional, number)
 
 #### Movies Tracking
-**Purpose**: Track movies watched, reviews, and recommendations  
-**Directory**: `movies/`  
+**Purpose**: Track movies watched, reviews, and recommendations
+**Directory**: `movies/`
 **Agent Instructions**:
 - Ask about what drew them to watch this particular movie
 - Encourage discussing themes, cinematography, and performances
@@ -591,7 +591,7 @@ Agent: [Uses list_vaults tool]
 Here are your configured vaults:
 - **work** (~/work-notes): Professional projects and meeting notes
   - 45 notes, last used yesterday
-- **personal** (~/personal-notes): Personal thoughts, goals, and interests  
+- **personal** (~/personal-notes): Personal thoughts, goals, and interests
   - 23 notes, currently active
 - **research** (~/research): Academic research and paper notes
   - 12 notes, last used last week
@@ -843,7 +843,7 @@ The project has a comprehensive design document and core implementation with MCP
 - **Timeline**: 1-2 weeks
 - **Success Criteria**: All tests passing, CI/CD pipeline green
 
-#### **2. Verify Core Functionality** 
+#### **2. Verify Core Functionality**
 - **Action**: Manual testing of all MVP features through MCP interface
 - **Verify**: Note CRUD operations, note type management, search, metadata validation
 - **Timeline**: 1 week
@@ -853,7 +853,7 @@ The project has a comprehensive design document and core implementation with MCP
 
 #### **3. Complete Phase 1 MVP Features**
 - ✅ Basic note creation/reading/updating (implemented)
-- ✅ Note type system (implemented) 
+- ✅ Note type system (implemented)
 - ✅ File-based storage (implemented)
 - ✅ MCP server interface (implemented)
 - ❓ **Verify** metadata validation works correctly
@@ -867,7 +867,7 @@ The project has a comprehensive design document and core implementation with MCP
 
 #### **5. Add Error Handling & Validation**
 - Implement robust error messages for common mistakes
-- Add validation for note type schemas  
+- Add validation for note type schemas
 - Ensure graceful handling of malformed files
 - Create user-friendly error reporting
 
