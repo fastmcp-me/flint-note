@@ -192,7 +192,3 @@ Agent: I'll modify your project note instructions to emphasize deadline tracking
        and proactive blocker identification.
        [Updates projects/_description.md accordingly]
 ```
-
-## License
-
-MIT
