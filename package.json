@@ -26,6 +26,9 @@
     "prepublish": "npm run build",
     "prepublishOnly": "npm run build"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "notes",
     "mcp",
