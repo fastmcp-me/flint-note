@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## upcoming
+## 0.2.1
 
 ### Fixed
 - Automatic configuration upgrade for old vaults missing deletion settings
