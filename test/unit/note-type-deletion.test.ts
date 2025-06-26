@@ -12,10 +12,8 @@ import { join } from 'node:path';
 import {
   createTestWorkspace,
   cleanupTestWorkspace,
-  createTestNotes,
   createTestNoteTypes,
-  TestContext,
-  TEST_CONSTANTS
+  TestContext
 } from './helpers/test-utils.ts';
 
 describe('Note Type Deletion Unit Tests', () => {
@@ -213,8 +211,12 @@ describe('Note Type Deletion Unit Tests', () => {
       // Set low bulk delete limit and enable note type deletion
       const config = {
         deletion: {
-          max_bulk_delete: 2,
-          allow_note_type_deletion: true
+          require_confirmation: false,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 2
         }
       };
       await workspace.updateConfig(config);
@@ -247,8 +249,12 @@ describe('Note Type Deletion Unit Tests', () => {
       // Configure built-in type protection
       const config = {
         deletion: {
+          require_confirmation: false,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
           protect_builtin_types: true,
-          allow_note_type_deletion: true
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -270,8 +276,12 @@ describe('Note Type Deletion Unit Tests', () => {
       // Disable built-in type protection
       const config = {
         deletion: {
+          require_confirmation: false,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
           protect_builtin_types: false,
-          allow_note_type_deletion: true
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -297,7 +307,12 @@ describe('Note Type Deletion Unit Tests', () => {
       // Disable note type deletion
       const config = {
         deletion: {
-          allow_note_type_deletion: false
+          require_confirmation: false,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: false,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -319,7 +334,11 @@ describe('Note Type Deletion Unit Tests', () => {
       const config = {
         deletion: {
           require_confirmation: true,
-          allow_note_type_deletion: true
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -355,9 +374,12 @@ describe('Note Type Deletion Unit Tests', () => {
 
       const config = {
         deletion: {
+          require_confirmation: false,
           create_backups: true,
           backup_path: backupDir,
-          allow_note_type_deletion: true
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -388,9 +410,12 @@ describe('Note Type Deletion Unit Tests', () => {
 
       const config = {
         deletion: {
+          require_confirmation: false,
           create_backups: true,
           backup_path: backupDir,
-          allow_note_type_deletion: true
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -475,7 +500,7 @@ describe('Note Type Deletion Unit Tests', () => {
 
         // Check if notes_count property exists in validation result
         if ('notes_count' in validation) {
-          assert.ok(validation.notes_count > 0, 'Should report note count');
+          assert.ok((validation as any).notes_count > 0, 'Should report note count');
         }
       } else {
         console.log('validateNoteTypeDeletion method not implemented yet');
@@ -490,7 +515,12 @@ describe('Note Type Deletion Unit Tests', () => {
       // Enable note type deletion
       const config = {
         deletion: {
-          allow_note_type_deletion: true
+          require_confirmation: false,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);

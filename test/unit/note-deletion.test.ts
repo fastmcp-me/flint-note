@@ -64,7 +64,12 @@ describe('Note Deletion Unit Tests', () => {
       // Set up configuration requiring confirmation
       const config = {
         deletion: {
-          require_confirmation: true
+          require_confirmation: true,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -96,8 +101,12 @@ describe('Note Deletion Unit Tests', () => {
 
       const config = {
         deletion: {
+          require_confirmation: false,
           create_backups: true,
-          backup_path: backupDir
+          backup_path: '.flint-note/test-backups',
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -306,6 +315,11 @@ Different content.`
       // Set a low bulk delete limit
       const config = {
         deletion: {
+          require_confirmation: false,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
           max_bulk_delete: 2
         }
       };
@@ -342,7 +356,12 @@ Different content.`
       // Configure to require confirmation
       const config = {
         deletion: {
-          require_confirmation: true
+          require_confirmation: true,
+          create_backups: true,
+          backup_path: '.flint-note/backups',
+          allow_note_type_deletion: true,
+          protect_builtin_types: true,
+          max_bulk_delete: 10
         }
       };
       await workspace.updateConfig(config);
@@ -369,7 +388,7 @@ Different content.`
       const { noteManager } = context;
 
       // Create some notes
-      const note1 = await noteManager.createNote(
+      const _note1 = await noteManager.createNote(
         TEST_CONSTANTS.NOTE_TYPES.DEFAULT,
         'Success Note',
         'This will be deleted successfully'
