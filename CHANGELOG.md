@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## upcoming
+
+- remove initialize_vault tool (redundant)
+
 ## 0.2.1
 
 ### Fixed

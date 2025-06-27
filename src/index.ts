@@ -41,9 +41,6 @@ Options:
   --workspace, --workspace-path <path>  Specify workspace path (overrides vault system)
   --help, -h                           Show this help message
 
-Environment Variables:
-  FLINT_NOTE_WORKSPACE                  Workspace path (deprecated, use --workspace instead)
-
 Examples:
   npx @flint-note/server                    # Start server with vault system
   npx @flint-note/server --workspace ./     # Start server with specific workspace

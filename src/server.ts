@@ -96,10 +96,6 @@ interface GetNoteTypeInfoArgs {
   type_name: string;
 }
 
-interface InitializeVaultArgs {
-  force?: boolean;
-}
-
 interface CreateVaultArgs {
   id: string;
   name: string;
@@ -620,22 +616,6 @@ export class FlintNoteServer {
             }
           },
           {
-            name: 'initialize_vault',
-            description:
-              'Initialize a new flint-note vault with default note types (daily, reading, todos, projects, goals, games, movies)',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                force: {
-                  type: 'boolean',
-                  description: 'Force initialization even if vault already exists',
-                  default: false
-                }
-              },
-              required: []
-            }
-          },
-          {
             name: 'list_vaults',
             description: 'List all configured vaults with their status and information',
             inputSchema: {
@@ -1032,10 +1012,6 @@ export class FlintNoteServer {
           case 'get_note_type_info':
             return await this.#handleGetNoteTypeInfo(
               args as unknown as GetNoteTypeInfoArgs
-            );
-          case 'initialize_vault':
-            return await this.#handleInitializeVault(
-              args as unknown as InitializeVaultArgs
             );
           case 'list_vaults':
             return await this.#handleListVaults();
@@ -2024,75 +2000,6 @@ export class FlintNoteServer {
     const transport = new StdioServerTransport();
     await this.#server.connect(transport);
     console.error('Flint Note MCP server running on stdio');
-  }
-
-  async #handleInitializeVault(
-    args: InitializeVaultArgs
-  ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
-    try {
-      if (!this.#workspace) {
-        throw new Error('Workspace not initialized');
-      }
-
-      // Check if vault already exists (has .flint-note directory)
-      const flintNoteDir = this.#workspace.flintNoteDir;
-      let vaultExists = false;
-
-      try {
-        await fs.access(flintNoteDir);
-        vaultExists = true;
-      } catch (_error) {
-        // Vault doesn't exist, which is fine
-      }
-
-      if (vaultExists && !args.force) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Vault already exists. Use force=true to reinitialize with default note types.'
-            }
-          ]
-        };
-      }
-
-      // Initialize the vault with default note types
-      await this.#workspace.initializeVault();
-
-      const defaultNoteTypes = this.#workspace.getDefaultNoteTypes();
-      const noteTypeNames = defaultNoteTypes.map(nt => nt.name);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `✅ Vault initialized successfully!
-
-Created default note types:
-${noteTypeNames.map(name => `• **${name}**: ${defaultNoteTypes.find(nt => nt.name === name)?.purpose}`).join('\n')}
-
-Your vault is ready to use! You can:
-1. Create notes using any of the default note types
-2. Customize existing note types to fit your needs
-3. Add new note types for specialized topics
-4. Start building your knowledge base
-
-A welcome note has been created in your vault root directory to help you get started.`
-          }
-        ]
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Failed to initialize vault: ${errorMessage}`
-          }
-        ],
-        isError: true
-      };
-    }
   }
 
   // Vault management handlers
