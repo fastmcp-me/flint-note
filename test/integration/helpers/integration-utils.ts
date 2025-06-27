@@ -100,7 +100,7 @@ async function getTsxCommand(): Promise<{ command: string; args: string[] }> {
       command: process.execPath, // Use current Node.js executable
       args: [tsxEntryPoint]
     };
-  } catch (error) {
+  } catch {
     // Fallback: try to find tsx in node_modules/.bin
     const tsxBin = join(
       process.cwd(),
@@ -197,7 +197,7 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
     // Handle server errors
     serverProcess.on('error', error => {
       clearTimeout(startupTimeout);
-      const errorMessage = `Failed to start server: ${error.message}. Command: ${command} ${fullArgs.join(' ')}. Platform: ${platform()}. Errno: ${error.errno || 'unknown'}. Code: ${error.code || 'unknown'}`;
+      const errorMessage = `Failed to start server: ${error.message}. Command: ${command} ${fullArgs.join(' ')}. Platform: ${platform()}. Errno: ${(error as any).errno || 'unknown'}. Code: ${(error as any).code || 'unknown'}`;
       reject(new Error(errorMessage));
     });
 
