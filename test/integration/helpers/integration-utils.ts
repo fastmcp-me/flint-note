@@ -9,6 +9,7 @@ import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { platform } from 'node:os';
 
 /**
  * Integration test context containing server process and workspace info
@@ -80,6 +81,51 @@ export async function cleanupIntegrationWorkspace(
 }
 
 /**
+ * Gets the command to run tsx in a cross-platform way
+ */
+function getTsxCommand(): { command: string; args: string[] } {
+  const isWindows = platform() === 'win32';
+
+  // First try to find tsx in node_modules/.bin
+  const tsxBin = join(
+    process.cwd(),
+    'node_modules',
+    '.bin',
+    isWindows ? 'tsx.cmd' : 'tsx'
+  );
+
+  try {
+    // Check if the file exists and is accessible
+    require('fs').accessSync(tsxBin, require('fs').constants.F_OK);
+    return { command: tsxBin, args: [] };
+  } catch {
+    // On Windows, also try tsx.exe
+    if (isWindows) {
+      const tsxExe = join(process.cwd(), 'node_modules', '.bin', 'tsx.exe');
+      try {
+        require('fs').accessSync(tsxExe, require('fs').constants.F_OK);
+        return { command: tsxExe, args: [] };
+      } catch {
+        // Continue to next fallback
+      }
+    }
+
+    // Fallback: try to use the tsx module entry point directly with node
+    try {
+      const tsxEntryPoint = require.resolve('tsx/cli');
+      return {
+        command: process.execPath, // Use current Node.js executable
+        args: [tsxEntryPoint]
+      };
+    } catch (error) {
+      // Last resort: try npx (might not work in all CI environments)
+      console.warn('Failed to resolve tsx cli entry point:', error);
+      return { command: 'npx', args: ['tsx'] };
+    }
+  }
+}
+
+/**
  * Starts the MCP server as a child process
  */
 export async function startServer(options: ServerStartupOptions): Promise<ChildProcess> {
@@ -87,10 +133,11 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
 
   return new Promise((resolve, reject) => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
+    const { command, args } = getTsxCommand();
 
     const serverProcess = spawn(
-      'npx',
-      ['tsx', serverPath, '--workspace', workspacePath],
+      command,
+      [...args, serverPath, '--workspace', workspacePath],
       {
         env: {
           ...process.env,
@@ -136,7 +183,8 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
     // Handle server errors
     serverProcess.on('error', error => {
       clearTimeout(startupTimeout);
-      reject(new Error(`Failed to start server: ${error.message}`));
+      const errorMessage = `Failed to start server: ${error.message}. Command: ${command} ${args.join(' ')}`;
+      reject(new Error(errorMessage));
     });
 
     // Handle unexpected server exit
