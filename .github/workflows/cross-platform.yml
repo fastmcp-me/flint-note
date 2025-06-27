@@ -2,9 +2,9 @@ name: Cross-Platform Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     # Run weekly on Sundays at 2 AM UTC
     - cron: '0 2 * * 0'
@@ -17,46 +17,46 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-latest]
-        node-version: [18.x, 20.x]
+        node-version: [22.x]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Type check
-      run: npm run type-check
+      - name: Type check
+        run: npm run type-check
 
-    - name: Run unit tests
-      run: npm run test:unit
+      - name: Run unit tests
+        run: npm run test:unit
 
-    - name: Run integration tests
-      run: npm run test:integration
+      - name: Run integration tests
+        run: npm run test:integration
 
-    - name: Build
-      run: npm run build
+      - name: Build
+        run: npm run build
 
-    - name: Verify build artifacts (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        if (!(Test-Path "dist/index.js")) { Write-Error "Missing dist/index.js"; exit 1 }
-        if (!(Test-Path "dist/cli.js")) { Write-Error "Missing dist/cli.js"; exit 1 }
+      - name: Verify build artifacts (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if (!(Test-Path "dist/index.js")) { Write-Error "Missing dist/index.js"; exit 1 }
+          if (!(Test-Path "dist/cli.js")) { Write-Error "Missing dist/cli.js"; exit 1 }
 
-    - name: Verify build artifacts (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        test -f dist/index.js || (echo "Missing dist/index.js" && exit 1)
-        test -f dist/cli.js || (echo "Missing dist/cli.js" && exit 1)
-        test -x dist/index.js || (echo "dist/index.js not executable" && exit 1)
-        test -x dist/cli.js || (echo "dist/cli.js not executable" && exit 1)
+      - name: Verify build artifacts (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          test -f dist/index.js || (echo "Missing dist/index.js" && exit 1)
+          test -f dist/cli.js || (echo "Missing dist/cli.js" && exit 1)
+          test -x dist/index.js || (echo "dist/index.js not executable" && exit 1)
+          test -x dist/cli.js || (echo "dist/cli.js not executable" && exit 1)
 
-    - name: Test CLI functionality
-      run: node dist/cli.js --help
+      - name: Test CLI functionality
+        run: node dist/cli.js --help
