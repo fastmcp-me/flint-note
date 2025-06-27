@@ -6,10 +6,10 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { join } from 'node:path';
-import { spawn } from 'node:child_process';
 import {
   createIntegrationWorkspace,
   cleanupIntegrationWorkspace,
+  spawnTsxCommand,
   type IntegrationTestContext,
   INTEGRATION_CONSTANTS
 } from './helpers/integration-utils.ts';
@@ -28,9 +28,12 @@ describe('Command Line Arguments Integration', () => {
   test('should start server with --workspace argument', async () => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
 
-    const serverProcess = spawn('tsx', [serverPath, '--workspace', context.tempDir], {
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+    const serverProcess = await spawnTsxCommand(
+      [serverPath, '--workspace', context.tempDir],
+      {
+        stdio: ['pipe', 'pipe', 'pipe']
+      }
+    );
 
     context.serverProcess = serverProcess;
 
@@ -95,8 +98,7 @@ describe('Command Line Arguments Integration', () => {
   test('should start server with --workspace-path argument', async () => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
 
-    const serverProcess = spawn(
-      'tsx',
+    const serverProcess = await spawnTsxCommand(
       [serverPath, '--workspace-path', context.tempDir],
       {
         stdio: ['pipe', 'pipe', 'pipe']
@@ -156,7 +158,7 @@ describe('Command Line Arguments Integration', () => {
   test('should show help message with --help argument', async () => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
 
-    const serverProcess = spawn('tsx', [serverPath, '--help'], {
+    const serverProcess = await spawnTsxCommand([serverPath, '--help'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -207,7 +209,7 @@ describe('Command Line Arguments Integration', () => {
   test('should show help message with -h argument', async () => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
 
-    const serverProcess = spawn('tsx', [serverPath, '-h'], {
+    const serverProcess = await spawnTsxCommand([serverPath, '-h'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -257,9 +259,12 @@ describe('Command Line Arguments Integration', () => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
     const invalidPath = '/this/path/definitely/does/not/exist/anywhere';
 
-    const serverProcess = spawn('tsx', [serverPath, '--workspace', invalidPath], {
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+    const serverProcess = await spawnTsxCommand(
+      [serverPath, '--workspace', invalidPath],
+      {
+        stdio: ['pipe', 'pipe', 'pipe']
+      }
+    );
 
     let errorOutput = '';
     let hasExited = false;
@@ -306,7 +311,7 @@ describe('Command Line Arguments Integration', () => {
   test('should handle missing workspace argument value', async () => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
 
-    const serverProcess = spawn('tsx', [serverPath, '--workspace'], {
+    const serverProcess = await spawnTsxCommand([serverPath, '--workspace'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -363,9 +368,12 @@ describe('Command Line Arguments Integration', () => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
 
     // Set environment variable to a different path
-    const serverProcess = spawn('tsx', [serverPath, '--workspace', context.tempDir], {
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+    const serverProcess = await spawnTsxCommand(
+      [serverPath, '--workspace', context.tempDir],
+      {
+        stdio: ['pipe', 'pipe', 'pipe']
+      }
+    );
 
     context.serverProcess = serverProcess;
 

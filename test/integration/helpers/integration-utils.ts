@@ -216,6 +216,31 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
 }
 
 /**
+ * Spawns tsx with the given arguments using the same resolution logic as startServer
+ */
+export async function spawnTsxCommand(
+  args: string[],
+  options: {
+    stdio?: ('pipe' | 'ignore' | 'inherit')[];
+    env?: Record<string, string>;
+  } = {}
+): Promise<import('child_process').ChildProcess> {
+  const { command, args: tsxArgs } = await getTsxCommand();
+  const fullArgs = [...tsxArgs, ...args];
+
+  const { stdio = ['pipe', 'pipe', 'pipe'], env = {} } = options;
+
+  return spawn(command, fullArgs, {
+    env: {
+      ...process.env,
+      ...env
+    },
+    stdio,
+    shell: platform() === 'win32' // Use shell on Windows for better compatibility
+  });
+}
+
+/**
  * Gracefully stops a server process
  */
 export async function stopServer(
