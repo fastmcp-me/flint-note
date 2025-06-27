@@ -6,10 +6,12 @@
  */
 
 import { promises as fs } from 'node:fs';
+import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { platform } from 'node:os';
+import { createRequire } from 'node:module';
 
 /**
  * Integration test context containing server process and workspace info
@@ -83,7 +85,7 @@ export async function cleanupIntegrationWorkspace(
 /**
  * Gets the command to run tsx in a cross-platform way
  */
-function getTsxCommand(): { command: string; args: string[] } {
+async function getTsxCommand(): Promise<{ command: string; args: string[] }> {
   const isWindows = platform() === 'win32';
 
   // First try to find tsx in node_modules/.bin
@@ -96,14 +98,14 @@ function getTsxCommand(): { command: string; args: string[] } {
 
   try {
     // Check if the file exists and is accessible
-    require('fs').accessSync(tsxBin, require('fs').constants.F_OK);
+    await fs.access(tsxBin, constants.F_OK);
     return { command: tsxBin, args: [] };
   } catch {
     // On Windows, also try tsx.exe
     if (isWindows) {
       const tsxExe = join(process.cwd(), 'node_modules', '.bin', 'tsx.exe');
       try {
-        require('fs').accessSync(tsxExe, require('fs').constants.F_OK);
+        await fs.access(tsxExe, constants.F_OK);
         return { command: tsxExe, args: [] };
       } catch {
         // Continue to next fallback
@@ -112,6 +114,15 @@ function getTsxCommand(): { command: string; args: string[] } {
 
     // Fallback: try to use the tsx module entry point directly with node
     try {
+      let require: NodeRequire;
+
+      try {
+        require = createRequire(import.meta.url);
+      } catch {
+        // Fallback for environments that don't support import.meta.url
+        require = createRequire(process.cwd() + '/package.json');
+      }
+
       const tsxEntryPoint = require.resolve('tsx/cli');
       return {
         command: process.execPath, // Use current Node.js executable
@@ -131,9 +142,9 @@ function getTsxCommand(): { command: string; args: string[] } {
 export async function startServer(options: ServerStartupOptions): Promise<ChildProcess> {
   const { workspacePath, timeout = 5000, env = {} } = options;
 
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const serverPath = join(process.cwd(), 'src', 'index.ts');
-    const { command, args } = getTsxCommand();
+    const { command, args } = await getTsxCommand();
 
     const serverProcess = spawn(
       command,
