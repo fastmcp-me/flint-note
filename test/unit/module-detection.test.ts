@@ -25,40 +25,53 @@ describe('Module Detection', () => {
       }
     }
 
-    // Test case 1: Exact match (Unix-style paths)
-    const unixPath = '/home/user/project/src/server.ts';
-    const unixUrl = `file://${unixPath}`;
-    strictEqual(
-      isMainModule(unixUrl, unixPath),
-      true,
-      'Should detect main module with Unix paths'
-    );
+    // Test case 1: Platform-appropriate paths
+    let testPath: string;
+    let testUrl: string;
 
-    // Test case 2: Windows-style paths (only test on Windows)
     if (process.platform === 'win32') {
-      const windowsPath = 'C:\\Users\\user\\project\\src\\server.ts';
-      const windowsUrl = `file:///${windowsPath.replace(/\\/g, '/')}`;
-      strictEqual(
-        isMainModule(windowsUrl, windowsPath),
-        true,
-        'Should detect main module with Windows paths'
-      );
+      testPath = 'C:\\Users\\user\\project\\src\\server.ts';
+      testUrl = `file:///${testPath.replace(/\\/g, '/')}`;
+    } else {
+      testPath = '/home/user/project/src/server.ts';
+      testUrl = `file://${testPath}`;
     }
 
-    // Test case 3: Different files
-    const file1 = '/home/user/project/src/server.ts';
-    const file2 = '/home/user/project/src/cli.ts';
-    const url1 = `file://${file1}`;
+    strictEqual(
+      isMainModule(testUrl, testPath),
+      true,
+      'Should detect main module with platform-appropriate paths'
+    );
+
+    // Test case 2: Different files
+    let file1: string;
+    let file2: string;
+    let url1: string;
+
+    if (process.platform === 'win32') {
+      file1 = 'C:\\Users\\user\\project\\src\\server.ts';
+      file2 = 'C:\\Users\\user\\project\\src\\cli.ts';
+      url1 = `file:///${file1.replace(/\\/g, '/')}`;
+    } else {
+      file1 = '/home/user/project/src/server.ts';
+      file2 = '/home/user/project/src/cli.ts';
+      url1 = `file://${file1}`;
+    }
+
     strictEqual(
       isMainModule(url1, file2),
       false,
       'Should not detect main module when files differ'
     );
 
-    // Test case 4: Relative vs absolute paths
+    // Test case 3: Relative vs absolute paths
     const relativePath = './src/server.ts';
     const absolutePath = resolve(relativePath);
-    const relativeUrl = `file://${absolutePath}`;
+    const relativeUrl =
+      process.platform === 'win32'
+        ? `file:///${absolutePath.replace(/\\/g, '/')}`
+        : `file://${absolutePath}`;
+
     strictEqual(
       isMainModule(relativeUrl, relativePath),
       true,
@@ -77,18 +90,36 @@ describe('Module Detection', () => {
       }
     }
 
-    // Test with spaces in path
-    const pathWithSpaces = '/home/user/my project/src/server.ts';
-    const encodedUrl = `file://${pathWithSpaces.replace(/ /g, '%20')}`;
+    // Test with spaces in path - use platform-appropriate paths
+    let pathWithSpaces: string;
+    let encodedUrl: string;
+
+    if (process.platform === 'win32') {
+      pathWithSpaces = 'C:\\Users\\user\\my project\\src\\server.ts';
+      encodedUrl = `file:///${pathWithSpaces.replace(/\\/g, '/').replace(/ /g, '%20')}`;
+    } else {
+      pathWithSpaces = '/home/user/my project/src/server.ts';
+      encodedUrl = `file://${pathWithSpaces.replace(/ /g, '%20')}`;
+    }
+
     strictEqual(
       isMainModule(encodedUrl, pathWithSpaces),
       true,
       'Should handle URL-encoded spaces correctly'
     );
 
-    // Test with special characters
-    const pathWithSpecialChars = '/home/user/project-name/src/server.ts';
-    const specialUrl = `file://${pathWithSpecialChars}`;
+    // Test with special characters - use platform-appropriate paths
+    let pathWithSpecialChars: string;
+    let specialUrl: string;
+
+    if (process.platform === 'win32') {
+      pathWithSpecialChars = 'C:\\Users\\user\\project-name\\src\\server.ts';
+      specialUrl = `file:///${pathWithSpecialChars.replace(/\\/g, '/')}`;
+    } else {
+      pathWithSpecialChars = '/home/user/project-name/src/server.ts';
+      specialUrl = `file://${pathWithSpecialChars}`;
+    }
+
     strictEqual(
       isMainModule(specialUrl, pathWithSpecialChars),
       true,
@@ -110,7 +141,10 @@ describe('Module Detection', () => {
 
     // Test with malformed URL
     const malformedUrl = 'not-a-valid-url';
-    const validPath = '/home/user/project/src/server.ts';
+    const validPath =
+      process.platform === 'win32'
+        ? 'C:\\Users\\user\\project\\src\\server.ts'
+        : '/home/user/project/src/server.ts';
 
     // Should not crash and should use fallback logic
     const result = isMainModule(malformedUrl, validPath);
@@ -154,7 +188,11 @@ describe('Module Detection', () => {
     const currentDir = process.cwd();
     const relativePath = './server.ts';
     const absolutePath = resolve(currentDir, 'server.ts');
-    const relativeUrl = `file://${absolutePath}`;
+    // Use platform-appropriate URL format
+    const relativeUrl =
+      process.platform === 'win32'
+        ? `file:///${absolutePath.replace(/\\/g, '/')}`
+        : `file://${absolutePath}`;
 
     strictEqual(
       isMainModule(relativeUrl, relativePath),
