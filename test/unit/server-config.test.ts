@@ -44,8 +44,14 @@ describe('Server Configuration', () => {
   });
 
   test('should handle invalid workspace path gracefully', async () => {
+    // Use platform-appropriate non-existent path
+    const invalidPath =
+      process.platform === 'win32'
+        ? 'Z:\\this\\path\\definitely\\does\\not\\exist\\anywhere'
+        : '/this/path/definitely/does/not/exist/anywhere';
+
     const server = new FlintNoteServer({
-      workspacePath: '/this/path/definitely/does/not/exist/anywhere',
+      workspacePath: invalidPath,
       throwOnError: true
     });
 
@@ -55,9 +61,13 @@ describe('Server Configuration', () => {
     } catch (error) {
       assert.ok(error instanceof Error, 'Should throw an error');
       assert.ok(
-        error.message.includes('Failed to initialize') ||
+        error.message.includes('Failed to initialize flint-note server') ||
+          error.message.includes('Failed to initialize workspace') ||
+          error.message.includes('Failed to initialize vault') ||
           error.message.includes('ENOENT') ||
-          error.message.includes('no such file or directory'),
+          error.message.includes('no such file or directory') ||
+          error.message.includes('cannot find the path') ||
+          error.message.includes('system cannot find'),
         `Error should indicate path issue. Got: ${error.message}`
       );
     }
@@ -120,11 +130,12 @@ describe('Server Configuration Edge Cases', () => {
       context = await createTestServer('relative-path');
 
       // Use a relative path that resolves to our temp directory
-      const relativePath = `./${context.tempDir.split('/').pop()}`;
+      const { sep, basename, dirname } = await import('node:path');
+      const relativePath = `.${sep}${basename(context.tempDir)}`;
 
       // Change to parent directory to make relative path meaningful
       const originalCwd = process.cwd();
-      const parentDir = context.tempDir.split('/').slice(0, -1).join('/');
+      const parentDir = dirname(context.tempDir);
 
       try {
         process.chdir(parentDir);
