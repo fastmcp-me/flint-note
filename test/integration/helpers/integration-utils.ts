@@ -88,50 +88,54 @@ export async function cleanupIntegrationWorkspace(
 async function getTsxCommand(): Promise<{ command: string; args: string[] }> {
   const isWindows = platform() === 'win32';
 
-  // First try to find tsx in node_modules/.bin
-  const tsxBin = join(
-    process.cwd(),
-    'node_modules',
-    '.bin',
-    isWindows ? 'tsx.cmd' : 'tsx'
-  );
-
+  // First try to use the tsx module entry point directly with node
   try {
-    // Check if the file exists and is accessible
-    await fs.access(tsxBin, constants.F_OK);
-    return { command: tsxBin, args: [] };
-  } catch {
-    // On Windows, also try tsx.exe
-    if (isWindows) {
-      const tsxExe = join(process.cwd(), 'node_modules', '.bin', 'tsx.exe');
-      try {
-        await fs.access(tsxExe, constants.F_OK);
-        return { command: tsxExe, args: [] };
-      } catch {
-        // Continue to next fallback
-      }
-    }
+    const require = createRequire(import.meta.url);
+    const tsxEntryPoint = require.resolve('tsx/cli');
 
-    // Fallback: try to use the tsx module entry point directly with node
+    // Validate that the entry point exists
+    await fs.access(tsxEntryPoint, constants.F_OK);
+
+    return {
+      command: process.execPath, // Use current Node.js executable
+      args: [tsxEntryPoint]
+    };
+  } catch (error) {
+    // Fallback: try to find tsx in node_modules/.bin
+    const tsxBin = join(
+      process.cwd(),
+      'node_modules',
+      '.bin',
+      isWindows ? 'tsx.cmd' : 'tsx'
+    );
+
     try {
-      let require: NodeRequire;
+      await fs.access(tsxBin, constants.F_OK);
+      return { command: tsxBin, args: [] };
+    } catch {
+      // On Windows, try additional variants
+      if (isWindows) {
+        const variants = [
+          join(process.cwd(), 'node_modules', '.bin', 'tsx.exe'),
+          join(process.cwd(), 'node_modules', '.bin', 'tsx'),
+          join(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs')
+        ];
 
-      try {
-        require = createRequire(import.meta.url);
-      } catch {
-        // Fallback for environments that don't support import.meta.url
-        require = createRequire(process.cwd() + '/package.json');
+        for (const variant of variants) {
+          try {
+            await fs.access(variant, constants.F_OK);
+            return { command: variant, args: [] };
+          } catch {
+            // Continue to next variant
+          }
+        }
+
+        // Final Windows fallback
+        return { command: 'npm.cmd', args: ['exec', 'tsx', '--'] };
+      } else {
+        // Unix fallback
+        return { command: 'npx', args: ['tsx'] };
       }
-
-      const tsxEntryPoint = require.resolve('tsx/cli');
-      return {
-        command: process.execPath, // Use current Node.js executable
-        args: [tsxEntryPoint]
-      };
-    } catch (error) {
-      // Last resort: try npx (might not work in all CI environments)
-      console.warn('Failed to resolve tsx cli entry point:', error);
-      return { command: 'npx', args: ['tsx'] };
     }
   }
 }
@@ -146,17 +150,16 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
   const { command, args } = await getTsxCommand();
 
   return new Promise((resolve, reject) => {
-    const serverProcess = spawn(
-      command,
-      [...args, serverPath, '--workspace', workspacePath],
-      {
-        env: {
-          ...process.env,
-          ...env
-        },
-        stdio: ['pipe', 'pipe', 'pipe']
-      }
-    );
+    const fullArgs = [...args, serverPath, '--workspace', workspacePath];
+
+    const serverProcess = spawn(command, fullArgs, {
+      env: {
+        ...process.env,
+        ...env
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: platform() === 'win32' // Use shell on Windows for better compatibility
+    });
 
     let startupOutput = '';
     let errorOutput = '';
@@ -194,7 +197,7 @@ export async function startServer(options: ServerStartupOptions): Promise<ChildP
     // Handle server errors
     serverProcess.on('error', error => {
       clearTimeout(startupTimeout);
-      const errorMessage = `Failed to start server: ${error.message}. Command: ${command} ${args.join(' ')}`;
+      const errorMessage = `Failed to start server: ${error.message}. Command: ${command} ${fullArgs.join(' ')}. Platform: ${platform()}. Errno: ${error.errno || 'unknown'}. Code: ${error.code || 'unknown'}`;
       reject(new Error(errorMessage));
     });
 
