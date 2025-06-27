@@ -142,10 +142,10 @@ async function getTsxCommand(): Promise<{ command: string; args: string[] }> {
 export async function startServer(options: ServerStartupOptions): Promise<ChildProcess> {
   const { workspacePath, timeout = 5000, env = {} } = options;
 
-  return new Promise(async (resolve, reject) => {
-    const serverPath = join(process.cwd(), 'src', 'index.ts');
-    const { command, args } = await getTsxCommand();
+  const serverPath = join(process.cwd(), 'src', 'index.ts');
+  const { command, args } = await getTsxCommand();
 
+  return new Promise((resolve, reject) => {
     const serverProcess = spawn(
       command,
       [...args, serverPath, '--workspace', workspacePath],
