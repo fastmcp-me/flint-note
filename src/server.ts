@@ -23,6 +23,10 @@ import { GlobalConfigManager } from './utils/global-config.js';
 import { resolvePath, isPathSafe } from './utils/path.js';
 import type { LinkRelationship, NoteMetadata } from './types/index.js';
 import type { MetadataSchema } from './core/metadata-schema.js';
+import {
+  generateContentHash,
+  createNoteTypeHashableContent
+} from './utils/content-hash.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -59,10 +63,12 @@ interface UpdateNoteArgs {
   identifier?: string;
   content?: string;
   metadata?: Record<string, unknown>;
+  content_hash?: string;
   updates?: Array<{
     identifier: string;
     content?: string;
     metadata?: Record<string, unknown>;
+    content_hash: string;
   }>;
 }
 
@@ -90,6 +96,7 @@ interface UpdateNoteTypeArgs {
   type_name: string;
   field: 'instructions' | 'description' | 'metadata_schema';
   value: string;
+  content_hash: string;
 }
 
 interface GetNoteTypeInfoArgs {
@@ -459,6 +466,11 @@ export class FlintNoteServer {
                   description:
                     'New content for the note - only used for single note update'
                 },
+                content_hash: {
+                  type: 'string',
+                  description:
+                    'Content hash of the current note for optimistic locking - required for single note update'
+                },
                 metadata: {
                   type: 'object',
                   description:
@@ -479,13 +491,17 @@ export class FlintNoteServer {
                         type: 'string',
                         description: 'New content for the note'
                       },
+                      content_hash: {
+                        type: 'string',
+                        description: 'Content hash for optimistic locking'
+                      },
                       metadata: {
                         type: 'object',
                         description: 'Metadata fields to update',
                         additionalProperties: true
                       }
                     },
-                    required: ['identifier']
+                    required: ['identifier', 'content_hash']
                   },
                   description:
                     'Array of note updates (must specify content, metadata, or both) - used for batch updates'
@@ -595,9 +611,14 @@ export class FlintNoteServer {
                 value: {
                   type: 'string',
                   description: 'New value for the field'
+                },
+                content_hash: {
+                  type: 'string',
+                  description:
+                    'Content hash of the current note type definition to prevent conflicts'
                 }
               },
-              required: ['type_name', 'field', 'value']
+              required: ['type_name', 'field', 'value', 'content_hash']
             }
           },
           {
@@ -1281,17 +1302,26 @@ export class FlintNoteServer {
       throw new Error('Single note update requires identifier');
     }
 
+    if (!args.content_hash) {
+      throw new Error('content_hash is required for all update operations');
+    }
+
     let result;
     if (args.content !== undefined && args.metadata !== undefined) {
       // Both content and metadata update
       result = await this.#noteManager.updateNoteWithMetadata(
         args.identifier,
         args.content,
-        args.metadata as NoteMetadata
+        args.metadata as NoteMetadata,
+        args.content_hash
       );
     } else if (args.content !== undefined) {
       // Content-only update
-      result = await this.#noteManager.updateNote(args.identifier, args.content);
+      result = await this.#noteManager.updateNote(
+        args.identifier,
+        args.content,
+        args.content_hash
+      );
     } else if (args.metadata !== undefined) {
       // Metadata-only update
       const currentNote = await this.#noteManager.getNote(args.identifier);
@@ -1301,7 +1331,8 @@ export class FlintNoteServer {
       result = await this.#noteManager.updateNoteWithMetadata(
         args.identifier,
         currentNote.content,
-        args.metadata as NoteMetadata
+        args.metadata as NoteMetadata,
+        args.content_hash
       );
     } else {
       throw new Error('Either content or metadata must be provided for update');
@@ -1379,10 +1410,36 @@ export class FlintNoteServer {
       throw new Error('Server not initialized');
     }
 
+    if (!args.content_hash) {
+      throw new Error('content_hash is required for all note type update operations');
+    }
+
     // Get current note type info
     const currentInfo = await this.#noteTypeManager.getNoteTypeDescription(
       args.type_name
     );
+
+    // Validate content hash to prevent conflicts
+    const currentHashableContent = createNoteTypeHashableContent({
+      description: currentInfo.description,
+      agent_instructions: currentInfo.parsed.agentInstructions.join('\n'),
+      metadata_schema: currentInfo.metadataSchema
+    });
+    const currentHash = generateContentHash(currentHashableContent);
+
+    if (currentHash !== args.content_hash) {
+      const error = new Error(
+        'Note type definition has been modified since last read. Please fetch the latest version.'
+      ) as Error & {
+        code: string;
+        current_hash: string;
+        provided_hash: string;
+      };
+      error.code = 'content_hash_mismatch';
+      error.current_hash = currentHash;
+      error.provided_hash = args.content_hash;
+      throw error;
+    }
 
     // Update based on field type
     let updatedDescription: string;
@@ -1485,6 +1542,7 @@ export class FlintNoteServer {
               description: info.parsed.purpose,
               agent_instructions: info.parsed.agentInstructions,
               metadata_schema: info.parsed.parsedMetadataSchema,
+              content_hash: info.content_hash,
               path: info.path
             },
             null,

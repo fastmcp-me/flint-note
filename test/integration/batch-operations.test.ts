@@ -406,10 +406,126 @@ describe('Batch Operations Integration', () => {
       const createBatchResult = JSON.parse(createResult.content[0].text);
       const noteIds = createBatchResult.results.map((r: any) => r.result.id);
 
+      // Get current notes to obtain content hashes
+      const getNoteRequest1 = {
+        jsonrpc: '2.0',
+        id: 11,
+        method: 'tools/call',
+        params: {
+          name: 'get_note',
+          arguments: {
+            identifier: noteIds[0]
+          }
+        }
+      };
+
+      let getResponse1 = '';
+      let getResolved1 = false;
+      serverProcess.stdin!.write(JSON.stringify(getNoteRequest1) + '\n');
+
+      await new Promise<void>(resolve => {
+        const onData = (data: Buffer) => {
+          if (getResolved1) return;
+          getResponse1 += data.toString();
+          const lines = getResponse1.split('\n');
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                const parsed = JSON.parse(line);
+                if (parsed.id === 11 && parsed.result) {
+                  getResolved1 = true;
+                  serverProcess.stdout!.off('data', onData);
+                  resolve();
+                  break;
+                }
+              } catch (_e) {
+                // Ignore JSON parse errors for incomplete messages
+              }
+            }
+          }
+        };
+        serverProcess.stdout!.on('data', onData);
+      });
+
+      const getNoteRequest2 = {
+        jsonrpc: '2.0',
+        id: 12,
+        method: 'tools/call',
+        params: {
+          name: 'get_note',
+          arguments: {
+            identifier: noteIds[1]
+          }
+        }
+      };
+
+      let getResponse2 = '';
+      let getResolved2 = false;
+      serverProcess.stdin!.write(JSON.stringify(getNoteRequest2) + '\n');
+
+      await new Promise<void>(resolve => {
+        const onData = (data: Buffer) => {
+          if (getResolved2) return;
+          getResponse2 += data.toString();
+          const lines = getResponse2.split('\n');
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                const parsed = JSON.parse(line);
+                if (parsed.id === 12 && parsed.result) {
+                  getResolved2 = true;
+                  serverProcess.stdout!.off('data', onData);
+                  resolve();
+                  break;
+                }
+              } catch (_e) {
+                // Ignore JSON parse errors for incomplete messages
+              }
+            }
+          }
+        };
+        serverProcess.stdout!.on('data', onData);
+      });
+
+      // Parse content hashes
+      const getLines1 = getResponse1.split('\n');
+      let contentHash1 = '';
+      for (const line of getLines1) {
+        if (line.trim()) {
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.id === 11 && parsed.result) {
+              const noteData = JSON.parse(parsed.result.content[0].text);
+              contentHash1 = noteData.content_hash;
+              break;
+            }
+          } catch (_e) {
+            // Ignore JSON parse errors for incomplete messages
+          }
+        }
+      }
+
+      const getLines2 = getResponse2.split('\n');
+      let contentHash2 = '';
+      for (const line of getLines2) {
+        if (line.trim()) {
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.id === 12 && parsed.result) {
+              const noteData = JSON.parse(parsed.result.content[0].text);
+              contentHash2 = noteData.content_hash;
+              break;
+            }
+          } catch (_e) {
+            // Ignore JSON parse errors for incomplete messages
+          }
+        }
+      }
+
       // Now update the notes
       const updateRequest = {
         jsonrpc: '2.0',
-        id: 11,
+        id: 13,
         method: 'tools/call',
         params: {
           name: 'update_note',
@@ -417,11 +533,13 @@ describe('Batch Operations Integration', () => {
             updates: [
               {
                 identifier: noteIds[0],
-                content: 'Updated content 1'
+                content: 'Updated content 1',
+                content_hash: contentHash1
               },
               {
                 identifier: noteIds[1],
                 content: 'Updated content 2',
+                content_hash: contentHash2,
                 metadata: {
                   updated_by: 'integration-test',
                   priority: 'high'
@@ -448,7 +566,7 @@ describe('Batch Operations Integration', () => {
             if (line.trim()) {
               try {
                 const parsed = JSON.parse(line);
-                if (parsed.id === 11 && parsed.result) {
+                if (parsed.id === 13 && parsed.result) {
                   updateResolved = true;
                   serverProcess.stdout!.off('data', onData);
                   resolve();
@@ -477,7 +595,7 @@ describe('Batch Operations Integration', () => {
         if (line.trim()) {
           try {
             const parsed = JSON.parse(line);
-            if (parsed.id === 11 && parsed.result) {
+            if (parsed.id === 13 && parsed.result) {
               updateResult = parsed.result;
               break;
             }
@@ -578,10 +696,69 @@ describe('Batch Operations Integration', () => {
       const createdNote = JSON.parse(createResult.content[0].text);
       const validNoteId = createdNote.id;
 
+      // Get the valid note to obtain its content hash
+      const getNoteRequest = {
+        jsonrpc: '2.0',
+        id: 21,
+        method: 'tools/call',
+        params: {
+          name: 'get_note',
+          arguments: {
+            identifier: validNoteId
+          }
+        }
+      };
+
+      let getResponse = '';
+      let getResolved = false;
+      serverProcess.stdin!.write(JSON.stringify(getNoteRequest) + '\n');
+
+      await new Promise<void>(resolve => {
+        const onData = (data: Buffer) => {
+          if (getResolved) return;
+          getResponse += data.toString();
+          const lines = getResponse.split('\n');
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                const parsed = JSON.parse(line);
+                if (parsed.id === 21 && parsed.result) {
+                  getResolved = true;
+                  serverProcess.stdout!.off('data', onData);
+                  resolve();
+                  break;
+                }
+              } catch (_e) {
+                // Ignore JSON parse errors for incomplete messages
+              }
+            }
+          }
+        };
+        serverProcess.stdout!.on('data', onData);
+      });
+
+      // Parse content hash
+      const getLines = getResponse.split('\n');
+      let contentHash = '';
+      for (const line of getLines) {
+        if (line.trim()) {
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.id === 21 && parsed.result) {
+              const noteData = JSON.parse(parsed.result.content[0].text);
+              contentHash = noteData.content_hash;
+              break;
+            }
+          } catch (_e) {
+            // Ignore JSON parse errors for incomplete messages
+          }
+        }
+      }
+
       // Now try batch update with mixed valid/invalid notes
       const updateRequest = {
         jsonrpc: '2.0',
-        id: 21,
+        id: 22,
         method: 'tools/call',
         params: {
           name: 'update_note',
@@ -589,15 +766,18 @@ describe('Batch Operations Integration', () => {
             updates: [
               {
                 identifier: validNoteId,
-                content: 'Successfully updated content'
+                content: 'Successfully updated content',
+                content_hash: contentHash
               },
               {
                 identifier: 'nonexistent/note.md',
-                content: 'This should fail'
+                content: 'This should fail',
+                content_hash: 'dummy-hash'
               },
               {
-                identifier: 'general/another-nonexistent.md'
-                // No content or metadata - should fail
+                identifier: 'general/another-nonexistent.md',
+                content: 'This should also fail',
+                content_hash: 'dummy-hash'
               }
             ]
           }
@@ -620,7 +800,7 @@ describe('Batch Operations Integration', () => {
             if (line.trim()) {
               try {
                 const parsed = JSON.parse(line);
-                if (parsed.id === 21 && parsed.result) {
+                if (parsed.id === 22 && parsed.result) {
                   updateResolved = true;
                   serverProcess.stdout!.off('data', onData);
                   resolve();
@@ -649,7 +829,7 @@ describe('Batch Operations Integration', () => {
         if (line.trim()) {
           try {
             const parsed = JSON.parse(line);
-            if (parsed.id === 21 && parsed.result) {
+            if (parsed.id === 22 && parsed.result) {
               updateResult = parsed.result;
               break;
             }

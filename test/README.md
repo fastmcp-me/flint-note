@@ -33,6 +33,7 @@ Unit tests focus on testing individual classes and functions in isolation. They:
 - `regex-search.test.ts` - Regex search functionality
 - `search-unit.test.ts` - Search manager unit tests
 - `template-creation.test.ts` - Template creation and processing logic
+- `content-hash.test.ts` - Content hash utilities and optimistic locking system
 
 **Shared Helpers:**
 - `helpers/test-utils.ts` - Common test setup, teardown, and utility functions
