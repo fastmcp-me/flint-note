@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## upcoming
+## 0.3.0
 
 ### Added
 - Content hash system for optimistic locking to prevent conflicts during note updates
