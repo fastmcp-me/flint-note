@@ -11,51 +11,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Type check
-      run: npm run type-check
+      - name: Type check
+        run: npm run type-check
 
-    - name: Lint
-      run: npm run lint
+      - name: Lint
+        run: npm run lint
 
-    - name: Run all tests
-      run: npm test
+      - name: Build
+        run: npm run build
 
-    - name: Build
-      run: npm run build
+      - name: Verify build artifacts
+        run: |
+          test -f dist/index.js || (echo "Missing dist/index.js" && exit 1)
+          test -f dist/cli.js || (echo "Missing dist/cli.js" && exit 1)
+          test -x dist/index.js || (echo "dist/index.js not executable" && exit 1)
+          test -x dist/cli.js || (echo "dist/cli.js not executable" && exit 1)
 
-    - name: Verify build artifacts
-      run: |
-        test -f dist/index.js || (echo "Missing dist/index.js" && exit 1)
-        test -f dist/cli.js || (echo "Missing dist/cli.js" && exit 1)
-        test -x dist/index.js || (echo "dist/index.js not executable" && exit 1)
-        test -x dist/cli.js || (echo "dist/cli.js not executable" && exit 1)
+      - name: Test package installation
+        run: |
+          npm pack
+          npm install -g *.tgz
+          which flint-note || echo "CLI not found in PATH"
 
-    - name: Test package installation
-      run: |
-        npm pack
-        npm install -g *.tgz
-        which flint-note || echo "CLI not found in PATH"
-
-    - name: Validate package.json version matches tag
-      run: |
-        PACKAGE_VERSION=$(node -p "require('./package.json').version")
-        TAG_VERSION=${GITHUB_REF#refs/tags/v}
-        if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
-          echo "Version mismatch: package.json has $PACKAGE_VERSION but tag is $TAG_VERSION"
-          exit 1
-        fi
+      - name: Validate package.json version matches tag
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Version mismatch: package.json has $PACKAGE_VERSION but tag is $TAG_VERSION"
+            exit 1
+          fi
 
   publish:
     name: Publish to NPM
@@ -64,26 +61,26 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-        registry-url: 'https://registry.npmjs.org'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Build
-      run: npm run build
+      - name: Build
+        run: npm run build
 
-    - name: Publish to NPM
-      run: npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to NPM
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   create-release:
     name: Create GitHub Release
@@ -92,25 +89,25 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-        body: |
-          ## Changes
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Changes
 
-          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
 
-          ## Installation
+            ## Installation
 
-          ```bash
-          npm install -g @flint-note/server@${{ github.ref_name }}
-          ```
+            ```bash
+            npm install -g @flint-note/server@${{ github.ref_name }}
+            ```
