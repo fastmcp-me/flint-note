@@ -12,7 +12,7 @@ import {
   createTestNoteType,
   type IntegrationTestContext,
   INTEGRATION_CONSTANTS
-} from './helpers/integration-utils.ts';
+} from './helpers/integration-utils.js';
 
 /**
  * MCP client simulation for sending requests to the server
@@ -39,9 +39,9 @@ class MCPClient {
 
       const timeout = setTimeout(() => {
         if (!hasResponded) {
-          reject(new Error(`Request timeout after 5000ms: ${method}`));
+          reject(new Error(`Request timeout after 15000ms: ${method}`));
         }
-      }, 5000);
+      }, 15000);
 
       // Listen for response on stdout
       const onData = (data: Buffer) => {

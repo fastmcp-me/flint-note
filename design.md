@@ -333,6 +333,197 @@ The flint-note MCP server exposes the following tools and resources:
 | `flint-note://recent` | Recently modified notes | JSON list of recent notes |
 | `flint-note://stats` | Workspace statistics | JSON with counts, types, etc. |
 
+### Search Functionality
+
+The search system uses a hybrid approach combining file-based storage with SQLite indexing for powerful querying capabilities.
+
+#### Architecture: Hybrid File + SQLite Index
+
+**File Storage:**
+- Notes remain as human-readable markdown files
+- Maintains existing file structure and compatibility
+- Direct file access for simple operations
+
+**SQLite Index:**
+- Comprehensive database index for complex queries
+- Real-time synchronization with file changes
+- Supports full-text search and complex metadata queries
+- Enables SQL-based searches for maximum flexibility
+
+#### Database Schema
+
+```sql
+-- Core notes table
+CREATE TABLE notes (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT,
+    type TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    path TEXT NOT NULL,
+    created DATETIME NOT NULL,
+    updated DATETIME NOT NULL,
+    size INTEGER
+);
+
+-- Metadata as key-value pairs with type information
+CREATE TABLE note_metadata (
+    note_id TEXT,
+    key TEXT,
+    value TEXT,
+    value_type TEXT, -- 'string', 'number', 'date', 'boolean', 'array'
+    FOREIGN KEY (note_id) REFERENCES notes(id)
+);
+
+-- Full-text search index
+CREATE VIRTUAL TABLE notes_fts USING fts5(
+    id, title, content, type, content=notes
+);
+
+-- Indexes for performance
+CREATE INDEX idx_notes_type ON notes(type);
+CREATE INDEX idx_notes_updated ON notes(updated);
+CREATE INDEX idx_metadata_key_value ON note_metadata(key, value);
+```
+
+#### Search Tools
+
+The system provides multiple search interfaces for different use cases:
+
+**1. Simple Text Search (Backward Compatible)**
+```json
+{
+  "name": "search_notes",
+  "arguments": {
+    "query": "meeting notes",
+    "type_filter": "meeting",
+    "limit": 10
+  }
+}
+```
+
+**2. Advanced Structured Search**
+```json
+{
+  "name": "search_notes_advanced",
+  "arguments": {
+    "type": "todo",
+    "metadata_filters": [
+      {"key": "status", "value": "in_progress"},
+      {"key": "priority", "operator": ">=", "value": "3"}
+    ],
+    "updated_within": "7d",
+    "content_contains": "review",
+    "sort": [{"field": "updated", "order": "desc"}],
+    "limit": 50
+  }
+}
+```
+
+**3. SQL Search (Maximum Flexibility)**
+```json
+{
+  "name": "search_notes_sql",
+  "arguments": {
+    "query": "SELECT n.*, GROUP_CONCAT(m.key || ':' || m.value) as metadata FROM notes n LEFT JOIN note_metadata m ON n.id = m.note_id WHERE n.type = 'todo' AND n.updated < datetime('now', '-7 days') AND EXISTS (SELECT 1 FROM note_metadata WHERE note_id = n.id AND key = 'status' AND value = 'in_progress') GROUP BY n.id ORDER BY n.updated DESC",
+    "limit": 50
+  }
+}
+```
+
+#### Search Response Format
+
+All search methods return consistent result format:
+
+```json
+{
+  "results": [
+    {
+      "id": "note-identifier",
+      "title": "Note Title",
+      "type": "note-type",
+      "tags": ["tag1", "tag2"],
+      "score": 0.95,
+      "snippet": "Relevant content excerpt...",
+      "lastUpdated": "2024-01-15T10:30:00Z",
+      "filename": "note-file.md",
+      "path": "/full/path/to/note.md",
+      "created": "2024-01-10T09:00:00Z",
+      "modified": "2024-01-15T10:30:00Z",
+      "size": 1024,
+      "metadata": {
+        "title": "Note Title",
+        "type": "note-type",
+        "created": "2024-01-10T09:00:00Z",
+        "updated": "2024-01-15T10:30:00Z",
+        "tags": ["tag1", "tag2"],
+        "custom_field": "value",
+        "rating": 5,
+        "status": "active"
+      }
+    }
+  ],
+  "total": 1,
+  "has_more": false
+}
+```
+
+#### SQL Search Safety Measures
+
+To ensure secure SQL execution:
+- **Parameterized Queries**: All user input is properly parameterized
+- **Read-Only Access**: Only SELECT statements are allowed
+- **Query Timeout**: Queries are limited to 30 seconds execution time
+- **Result Limits**: Maximum 1000 results per query
+- **Complexity Analysis**: Overly complex queries are rejected
+
+#### Common Query Patterns
+
+**Find todos by status and priority:**
+```sql
+SELECT n.* FROM notes n 
+JOIN note_metadata m1 ON n.id = m1.note_id AND m1.key = 'status' AND m1.value = 'in_progress'
+JOIN note_metadata m2 ON n.id = m2.note_id AND m2.key = 'priority' AND CAST(m2.value AS INTEGER) >= 3
+WHERE n.type = 'todo'
+ORDER BY n.updated DESC
+```
+
+**Find reading notes with high ratings from this year:**
+```sql
+SELECT n.* FROM notes n 
+JOIN note_metadata m ON n.id = m.note_id AND m.key = 'rating' AND CAST(m.value AS INTEGER) > 4
+WHERE n.type = 'reading' AND n.created >= datetime('now', 'start of year')
+ORDER BY CAST(m.value AS INTEGER) DESC
+```
+
+**Group meeting notes by attendees:**
+```sql
+SELECT m.value as attendee, COUNT(*) as meeting_count
+FROM notes n 
+JOIN note_metadata m ON n.id = m.note_id AND m.key = 'attendees'
+WHERE n.type = 'meeting' AND n.created >= datetime('now', '-30 days')
+GROUP BY m.value
+ORDER BY meeting_count DESC
+```
+
+#### Synchronization
+
+The SQLite index is kept in sync with file changes through:
+- **File Watcher**: Monitors note directories for changes
+- **Batch Updates**: Processes multiple file changes efficiently  
+- **Conflict Resolution**: Handles concurrent file and database modifications
+- **Recovery**: Rebuilds index from files if corruption is detected
+
+#### Performance Characteristics
+
+- **Simple Searches**: Sub-millisecond response for basic text queries
+- **Complex Queries**: Optimized for metadata-heavy searches with proper indexing
+- **Scalability**: Handles thousands of notes efficiently
+- **Memory Usage**: Lightweight index with minimal memory footprint
+- **Startup Time**: Fast initialization with incremental index building
+
+This hybrid approach provides agents with unprecedented querying power while maintaining the human-friendly file-based storage that makes notes accessible and portable.
+
 ## Content Hash System for Optimistic Locking
 
 Flint-note implements an optimistic locking system using content hashes to prevent accidental overwrites when multiple applications or agents are editing the same note.

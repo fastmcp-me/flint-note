@@ -9,7 +9,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import { Workspace } from './workspace.js';
 import { NoteTypeManager } from './note-types.js';
-import { SearchManager } from './search.js';
+
+import { HybridSearchManager } from '../database/search-manager.js';
 import { MetadataValidator } from './metadata-schema.js';
 import type { ValidationResult } from './metadata-schema.js';
 import { parseFrontmatter, parseNoteContent } from '../utils/yaml-parser.js';
@@ -88,13 +89,6 @@ interface NoteListItem {
   path: string;
 }
 
-interface SearchNotesArgs {
-  query?: string;
-  type_filter?: string;
-  limit?: number;
-  use_regex?: boolean;
-}
-
 interface ParsedIdentifier {
   typeName: string;
   filename: string;
@@ -104,12 +98,14 @@ interface ParsedIdentifier {
 export class NoteManager {
   #workspace: Workspace;
   #noteTypeManager: NoteTypeManager;
-  #searchManager: SearchManager;
 
-  constructor(workspace: Workspace) {
+  #hybridSearchManager?: HybridSearchManager;
+
+  constructor(workspace: Workspace, hybridSearchManager?: HybridSearchManager) {
     this.#workspace = workspace;
     this.#noteTypeManager = new NoteTypeManager(workspace);
-    this.#searchManager = new SearchManager(workspace);
+
+    this.#hybridSearchManager = hybridSearchManager;
   }
 
   /**
@@ -1038,34 +1034,26 @@ export class NoteManager {
   }
 
   /**
-   * Search notes using the SearchManager
-   */
-  async searchNotes(args: SearchNotesArgs): Promise<NoteListItem[]> {
-    try {
-      const searchManager = new SearchManager(this.#workspace);
-      const results = await searchManager.searchNotes(
-        args.query,
-        args.type_filter,
-        args.limit,
-        args.use_regex
-      );
-      return results;
-    } catch (error) {
-      // Fallback to listing notes if search fails
-      console.error(
-        'Search failed, falling back to list:',
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-      return await this.listNotes(args.type_filter, args.limit);
-    }
-  }
-
-  /**
    * Update search index for a note
    */
   async updateSearchIndex(notePath: string, content: string): Promise<void> {
     try {
-      await this.#searchManager.updateNoteInIndex(notePath, content);
+      // Update hybrid search index if available
+      if (this.#hybridSearchManager) {
+        const parsed = parseNoteContent(content);
+        const filename = path.basename(notePath);
+        const noteId = this.generateNoteId(parsed.metadata.type || 'default', filename);
+
+        await this.#hybridSearchManager.upsertNote(
+          noteId,
+          parsed.metadata.title || filename.replace('.md', ''),
+          parsed.content,
+          parsed.metadata.type || 'default',
+          filename,
+          notePath,
+          parsed.metadata
+        );
+      }
     } catch (error) {
       // Don't fail note operations if search index update fails
       console.error(
@@ -1080,7 +1068,15 @@ export class NoteManager {
    */
   async removeFromSearchIndex(notePath: string): Promise<void> {
     try {
-      await this.#searchManager.removeNoteFromIndex(notePath);
+      // Remove from hybrid search index if available
+      if (this.#hybridSearchManager) {
+        const filename = path.basename(notePath);
+        const content = await fs.readFile(notePath, 'utf-8');
+        const parsed = parseNoteContent(content);
+        const noteId = this.generateNoteId(parsed.metadata.type || 'default', filename);
+
+        await this.#hybridSearchManager.removeNote(noteId);
+      }
     } catch (error) {
       // Don't fail note operations if search index update fails
       console.error(
@@ -1088,6 +1084,27 @@ export class NoteManager {
         error instanceof Error ? error.message : 'Unknown error'
       );
     }
+  }
+
+  /**
+   * Search notes using the hybrid search manager
+   */
+  async searchNotes(options: {
+    query?: string;
+    type_filter?: string;
+    limit?: number;
+  }): Promise<import('../database/search-manager.js').SearchResult[]> {
+    if (!this.#hybridSearchManager) {
+      throw new Error(
+        'Search functionality not available - hybrid search manager not initialized'
+      );
+    }
+
+    return await this.#hybridSearchManager.searchNotes(
+      options.query,
+      options.type_filter || null,
+      options.limit || 50
+    );
   }
 
   /**
