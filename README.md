@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/disnet/flint-note/actions/workflows/ci.yml/badge.svg)](https://github.com/disnet/flint-note/actions/workflows/ci.yml)
 [![Cross-Platform Tests](https://github.com/disnet/flint-note/actions/workflows/cross-platform.yml/badge.svg)](https://github.com/disnet/flint-note/actions/workflows/cross-platform.yml)
-![NPM Version](https://img.shields.io/npm/v/%40flint-note%2Fserver)
+[![NPM Version](https://img.shields.io/npm/v/%40flint-note%2Fserver)](https://www.npmjs.com/package/@flint-note/server)
 
 Flint note is a Model Context Protocol (MCP) server that provides an agent-first note-taking system designed from the ground up for AI collaboration. Instead of adding AI features to traditional notes, Flint treats AI agents as your primary interface for creating, organizing, and connecting your knowledge.
 
