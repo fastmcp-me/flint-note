@@ -115,62 +115,64 @@ Focus on making note-taking effortless while building a valuable, adaptive knowl
 ## Example Agent Conversations
 
 ### Agent-Guided Note Creation
-```
-You: I just finished reading "The Psychology of Money"
-Agent: I'll create a reading note for you. Based on your reading note schema, I need:
-       - Your rating (1-5 stars)
-       - Key insights that stuck with you
-       - The author's name
 
-       What would you rate this book?
-You: I'd give it a 4/5. Main insight was how behavior matters more than knowledge in investing.
-Agent: Perfect! I'm creating your reading note with Morgan Housel as author, 4/5 rating,
-       and that key insight. The note will be saved as reading/psychology-of-money.md
-```
+
+> You: I just finished reading "The Psychology of Money"
+>
+> Agent: I'll create a reading note for you. Based on your reading note schema, I need:
+> - Your rating (1-5 stars)
+> - Key insights that stuck with you
+> - The author's name
+>
+> What would you rate this book?
+>
+> You: I'd give it a 4/5. Main insight was how behavior matters more than knowledge in investing.
+>
+> Agent: Perfect! I'm creating your reading note with Morgan Housel as author, 4/5 rating, and that key insight. The note will be saved as reading/psychology-of-money.md
+
 
 ### Intelligent Note Suggestions
-```
-You: Create a project note for our website redesign
-Agent: I'll set up a project note. Based on your project schema, I should include:
-       - Project goals and success criteria
-       - Key milestones and deadlines
-       - Team members and stakeholders
-       - Risk assessment
 
-       What's the main goal for this redesign?
-You: Improve user engagement and reduce support tickets by 30%
-Agent: Excellent! I'll create projects/website-redesign.md with that goal and template
-       sections for milestones, team, and risks. Should I link this to any existing notes?
-```
+> You: Create a project note for our website redesign
+>
+> Agent: I'll set up a project note. Based on your project schema, I should include:
+> - Project goals and success criteria
+> - Key milestones and deadlines
+> - Team members and stakeholders
+> - Risk assessment
+>
+> What's the main goal for this redesign?
+>
+> You: Improve user engagement and reduce support tickets by 30%
+>
+> Agent: Excellent! I'll create projects/website-redesign.md with that goal and template sections for milestones, team, and risks. Should I link this to any existing notes?
 
 ### Smart Metadata and Organization
-```
-You: Add a meeting note for today's standup
-Agent: Creating your meeting note. I see you have a standup template that includes:
-       - Attendees
-       - What did we accomplish yesterday?
-       - What are we working on today?
-       - Any blockers?
 
-       Who attended today's standup?
-You: The whole team - Sarah, Mike, Alex, and me
-Agent: Got it! I'll create meetings/standup-2024-01-15.md with those attendees and
-       the standup template. The metadata will automatically tag this as a "standup"
-       meeting for easy filtering later. The note includes a content hash for safe
-       future updates.
-```
+> You: Add a meeting note for today's standup
+>
+> Agent: Creating your meeting note. I see you have a standup template that includes:
+> - Attendees
+> - What did we accomplish yesterday?
+> - What are we working on today?
+> - Any blockers?
+>
+> Who attended today's standup?
+>
+> You: The whole team - Sarah, Mike, Alex, and me
+>
+> Agent: Got it! I'll create meetings/standup-2024-01-15.md with those attendees and the standup template. The metadata will automatically tag this as a "standup" meeting for easy filtering later. The note includes a content hash for safe future updates.
+
 
 ### Safe Concurrent Updates
-```
-You: Update my project status to completed
-Agent: I'll update your project note safely. Let me get the current version with its
-       content hash first... Now updating with hash verification to prevent conflicts.
-       ✅ Project status updated to completed with content hash protection.
-You: What if someone else was editing it?
-Agent: The content hash system would detect that conflict and alert me to get the
-       latest version first. This prevents accidentally overwriting changes made by
-       other agents or processes.
-```
+
+> You: Update my project status to completed
+>
+> Agent: I'll update your project note safely. Let me get the current version with its content hash first... Now updating with hash verification to prevent conflicts. ✅ Project status updated to completed with content hash protection.
+>
+> You: What if someone else was editing it?
+>
+> Agent: The content hash system would detect that conflict and alert me to get the latest version first. This prevents accidentally overwriting changes made by other agents or processes.
 
 ## How Note Types Work
 
@@ -223,16 +225,18 @@ Track books, articles, and papers with structured insights and ratings.
 
 You can modify how agents work with any note type just by talking to them:
 
-```
-You: Update my reading notes so agents always ask about the book's publication year
-Agent: I'll update your reading note instructions to include asking about publication year.
-       [Updates reading/_description.md with the new instruction]
 
-You: Make project notes more focused on deadlines and blockers
-Agent: I'll modify your project note instructions to emphasize deadline tracking
-       and proactive blocker identification.
-       [Updates projects/_description.md accordingly]
-```
+> You: Update my reading notes so agents always ask about the book's publication year
+>
+> Agent: I'll update your reading note instructions to include asking about publication year.
+>
+> [Updates reading/_description.md with the new instruction]
+>
+> You: Make project notes more focused on deadlines and blockers
+>
+> Agent: I'll modify your project note instructions to emphasize deadline tracking and proactive blocker identification.
+>
+> [Updates projects/_description.md accordingly]
 
 ## Configuration
 
