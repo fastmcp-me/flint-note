@@ -4,7 +4,7 @@ FROM node:lts-alpine
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json
-COPY package*.json ./Add commentMore actions
+COPY package*.json ./
 
 # Install dependencies without triggering any unwanted scripts
 RUN npm install --ignore-scripts
