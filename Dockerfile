@@ -8,7 +8,7 @@ COPY package*.json ./Add commentMore actions
 
 # Install dependencies without triggering any unwanted scripts
 RUN npm install --ignore-scripts
-t
+
 # Copy all source code
 COPY . .
 
