@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.4.1
+
+### Fixed
+- Prevent metadata corruption by validating schema in update_note_type (#6)
+
 ## 0.4.0
 
 ### Added
