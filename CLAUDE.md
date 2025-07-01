@@ -14,7 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm test` - Run all tests (unit + integration)
 - `npm run test:unit` - Run only unit tests
 - `npm run test:integration` - Run only integration tests
+<<<<<<< HEAD
 - `npm run test -- --test-name-pattern="pattern to narrow down tests"` - Run tests matching the provided pattern
+=======
+>>>>>>> eeb5adf (add claude md)
 
 ### Code Quality
 - `npm run lint` - Lint TypeScript files with ESLint
@@ -108,7 +111,11 @@ npm run type-check && npm run lint && npm test
 
 ### Working with Vaults
 The system supports multiple vaults. Default vault operations:
+<<<<<<< HEAD
 - Configuration in `~/.config/flint-note/` (Unix) or `%APPDATA%\flint-note` (Windows)
+=======
+- Configuration in `~/.config/flint-note/` (Unix) or `%APPDATA%\flint-note` (Windows)  
+>>>>>>> eeb5adf (add claude md)
 - Use CLI commands for vault management: `npm run cli -- list`, `npm run cli -- create`, etc.
 
 ### MCP Development
@@ -128,12 +135,15 @@ The system supports multiple vaults. Default vault operations:
 - Always call `get_note` before `update_note` to obtain current hash
 - Supports optimistic locking for concurrent access safety
 
+<<<<<<< HEAD
 ### Note Renaming
 - Use `rename_note` tool to change note display titles (preserves filenames and links)
 - The `title` field in YAML frontmatter is the user-visible name
 - Filenames remain unchanged to maintain stable wikilink references
 - When asked to rename a note, ALWAYS use `rename_note` instead of `update_note`
 
+=======
+>>>>>>> eeb5adf (add claude md)
 ### Metadata Validation
 - Schemas support string, number, boolean, date, array, select field types
 - Constraints include min/max, patterns, required fields, selection options
@@ -148,4 +158,8 @@ The system supports multiple vaults. Default vault operations:
 - Note types are directories with `_description.md` files
 - Notes are markdown files with YAML frontmatter
 - `.flint-note/` directory contains configuration and indexes
+<<<<<<< HEAD
 - Default note types: daily, reading, todos, projects, goals
+=======
+- Default note types: daily, reading, todos, projects, goals
+>>>>>>> eeb5adf (add claude md)
