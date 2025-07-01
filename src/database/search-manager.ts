@@ -5,9 +5,9 @@ import {
   MetadataRow,
   SearchRow,
   serializeMetadataValue,
-  deserializeMetadataValue
+  deserializeMetadataValue as _deserializeMetadataValue
 } from './schema.js';
-import { NoteMetadata, NoteLink } from '../types/index.js';
+import { NoteMetadata, NoteLink as _NoteLink } from '../types/index.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { createHash } from 'crypto';
@@ -160,8 +160,7 @@ export class HybridSearchManager {
             SELECT n.*,
                    1.0 as score
             FROM notes n
-            WHERE (n.title LIKE ? OR n.content LIKE ?)
-            ${typeFilter ? 'AND n.type = ?' : ''}
+            WHERE (n.title LIKE ? OR n.content LIKE ?)${typeFilter ? 'AND n.type = ?' : ''}
             ORDER BY n.updated DESC
             LIMIT ?
           `;
@@ -176,8 +175,7 @@ export class HybridSearchManager {
                    snippet(notes_fts, 2, '<mark>', '</mark>', '...', 32) as snippet
             FROM notes_fts fts
             JOIN notes n ON n.id = fts.id
-            WHERE notes_fts MATCH ?
-            ${typeFilter ? 'AND n.type = ?' : ''}
+            WHERE notes_fts MATCH ?${typeFilter ? 'AND n.type = ?' : ''}
             ORDER BY fts.rank
             LIMIT ?
           `;
@@ -452,35 +450,69 @@ export class HybridSearchManager {
 
   // Validate SQL query for security
   private validateSQLQuery(query: string): void {
-    const sql = query.toLowerCase().trim();
+    const lowerSql = query.toLowerCase().trim();
 
-    // Only allow SELECT statements
-    if (!sql.startsWith('select')) {
-      throw new Error('Only SELECT queries are allowed');
+    // 1. Only allow SELECT statements
+    if (!lowerSql.startsWith('select')) {
+      throw new Error('SQL Security Error: Only SELECT queries are allowed.');
     }
 
-    // Prevent dangerous operations using word boundaries
-    const forbidden = [
+    // 2. Prohibit dangerous keywords and commands
+    const prohibitedKeywords = [
       'drop',
       'delete',
       'insert',
       'update',
       'alter',
       'create',
+      'attach',
+      'detach',
+      'grant',
+      'revoke',
+      'commit',
+      'rollback',
+      'truncate',
+      'replace',
       'exec',
-      'execute'
+      'execute',
+      'pragma'
     ];
-    for (const keyword of forbidden) {
-      const wordBoundaryRegex = new RegExp(`\\b${keyword}\\b`, 'i');
-      if (wordBoundaryRegex.test(sql)) {
-        throw new Error(`Forbidden SQL keyword: ${keyword}`);
+
+    for (const keyword of prohibitedKeywords) {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+      if (regex.test(lowerSql)) {
+        throw new Error(`SQL Security Error: Prohibited keyword '${keyword}' found.`);
       }
     }
 
-    // Check for excessive complexity (basic heuristic)
-    const subqueryCount = (sql.match(/\bselect\b/g) || []).length;
-    if (subqueryCount > 5) {
-      throw new Error('Query too complex: too many subqueries');
+    // 3. Prevent manipulation of system tables
+    const systemTables = ['sqlite_master', 'sqlite_sequence', 'sqlite_stat1'];
+    for (const table of systemTables) {
+      if (lowerSql.includes(table)) {
+        throw new Error(
+          `SQL Security Error: Direct access to system table '${table}' is not allowed.`
+        );
+      }
+    }
+
+    // 4. Limit query complexity (basic heuristics)
+    const subqueryCount = (lowerSql.match(/select/g) || []).length - 1;
+    if (subqueryCount > 3) {
+      throw new Error(
+        'SQL Security Error: Query is too complex (too many subqueries). Maximum 3 are allowed.'
+      );
+    }
+
+    const joinCount = (lowerSql.match(/join/g) || []).length;
+    if (joinCount > 5) {
+      throw new Error(
+        'SQL Security Error: Query is too complex (too many JOINs). Maximum 5 are allowed.'
+      );
+    }
+
+    // 5. Disallow comments which can be used to hide malicious code
+    if (lowerSql.includes('--') || lowerSql.includes('/*')) {
+      throw new Error('SQL Security Error: Comments are not allowed in queries.');
     }
   }
 
@@ -538,7 +570,7 @@ export class HybridSearchManager {
 
       // Add custom metadata
       for (const metaRow of metadataRows) {
-        metadata[metaRow.key] = deserializeMetadataValue(
+        metadata[metaRow.key] = _deserializeMetadataValue(
           metaRow.value,
           metaRow.value_type
         ) as
@@ -547,7 +579,7 @@ export class HybridSearchManager {
           | boolean
           | object
           | string[]
-          | NoteLink[]
+          | _NoteLink[]
           | null
           | undefined;
       }
@@ -838,7 +870,7 @@ export class HybridSearchManager {
   } | null {
     try {
       // Parse frontmatter
-      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
       const metadata: Record<string, unknown> = {};
       let bodyContent = content;
 
@@ -865,7 +897,18 @@ export class HybridSearchManager {
                     .split(',')
                     .map(v => v.trim().replace(/^["']|["']$/g, ''));
                 } else {
-                  metadata[key] = cleanValue;
+                  // Handle numbers
+                  if (/^\d+(\.\d+)?$/.test(cleanValue)) {
+                    metadata[key] = parseFloat(cleanValue);
+                  } else if (cleanValue === 'true') {
+                    metadata[key] = true;
+                  } else if (cleanValue === 'false') {
+                    metadata[key] = false;
+                  } else if (cleanValue === 'null') {
+                    metadata[key] = null;
+                  } else {
+                    metadata[key] = cleanValue;
+                  }
                 }
               }
             }

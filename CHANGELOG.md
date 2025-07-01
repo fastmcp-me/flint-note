@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.4.2
+
+### Added
+- Added `rename_note` tool for safe title changes
+- Protection against title/filename modifications via `update_note` metadata updates
+
 ## 0.4.1
 
 ### Fixed
