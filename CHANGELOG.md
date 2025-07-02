@@ -2,11 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## 0.4.2
+## 0.5.0
 
 ### Added
-- Added `rename_note` tool for safe title changes
+- Added `rename_note` tool for safe title changes (#7)
 - Protection against title/filename modifications via `update_note` metadata updates
+- Better link handling (#8)
+  - links are now automatically extracted from notes and stored in db
+  - new tools for managing links: `get_note_links`, `get_backlinks`, `find_broken_links`, `search_by_links`, `migrate_links`
+
+### Changed
+- Dropped old link handling tools (#8)
 
 ## 0.4.1
 
