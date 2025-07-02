@@ -18,10 +18,12 @@ import { Workspace } from './core/workspace.js';
 import { NoteManager } from './core/notes.js';
 import { NoteTypeManager } from './core/note-types.js';
 import { HybridSearchManager } from './database/search-manager.js';
-import { LinkManager } from './core/links.js';
+import type { NoteRow } from './database/schema.js';
+
+import { LinkExtractor } from './core/link-extractor.js';
 import { GlobalConfigManager } from './utils/global-config.js';
 import { resolvePath, isPathSafe } from './utils/path.js';
-import type { LinkRelationship, NoteMetadata } from './types/index.js';
+import type { NoteMetadata } from './types/index.js';
 import type { MetadataSchema, MetadataFieldDefinition } from './core/metadata-schema.js';
 import { MetadataSchemaParser } from './core/metadata-schema.js';
 import {
@@ -112,14 +114,6 @@ interface ListNoteTypesArgs {
   [key: string]: never;
 }
 
-interface LinkNotesArgs {
-  source: string;
-  target: string;
-  relationship?: LinkRelationship;
-  bidirectional?: boolean;
-  context?: string;
-}
-
 interface UpdateNoteTypeArgs {
   type_name: string;
   instructions?: string;
@@ -155,22 +149,6 @@ interface UpdateVaultArgs {
   description?: string;
 }
 
-interface SearchNotesForLinksArgs {
-  query: string;
-  type?: string;
-  limit?: number;
-}
-
-interface GetLinkSuggestionsArgs {
-  query: string;
-  context_type?: string;
-  limit?: number;
-}
-
-interface UpdateNoteLinksSyncArgs {
-  identifier: string;
-}
-
 interface GetNoteInfoArgs {
   title_or_filename: string;
   type?: string;
@@ -179,27 +157,6 @@ interface GetNoteInfoArgs {
 interface ListNotesByTypeArgs {
   type: string;
   limit?: number;
-}
-
-interface SuggestLinkTargetsArgs {
-  partial_query: string;
-  context_type?: string;
-  limit?: number;
-}
-
-interface ValidateWikilinksArgs {
-  content: string;
-  context_type?: string;
-}
-
-interface AutoLinkContentArgs {
-  content: string;
-  context_type?: string;
-  aggressiveness?: 'conservative' | 'moderate' | 'aggressive';
-}
-
-interface GenerateLinkReportArgs {
-  identifier: string;
 }
 
 interface DeleteNoteArgs {
@@ -225,7 +182,6 @@ interface RenameNoteArgs {
   identifier: string;
   new_title: string;
   content_hash: string;
-  update_wikilinks?: boolean;
 }
 
 export class FlintNoteServer {
@@ -234,7 +190,7 @@ export class FlintNoteServer {
   #noteManager!: NoteManager;
   #noteTypeManager!: NoteTypeManager;
   #hybridSearchManager!: HybridSearchManager;
-  #linkManager!: LinkManager;
+
   #globalConfig: GlobalConfigManager;
   #config: ServerConfig;
 
@@ -265,7 +221,11 @@ export class FlintNoteServer {
       // If workspace path is provided explicitly, use it
       if (this.#config.workspacePath) {
         const workspacePath = this.#config.workspacePath;
-        this.#workspace = new Workspace(workspacePath);
+        this.#hybridSearchManager = new HybridSearchManager(workspacePath);
+        this.#workspace = new Workspace(
+          workspacePath,
+          this.#hybridSearchManager.getDatabaseManager()
+        );
 
         // Check if workspace has any note type descriptions
         const flintNoteDir = path.join(workspacePath, '.flint-note');
@@ -287,10 +247,8 @@ export class FlintNoteServer {
           await this.#workspace.initialize();
         }
 
-        this.#hybridSearchManager = new HybridSearchManager(this.#workspace.rootPath);
         this.#noteManager = new NoteManager(this.#workspace, this.#hybridSearchManager);
         this.#noteTypeManager = new NoteTypeManager(this.#workspace);
-        this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
 
         // Initialize hybrid search index - only rebuild if necessary
         try {
@@ -330,13 +288,14 @@ export class FlintNoteServer {
 
         if (currentVault) {
           // Initialize with current vault
-          this.#workspace = new Workspace(currentVault.path);
+          this.#hybridSearchManager = new HybridSearchManager(currentVault.path);
+          this.#workspace = new Workspace(
+            currentVault.path,
+            this.#hybridSearchManager.getDatabaseManager()
+          );
           await this.#workspace.initialize();
-
-          this.#hybridSearchManager = new HybridSearchManager(this.#workspace.rootPath);
           this.#noteManager = new NoteManager(this.#workspace, this.#hybridSearchManager);
           this.#noteTypeManager = new NoteTypeManager(this.#workspace);
-          this.#linkManager = new LinkManager(this.#workspace, this.#noteManager);
 
           // Initialize hybrid search index - only rebuild if necessary
           try {
@@ -759,49 +718,6 @@ export class FlintNoteServer {
               properties: {}
             }
           },
-          {
-            name: 'link_notes',
-            description:
-              'Create explicit links between notes with optional relationship types',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                source: {
-                  type: 'string',
-                  description: 'Source note identifier (type/filename or title)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target note identifier (type/filename or title)'
-                },
-                relationship: {
-                  type: 'string',
-                  description: 'Type of relationship between notes',
-                  enum: [
-                    'references',
-                    'follows-up',
-                    'contradicts',
-                    'supports',
-                    'mentions',
-                    'depends-on',
-                    'blocks',
-                    'related-to'
-                  ],
-                  default: 'references'
-                },
-                bidirectional: {
-                  type: 'boolean',
-                  description: 'Create reverse link from target to source',
-                  default: true
-                },
-                context: {
-                  type: 'string',
-                  description: 'Optional context about the relationship'
-                }
-              },
-              required: ['source', 'target']
-            }
-          },
 
           {
             name: 'update_note_type',
@@ -992,69 +908,7 @@ export class FlintNoteServer {
               required: ['id']
             }
           },
-          {
-            name: 'search_notes_for_links',
-            description:
-              'Search for notes that could be linked, returning filename and type information',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                query: {
-                  type: 'string',
-                  description: 'Search query to find linkable notes'
-                },
-                type: {
-                  type: 'string',
-                  description: 'Optional: filter by note type'
-                },
-                limit: {
-                  type: 'number',
-                  description: 'Optional: maximum number of results (default: 20)',
-                  default: 20
-                }
-              },
-              required: ['query']
-            }
-          },
-          {
-            name: 'get_link_suggestions',
-            description:
-              'Get link suggestions for a partial query, formatted for wikilink creation',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                query: {
-                  type: 'string',
-                  description: 'Partial text to get link suggestions for'
-                },
-                context_type: {
-                  type: 'string',
-                  description: 'Optional: current note type for context filtering'
-                },
-                limit: {
-                  type: 'number',
-                  description: 'Optional: maximum number of suggestions (default: 10)',
-                  default: 10
-                }
-              },
-              required: ['query']
-            }
-          },
-          {
-            name: 'update_note_links_sync',
-            description:
-              'Parse wikilinks from note content and sync with frontmatter metadata',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                identifier: {
-                  type: 'string',
-                  description: 'Note identifier to update links for'
-                }
-              },
-              required: ['identifier']
-            }
-          },
+
           {
             name: 'get_note_info',
             description:
@@ -1093,86 +947,7 @@ export class FlintNoteServer {
               required: ['type']
             }
           },
-          {
-            name: 'suggest_link_targets',
-            description: 'Get formatted wikilink suggestions for a partial query',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                partial_query: {
-                  type: 'string',
-                  description: 'Partial text to get link target suggestions for'
-                },
-                context_type: {
-                  type: 'string',
-                  description: 'Optional: current note type for filtering'
-                },
-                limit: {
-                  type: 'number',
-                  description: 'Optional: maximum number of suggestions (default: 10)',
-                  default: 10
-                }
-              },
-              required: ['partial_query']
-            }
-          },
-          {
-            name: 'validate_wikilinks',
-            description:
-              'Validate all wikilinks in content and get suggestions for broken links',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                content: {
-                  type: 'string',
-                  description: 'Content to validate wikilinks in'
-                },
-                context_type: {
-                  type: 'string',
-                  description: 'Optional: note type for context-aware suggestions'
-                }
-              },
-              required: ['content']
-            }
-          },
-          {
-            name: 'auto_link_content',
-            description: 'Automatically suggest and insert wikilinks in content',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                content: {
-                  type: 'string',
-                  description: 'Content to auto-link'
-                },
-                context_type: {
-                  type: 'string',
-                  description: 'Optional: note type for context filtering'
-                },
-                aggressiveness: {
-                  type: 'string',
-                  enum: ['conservative', 'moderate', 'aggressive'],
-                  description: 'How aggressively to suggest links (default: moderate)',
-                  default: 'moderate'
-                }
-              },
-              required: ['content']
-            }
-          },
-          {
-            name: 'generate_link_report',
-            description: 'Generate a comprehensive report about links in a note',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                identifier: {
-                  type: 'string',
-                  description: 'Note identifier to generate link report for'
-                }
-              },
-              required: ['identifier']
-            }
-          },
+
           {
             name: 'delete_note',
             description: 'Delete an existing note permanently',
@@ -1254,7 +1029,7 @@ export class FlintNoteServer {
           {
             name: 'rename_note',
             description:
-              'Rename a note by updating its title field (display name). The filename and ID remain unchanged to preserve links.',
+              'Rename a note by updating its title field (display name). The filename and ID remain unchanged to preserve links. Automatically updates wikilinks in other notes that reference the old title.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -1269,15 +1044,90 @@ export class FlintNoteServer {
                 content_hash: {
                   type: 'string',
                   description: 'Content hash of the current note for optimistic locking'
-                },
-                update_wikilinks: {
-                  type: 'boolean',
-                  description:
-                    'Whether to update display text in wikilinks that reference this note',
-                  default: false
                 }
               },
               required: ['identifier', 'new_title', 'content_hash']
+            }
+          },
+          {
+            name: 'get_note_links',
+            description:
+              'Get all links for a specific note (incoming, outgoing internal, and external)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                identifier: {
+                  type: 'string',
+                  description: 'Note identifier (type/filename format)'
+                }
+              },
+              required: ['identifier']
+            }
+          },
+          {
+            name: 'get_backlinks',
+            description: 'Get all notes that link to the specified note',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                identifier: {
+                  type: 'string',
+                  description: 'Note identifier (type/filename format)'
+                }
+              },
+              required: ['identifier']
+            }
+          },
+          {
+            name: 'find_broken_links',
+            description: 'Find all broken wikilinks (links to non-existent notes)',
+            inputSchema: {
+              type: 'object',
+              properties: {},
+              required: []
+            }
+          },
+          {
+            name: 'search_by_links',
+            description: 'Search for notes based on their link relationships',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                has_links_to: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Find notes that link to any of these notes'
+                },
+                linked_from: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Find notes that are linked from any of these notes'
+                },
+                external_domains: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Find notes with external links to these domains'
+                },
+                broken_links: {
+                  type: 'boolean',
+                  description: 'Find notes with broken internal links'
+                }
+              }
+            }
+          },
+          {
+            name: 'migrate_links',
+            description:
+              'Scan all existing notes and populate the link tables (one-time migration)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                force: {
+                  type: 'boolean',
+                  description: 'Force migration even if link tables already contain data',
+                  default: false
+                }
+              }
             }
           }
         ]
@@ -1312,8 +1162,6 @@ export class FlintNoteServer {
             );
           case 'list_note_types':
             return await this.#handleListNoteTypes(args as unknown as ListNoteTypesArgs);
-          case 'link_notes':
-            return await this.#handleLinkNotes(args as unknown as LinkNotesArgs);
 
           case 'update_note_type':
             return await this.#handleUpdateNoteType(
@@ -1335,40 +1183,14 @@ export class FlintNoteServer {
             return await this.#handleGetCurrentVault();
           case 'update_vault':
             return await this.#handleUpdateVault(args as unknown as UpdateVaultArgs);
-          case 'search_notes_for_links':
-            return await this.#handleSearchNotesForLinks(
-              args as unknown as SearchNotesForLinksArgs
-            );
-          case 'get_link_suggestions':
-            return await this.#handleGetLinkSuggestions(
-              args as unknown as GetLinkSuggestionsArgs
-            );
-          case 'update_note_links_sync':
-            return await this.#handleUpdateNoteLinkSync(
-              args as unknown as UpdateNoteLinksSyncArgs
-            );
+
           case 'get_note_info':
             return await this.#handleGetNoteInfo(args as unknown as GetNoteInfoArgs);
           case 'list_notes_by_type':
             return await this.#handleListNotesByType(
               args as unknown as ListNotesByTypeArgs
             );
-          case 'suggest_link_targets':
-            return await this.#handleSuggestLinkTargets(
-              args as unknown as SuggestLinkTargetsArgs
-            );
-          case 'validate_wikilinks':
-            return await this.#handleValidateWikilinks(
-              args as unknown as ValidateWikilinksArgs
-            );
-          case 'auto_link_content':
-            return await this.#handleAutoLinkContent(
-              args as unknown as AutoLinkContentArgs
-            );
-          case 'generate_link_report':
-            return await this.#handleGenerateLinkReport(
-              args as unknown as GenerateLinkReportArgs
-            );
+
           case 'delete_note':
             return await this.#handleDeleteNote(args as unknown as DeleteNoteArgs);
           case 'delete_note_type':
@@ -1381,6 +1203,32 @@ export class FlintNoteServer {
             );
           case 'rename_note':
             return await this.#handleRenameNote(args as unknown as RenameNoteArgs);
+
+          case 'get_note_links':
+            return await this.#handleGetNoteLinks(
+              args as unknown as { identifier: string }
+            );
+
+          case 'get_backlinks':
+            return await this.#handleGetBacklinks(
+              args as unknown as { identifier: string }
+            );
+
+          case 'find_broken_links':
+            return await this.#handleFindBrokenLinks();
+
+          case 'search_by_links':
+            return await this.#handleSearchByLinks(
+              args as unknown as {
+                has_links_to?: string[];
+                linked_from?: string[];
+                external_domains?: string[];
+                broken_links?: boolean;
+              }
+            );
+
+          case 'migrate_links':
+            return await this.#handleMigrateLinks(args as unknown as { force?: boolean });
 
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -1728,23 +1576,6 @@ export class FlintNoteServer {
     };
   };
 
-  #handleLinkNotes = async (args: LinkNotesArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const result = await this.#linkManager.linkNotes(args);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }
-      ]
-    };
-  };
-
   #handleUpdateNoteType = async (args: UpdateNoteTypeArgs) => {
     this.#requireWorkspace();
     if (!this.#noteTypeManager) {
@@ -1869,7 +1700,10 @@ export class FlintNoteServer {
 
             // Validate select field options
             if (field.type === 'select') {
-              if (!field.constraints.options || !Array.isArray(field.constraints.options)) {
+              if (
+                !field.constraints.options ||
+                !Array.isArray(field.constraints.options)
+              ) {
                 throw new Error(
                   `Select field "${field.name}" must have constraints.options array`
                 );
@@ -2155,68 +1989,6 @@ export class FlintNoteServer {
     };
   };
 
-  // New wikilink and note discovery handlers
-  #handleSearchNotesForLinks = async (args: SearchNotesForLinksArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const notes = await this.#linkManager.searchLinkableNotes(args.query, args.type);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(notes.slice(0, args.limit || 20), null, 2)
-        }
-      ]
-    };
-  };
-
-  #handleGetLinkSuggestions = async (args: GetLinkSuggestionsArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const suggestions = await this.#linkManager.getLinkSuggestions(
-      args.query,
-      args.context_type
-    );
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(suggestions.slice(0, args.limit || 10), null, 2)
-        }
-      ]
-    };
-  };
-
-  #handleUpdateNoteLinkSync = async (args: UpdateNoteLinksSyncArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager) {
-      throw new Error('Server not initialized');
-    }
-
-    await this.#linkManager.updateLinksFromContent(args.identifier);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              success: true,
-              message: `Links synchronized for note: ${args.identifier}`
-            },
-            null,
-            2
-          )
-        }
-      ]
-    };
-  };
-
   #handleGetNoteInfo = async (args: GetNoteInfoArgs) => {
     this.#requireWorkspace();
     if (!this.#noteManager) {
@@ -2301,156 +2073,6 @@ export class FlintNoteServer {
         {
           type: 'text',
           text: JSON.stringify(notesWithFilenames, null, 2)
-        }
-      ]
-    };
-  };
-
-  #handleSuggestLinkTargets = async (args: SuggestLinkTargetsArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const suggestions = await this.#linkManager.getLinkSuggestions(
-      args.partial_query,
-      args.context_type
-    );
-
-    const formattedSuggestions = suggestions
-      .slice(0, args.limit || 10)
-      .map(suggestion => ({
-        target: suggestion.target,
-        display: suggestion.display,
-        type: suggestion.type,
-        filename: suggestion.filename,
-        title: suggestion.title,
-        relevance: suggestion.relevance,
-        wikilink: `[[${suggestion.target}|${suggestion.display}]]`,
-        wikilink_simple: `[[${suggestion.target}]]`
-      }));
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(formattedSuggestions, null, 2)
-        }
-      ]
-    };
-  };
-
-  #handleValidateWikilinks = async (args: ValidateWikilinksArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const validationResult = await this.#linkManager.validateWikilinks(
-      args.content,
-      args.context_type
-    );
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              valid: validationResult.valid,
-              broken_links: validationResult.broken,
-              suggestions: Object.fromEntries(validationResult.suggestions),
-              summary: {
-                total_links:
-                  validationResult.broken.length +
-                  (validationResult.valid ? 0 : validationResult.broken.length),
-                broken_count: validationResult.broken.length
-              }
-            },
-            null,
-            2
-          )
-        }
-      ]
-    };
-  };
-
-  #handleAutoLinkContent = async (args: AutoLinkContentArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const autoLinkResult = await this.#linkManager.autoLinkContent(
-      args.content,
-      args.context_type,
-      args.aggressiveness
-    );
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              original_content: autoLinkResult.originalContent,
-              updated_content: autoLinkResult.updatedContent,
-              added_links: autoLinkResult.addedLinks,
-              changes_count: autoLinkResult.changesCount,
-              summary: {
-                links_added: autoLinkResult.changesCount,
-                content_changed:
-                  autoLinkResult.originalContent !== autoLinkResult.updatedContent
-              }
-            },
-            null,
-            2
-          )
-        }
-      ]
-    };
-  };
-
-  #handleGenerateLinkReport = async (args: GenerateLinkReportArgs) => {
-    this.#requireWorkspace();
-    if (!this.#linkManager || !this.#noteManager) {
-      throw new Error('Server not initialized');
-    }
-
-    const note = await this.#noteManager.getNote(args.identifier);
-    if (!note) {
-      throw new Error(`Note not found: ${args.identifier}`);
-    }
-
-    const linkReport = await this.#linkManager.generateLinkReport(
-      note.content,
-      note.type
-    );
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              note_id: args.identifier,
-              note_title: note.title,
-              note_type: note.type,
-              link_report: linkReport,
-              recommendations: {
-                needs_linking: linkReport.linkingOpportunities > 0,
-                has_broken_links: linkReport.brokenLinks > 0,
-                link_density_rating:
-                  linkReport.linkDensity < 0.05
-                    ? 'low'
-                    : linkReport.linkDensity < 0.15
-                      ? 'moderate'
-                      : 'high'
-              }
-            },
-            null,
-            2
-          )
         }
       ]
     };
@@ -2691,7 +2313,11 @@ export class FlintNoteServer {
       let initMessage = '';
       if (args.initialize !== false) {
         // Initialize the vault with default note types
-        const workspace = new Workspace(resolvedPath);
+        const tempHybridSearchManager = new HybridSearchManager(resolvedPath);
+        const workspace = new Workspace(
+          resolvedPath,
+          tempHybridSearchManager.getDatabaseManager()
+        );
         await workspace.initializeVault();
         initMessage =
           '\n\n✅ Vault initialized with default note types (daily, reading, todos, projects, goals, games, movies)';
@@ -2938,12 +2564,36 @@ export class FlintNoteServer {
         true // Bypass protection for legitimate rename operations
       );
 
-      // Handle wikilink display text updates if requested
+      let brokenLinksUpdated = 0;
+      let wikilinksResult = { notesUpdated: 0, linksUpdated: 0 };
+
+      // Only proceed with link updates if search manager is available
+      if (this.#hybridSearchManager) {
+        const db = await this.#hybridSearchManager.getDatabaseConnection();
+        const noteId = this.#generateNoteIdFromIdentifier(args.identifier);
+
+        // Update broken links that might now be resolved due to the new title
+        brokenLinksUpdated = await LinkExtractor.updateBrokenLinks(
+          noteId,
+          args.new_title,
+          db
+        );
+
+        // Always update wikilinks in other notes
+        wikilinksResult = await LinkExtractor.updateWikilinksForRenamedNote(
+          noteId,
+          currentNote.title,
+          args.new_title,
+          db
+        );
+      }
+
       let wikilinkMessage = '';
-      const linksUpdated = 0;
-      if (args.update_wikilinks) {
-        // TODO: Implement wikilink updates in a future version
-        wikilinkMessage = '\n\n📝 Wikilink display text updates are not yet implemented.';
+      if (brokenLinksUpdated > 0) {
+        wikilinkMessage = `\n\n🔗 Updated ${brokenLinksUpdated} broken links that now resolve to this note.`;
+      }
+      if (wikilinksResult.notesUpdated > 0) {
+        wikilinkMessage += `\n🔗 Updated ${wikilinksResult.linksUpdated} wikilinks in ${wikilinksResult.notesUpdated} notes that referenced the old title.`;
       }
 
       return {
@@ -2959,7 +2609,10 @@ export class FlintNoteServer {
                 identifier: args.identifier,
                 filename_unchanged: true,
                 links_preserved: true,
-                wikilinks_updated: args.update_wikilinks ? linksUpdated : null,
+                broken_links_resolved: brokenLinksUpdated,
+                wikilinks_updated: true,
+                notes_with_updated_wikilinks: wikilinksResult.notesUpdated,
+                total_wikilinks_updated: wikilinksResult.linksUpdated,
                 result
               },
               null,
@@ -2988,4 +2641,350 @@ export class FlintNoteServer {
       };
     }
   };
+
+  #handleGetNoteLinks = async (args: { identifier: string }) => {
+    try {
+      const db = await this.#hybridSearchManager.getDatabaseConnection();
+      const noteId = this.#generateNoteIdFromIdentifier(args.identifier);
+
+      // Check if note exists
+      const note = await db.get('SELECT id FROM notes WHERE id = ?', [noteId]);
+      if (!note) {
+        throw new Error(`Note not found: ${args.identifier}`);
+      }
+
+      const links = await LinkExtractor.getLinksForNote(noteId, db);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                note_id: noteId,
+                links: {
+                  outgoing_internal: links.outgoing_internal,
+                  outgoing_external: links.outgoing_external,
+                  incoming: links.incoming
+                }
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  #handleGetBacklinks = async (args: { identifier: string }) => {
+    try {
+      const db = await this.#hybridSearchManager.getDatabaseConnection();
+      const noteId = this.#generateNoteIdFromIdentifier(args.identifier);
+
+      // Check if note exists
+      const note = await db.get('SELECT id FROM notes WHERE id = ?', [noteId]);
+      if (!note) {
+        throw new Error(`Note not found: ${args.identifier}`);
+      }
+
+      const backlinks = await LinkExtractor.getBacklinks(noteId, db);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                note_id: noteId,
+                backlinks: backlinks
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  #handleFindBrokenLinks = async () => {
+    try {
+      const db = await this.#hybridSearchManager.getDatabaseConnection();
+      const brokenLinks = await LinkExtractor.findBrokenLinks(db);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                broken_links: brokenLinks,
+                count: brokenLinks.length
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  #handleSearchByLinks = async (args: {
+    has_links_to?: string[];
+    linked_from?: string[];
+    external_domains?: string[];
+    broken_links?: boolean;
+  }) => {
+    try {
+      const db = await this.#hybridSearchManager.getDatabaseConnection();
+      let notes: NoteRow[] = [];
+
+      // Handle different search criteria
+      if (args.has_links_to && args.has_links_to.length > 0) {
+        // Find notes that link to any of the specified notes
+        const targetIds = args.has_links_to.map(id =>
+          this.#generateNoteIdFromIdentifier(id)
+        );
+        const placeholders = targetIds.map(() => '?').join(',');
+        notes = await db.all(
+          `SELECT DISTINCT n.* FROM notes n
+           INNER JOIN note_links nl ON n.id = nl.source_note_id
+           WHERE nl.target_note_id IN (${placeholders})`,
+          targetIds
+        );
+      } else if (args.linked_from && args.linked_from.length > 0) {
+        // Find notes that are linked from any of the specified notes
+        const sourceIds = args.linked_from.map(id =>
+          this.#generateNoteIdFromIdentifier(id)
+        );
+        const placeholders = sourceIds.map(() => '?').join(',');
+        notes = await db.all(
+          `SELECT DISTINCT n.* FROM notes n
+           INNER JOIN note_links nl ON n.id = nl.target_note_id
+           WHERE nl.source_note_id IN (${placeholders})`,
+          sourceIds
+        );
+      } else if (args.external_domains && args.external_domains.length > 0) {
+        // Find notes with external links to specified domains
+        const domainConditions = args.external_domains
+          .map(() => 'el.url LIKE ?')
+          .join(' OR ');
+        const domainParams = args.external_domains.map(domain => `%${domain}%`);
+        notes = await db.all(
+          `SELECT DISTINCT n.* FROM notes n
+           INNER JOIN external_links el ON n.id = el.note_id
+           WHERE ${domainConditions}`,
+          domainParams
+        );
+      } else if (args.broken_links) {
+        // Find notes with broken internal links
+        notes = await db.all(
+          `SELECT DISTINCT n.* FROM notes n
+           INNER JOIN note_links nl ON n.id = nl.source_note_id
+           WHERE nl.target_note_id IS NULL`
+        );
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                notes: notes,
+                count: notes.length
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  #handleMigrateLinks = async (args: { force?: boolean }) => {
+    try {
+      const db = await this.#hybridSearchManager.getDatabaseConnection();
+
+      // Check if migration is needed
+      if (!args.force) {
+        const existingLinks = await db.get<{ count: number }>(
+          'SELECT COUNT(*) as count FROM note_links'
+        );
+        if (existingLinks && existingLinks.count > 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    success: false,
+                    message:
+                      'Link tables already contain data. Use force=true to migrate anyway.',
+                    existing_links: existingLinks.count
+                  },
+                  null,
+                  2
+                )
+              }
+            ]
+          };
+        }
+      }
+
+      // Get all notes from the database
+      const notes = await db.all<{ id: string; content: string }>(
+        'SELECT id, content FROM notes'
+      );
+      let processedCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      for (const note of notes) {
+        try {
+          // Extract links from note content
+          const extractionResult = LinkExtractor.extractLinks(note.content);
+
+          // Store the extracted links
+          await LinkExtractor.storeLinks(note.id, extractionResult, db);
+          processedCount++;
+        } catch (error) {
+          errorCount++;
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          errors.push(`${note.id}: ${errorMessage}`);
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                message: 'Link migration completed',
+                total_notes: notes.length,
+                processed: processedCount,
+                errors: errorCount,
+                error_details: errors.length > 0 ? errors.slice(0, 10) : undefined // Limit error details to first 10
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: errorMessage
+              },
+              null,
+              2
+            )
+          }
+        ],
+        isError: true
+      };
+    }
+  };
+
+  /**
+   * Helper method to generate note ID from identifier
+   */
+  #generateNoteIdFromIdentifier(identifier: string): string {
+    // Check if identifier is already in type/filename format
+    if (identifier.includes('/')) {
+      return identifier;
+    }
+
+    // If it's just a filename, we need to find the note and get its type
+    // For now, we'll assume it's in the format we expect
+    return identifier;
+  }
 }

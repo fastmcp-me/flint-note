@@ -91,6 +91,20 @@ export class HybridSearchManager {
     return this.connection;
   }
 
+  /**
+   * Get database connection for external use (e.g., link management)
+   */
+  async getDatabaseConnection(): Promise<DatabaseConnection> {
+    return await this.getConnection();
+  }
+
+  /**
+   * Get database manager for migrations and other database operations
+   */
+  getDatabaseManager(): DatabaseManager {
+    return this.dbManager;
+  }
+
   private async getReadOnlyConnection(): Promise<DatabaseConnection> {
     if (!this.readOnlyConnection) {
       this.readOnlyConnection = await this.dbManager.connectReadOnly();

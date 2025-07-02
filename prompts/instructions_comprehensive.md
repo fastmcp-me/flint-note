@@ -303,8 +303,7 @@ Use for safely updating note display titles while preserving link stability:
 {
   "identifier": "projects/website-redesign.md",
   "new_title": "Website Redesign v2.0 - Mobile First",
-  "content_hash": "a1b2c3d4e5f6...",
-  "update_wikilinks": false
+  "content_hash": "a1b2c3d4e5f6..."
 }
 ```
 
@@ -546,74 +545,12 @@ For batch updates, include content_hash for each note:
 - Handle partial failures where some hashes conflict
 - Report which updates succeeded vs failed due to conflicts
 
-### Enhanced Wikilink Management
+### Automatic Link Management System
 
-#### `search_notes_for_links`
-Find notes that can be linked with their filename information:
+**Core Principle**: All wikilinks and external URLs are automatically extracted from note content during create/update operations and stored in a SQLite database for powerful querying and analysis.
 
-```json
-{
-  "query": "atomic habits",
-  "type": "reading-notes",
-  "limit": 10
-}
-```
-
-Returns notes with their type and filename for creating stable wikilinks.
-
-#### `get_link_suggestions`
-Get intelligent link suggestions for partial queries:
-
-```json
-{
-  "query": "habit",
-  "context_type": "daily-notes",
-  "limit": 5
-}
-```
-
-Provides formatted wikilink suggestions with relevance scores.
-
-#### `suggest_link_targets`
-Get properly formatted wikilink suggestions:
-
-```json
-{
-  "partial_query": "atomic",
-  "context_type": "reading-notes",
-  "limit": 5
-}
-```
-
-Returns ready-to-use wikilinks: `[[reading-notes/atomic-habits|Atomic Habits]]`
-
-#### `validate_wikilinks`
-Check wikilinks in content and get repair suggestions:
-
-```json
-{
-  "content": "I read [[reading-notes/missing-book|Some Book]] and [[project-notes/website|Website Project]]",
-  "context_type": "daily-notes"
-}
-```
-
-Identifies broken links and suggests replacements.
-
-#### `auto_link_content`
-Automatically enhance content with relevant wikilinks:
-
-```json
-{
-  "content": "I'm reading Atomic Habits and working on my Website Project",
-  "context_type": "daily-notes",
-  "aggressiveness": "moderate"
-}
-```
-
-Intelligently adds wikilinks: `I'm reading [[reading-notes/atomic-habits|Atomic Habits]] and working on my [[project-notes/website-redesign|Website Project]]`
-
-#### `update_note_links_sync`
-Sync wikilinks from content to frontmatter metadata:
+#### `get_note_links`
+Get all links for a specific note (incoming, outgoing internal, and external):
 
 ```json
 {
@@ -621,41 +558,105 @@ Sync wikilinks from content to frontmatter metadata:
 }
 ```
 
-Automatically extracts wikilinks and updates YAML frontmatter.
-
-#### `generate_link_report`
-Analyze note connectivity and linking opportunities:
-
+Returns comprehensive link data:
 ```json
 {
-  "identifier": "project-notes/website-redesign"
+  "success": true,
+  "note_id": "daily-notes/2024-01-15",
+  "outgoing_internal": [
+    {
+      "id": 1,
+      "source_note_id": "daily-notes/2024-01-15",
+      "target_note_id": "reading-notes/atomic-habits",
+      "target_title": "atomic-habits",
+      "link_text": "Atomic Habits",
+      "line_number": 3,
+      "created": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "outgoing_external": [
+    {
+      "id": 1,
+      "note_id": "daily-notes/2024-01-15",
+      "url": "https://example.com/article",
+      "title": "Interesting Article",
+      "line_number": 5,
+      "link_type": "url",
+      "created": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "incoming": [
+    {
+      "id": 2,
+      "source_note_id": "project-notes/goals",
+      "target_note_id": "daily-notes/2024-01-15",
+      "target_title": "2024-01-15",
+      "link_text": "Today's reflection",
+      "line_number": 12,
+      "created": "2024-01-15T14:00:00Z"
+    }
+  ]
 }
 ```
 
-Provides comprehensive analysis of links, broken connections, and improvement suggestions.
-
-### Traditional Link Management
-
-#### `link_notes`
-Create explicit bidirectional links between notes:
+#### `get_backlinks`
+Get all notes that link to the specified note:
 
 ```json
 {
-  "source_id": "meeting-20240115",
-  "target_id": "project-alpha-overview",
-  "relationship_type": "relates_to",
-  "description": "Standup covered Alpha project progress and blockers"
+  "identifier": "reading-notes/atomic-habits"
 }
 ```
 
-**Wikilink vs Traditional Linking:**
-- **Wikilinks**: Natural, inline, Obsidian-compatible `[[type/filename|Display]]`
-- **Traditional Links**: Explicit relationships in frontmatter metadata
-- **Best Practice**: Use wikilinks for natural connections, traditional links for formal relationships
+Returns notes that reference the target note with full link context.
 
-**When to Use Each:**
-- **Wikilinks**: References, mentions, related content, natural flow
-- **Traditional Links**: Formal dependencies, project hierarchies, workflow connections
+#### `find_broken_links`
+Find all broken wikilinks (links to non-existent notes):
+
+```json
+{}
+```
+
+Returns all broken links across the vault:
+```json
+{
+  "success": true,
+  "broken_links": [
+    {
+      "id": 5,
+      "source_note_id": "daily-notes/2024-01-10",
+      "target_note_id": null,
+      "target_title": "missing-book",
+      "link_text": "Some Missing Book",
+      "line_number": 8,
+      "created": "2024-01-10T09:00:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+#### `search_by_links`
+Search notes by link relationships:
+
+```json
+{
+  "has_links_to": ["reading-notes/atomic-habits"],
+  "broken_links": false,
+  "external_domains": ["github.com"]
+}
+```
+
+Search criteria:
+- `has_links_to`: Find notes linking to specified targets
+- `linked_from`: Find notes linked from specified sources
+- `external_domains`: Find notes with links to specified domains
+- `broken_links`: Find notes with broken internal links
+
+
+
+
+
 
 ### Analysis and Enhancement
 
@@ -696,40 +697,40 @@ This helps identify missing information, suggest connections, and recommend stru
 
 1. **Search for Linkable Content**:
    ```
-   User mentions "atomic habits" → search_notes_for_links("atomic habits")
+   User mentions "atomic habits" → search_notes("atomic habits")
    ```
 
 2. **Get Smart Suggestions**:
    ```
-   User typing "I learned about..." → get_link_suggestions("learned")
+   User typing "I learned about..." → search_notes("learned")
    ```
 
 3. **Validate Existing Links**:
    ```
-   Before updating content → validate_wikilinks(content)
+   Before updating content → check existing wikilinks manually
    ```
 
 4. **Auto-enhance Content**:
    ```
-   Plain text → auto_link_content() → Enhanced with wikilinks
+   Plain text → manually add wikilinks → Enhanced with connections
    ```
 
 5. **Sync Metadata**:
    ```
-   After adding wikilinks → update_note_links_sync()
+   After adding wikilinks → links are automatically tracked
    ```
 
 ### Link Quality Management
 
 **Always Check Before Linking:**
-- Use `search_notes_for_links` to verify target exists
+- Use `search_notes` to verify target exists
 - Get filename from search results for stable links
 - Validate display text matches user expectations
 
 **Link Maintenance:**
-- Run `validate_wikilinks` on important notes periodically
-- Use `generate_link_report` to analyze note connectivity
-- Fix broken links using repair suggestions
+- Use `find_broken_links` to identify broken wikilinks
+- Use `search_by_links` to analyze note connectivity
+- Fix broken links by updating content manually
 
 **Context-Aware Suggestions:**
 - Pass `context_type` to filter relevant suggestions

@@ -314,10 +314,9 @@ The flint-note MCP server exposes the following tools and resources:
 | `create_note` | Create one or more notes | Single: `type`, `title`, `content`, `metadata?` OR Batch: `notes` (array) |
 | `get_note` | Retrieve specific note | `identifier` |
 | `update_note` | Update one or more existing notes | Single: `identifier`, `content?`, `metadata?`, `content_hash` OR Batch: `updates` (array) |
-| `rename_note` | Rename note display title while preserving filename/ID | `identifier`, `new_title`, `content_hash`, `update_wikilinks?` |
+| `rename_note` | Rename note display title while preserving filename/ID | `identifier`, `new_title`, `content_hash` |
 | `search_notes` | Search notes by content/type | `query`, `type_filter?`, `limit?`, `use_regex?` |
 | `list_note_types` | List all available note types | none |
-| `link_notes` | Create explicit links between notes | `source`, `target`, `relationship?` |
 | `update_note_type` | Update specific field of existing note type | `type_name`, `field` (instructions\|description\|metadata_schema), `value`, `content_hash` |
 | `get_note_type_info` | Get comprehensive note type information including agent instructions | `type_name` |
 | `analyze_note` | Get AI analysis/suggestions for a note | `identifier` |
@@ -537,7 +536,7 @@ Flint-note implements a clear hierarchy for note naming that eliminates confusio
 
 ### Note Renaming
 
-The `rename_note` tool provides safe title updates:
+The `rename_note` tool provides safe title updates and automatically updates wikilinks in other notes:
 
 **Key Features:**
 - Updates only the `title` field in note metadata
@@ -559,8 +558,7 @@ The `rename_note` tool provides safe title updates:
   "arguments": {
     "identifier": "projects/website-redesign.md",
     "new_title": "Website Redesign v2.0 - Mobile First",
-    "content_hash": "sha256:a1b2c3d4e5f6...",
-    "update_wikilinks": false
+    "content_hash": "sha256:a1b2c3d4e5f6..."
   }
 }
 ```
@@ -1210,6 +1208,207 @@ The project has a comprehensive design document and core implementation with MCP
 - Metadata schema adoption and effectiveness
 - Reduction in data entry errors through validation
 - User satisfaction with structured data features
+
+## Link Management System
+
+### Current Implementation Overview
+
+flint-note now features a fully implemented SQLite-based link management system that automatically extracts and stores links from note content. The system provides comprehensive link tracking, validation, and querying capabilities while maintaining full compatibility with Obsidian-style wikilinks.
+
+### Key Features
+
+- **Automatic Link Extraction**: Links are automatically extracted from content during note create/update operations
+- **Dual Link Support**: Handles both internal wikilinks (`[[note-title]]`) and external URLs seamlessly
+- **Real-time Link Resolution**: Wikilinks are resolved to actual note IDs with automatic broken link detection
+- **Comprehensive MCP Tools**: Rich set of tools for link querying, validation, and management
+- **Obsidian Compatibility**: Full support for `[[wikilink]]` and `[[target|display]]` formats
+
+### Architecture: SQLite-Based Link Storage
+
+#### Implementation Principles
+
+1. **Content-Driven Extraction**: Links are automatically extracted using the `LinkExtractor` class during all note operations
+2. **Dual Link Support**: Separate handling for internal wikilinks and external URLs with dedicated database tables
+3. **Real-time Resolution**: Wikilinks are resolved to note IDs immediately, with broken links tracked for future resolution
+4. **Database Integration**: Full integration with existing SQLite search infrastructure
+5. **Automatic Synchronization**: Link relationships are maintained automatically across note operations
+
+#### Database Schema (Implemented)
+
+```sql
+-- Internal links between notes (wikilinks)
+CREATE TABLE note_links (
+    id INTEGER PRIMARY KEY,
+    source_note_id TEXT NOT NULL,
+    target_note_id TEXT,  -- NULL if target doesn't exist (broken link)
+    target_title TEXT NOT NULL,  -- The text inside [[]]
+    link_text TEXT,  -- Display text for [[target|display]] format
+    line_number INTEGER,  -- Location in source content
+    created DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (source_note_id) REFERENCES notes(id),
+    FOREIGN KEY (target_note_id) REFERENCES notes(id)
+);
+
+-- External links to URLs
+CREATE TABLE external_links (
+    id INTEGER PRIMARY KEY,
+    note_id TEXT NOT NULL,
+    url TEXT NOT NULL,
+    title TEXT,  -- Link title/description
+    line_number INTEGER,  -- Location in note content
+    link_type TEXT DEFAULT 'url',  -- 'url', 'image', 'embed'
+    created DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (note_id) REFERENCES notes(id)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_note_links_source ON note_links(source_note_id);
+CREATE INDEX idx_note_links_target ON note_links(target_note_id);
+CREATE INDEX idx_note_links_target_title ON note_links(target_title);
+CREATE INDEX idx_external_links_note ON external_links(note_id);
+CREATE INDEX idx_external_links_url ON external_links(url);
+```
+
+#### Link Extraction Process (Implemented)
+
+The `LinkExtractor` class handles automatic link extraction during all note operations:
+
+**During Note Create/Update Operations:**
+
+1. **Content Parsing**: 
+   - Uses `WikilinkParser` to extract `[[wikilink]]` patterns with display text support
+   - Extracts markdown links `[title](url)`, image embeds `![alt](url)`, and plain URLs
+   - Tracks line numbers for all extracted links
+
+2. **Link Resolution**:
+   - Resolves wikilinks to actual note IDs using title matching
+   - Supports case-insensitive matching with normalization
+   - Handles both `[[note-title]]` and `[[note-title|display-text]]` formats
+   - Tracks unresolved links as broken links (target_note_id = NULL)
+
+3. **Database Updates**:
+   - Clears existing links for the note
+   - Inserts new internal links into `note_links` table
+   - Inserts new external links into `external_links` table
+   - Maintains referential integrity with cascade operations
+
+4. **Automatic Broken Link Resolution**:
+   - When notes are created or renamed, broken links are automatically resolved
+   - Updates link relationships in real-time
+
+#### MCP Tools (Implemented)
+
+The following MCP tools are available for link management:
+
+**Core Link Tools:**
+- `get_note_links(identifier)` - Get all links for a note (incoming, outgoing internal, and external)
+- `get_backlinks(identifier)` - Get all notes that link to the specified note
+- `find_broken_links()` - Find all broken wikilinks (links to non-existent notes)
+
+
+
+**Advanced Link Search:**
+- `search_by_links(criteria)` - Search notes by link relationships:
+  - `has_links_to: string[]` - Find notes linking to specified targets
+  - `linked_from: string[]` - Find notes linked from specified sources  
+  - `external_domains: string[]` - Find notes with links to specified domains
+  - `broken_links: boolean` - Find notes with broken internal links
+
+**Link Migration:**
+- `migrate_links(force?)` - One-time migration to populate link tables from existing notes
+
+**Response Formats:**
+
+```typescript
+// get_note_links response
+{
+  success: true,
+  note_id: string,
+  outgoing_internal: NoteLinkRow[],
+  outgoing_external: ExternalLinkRow[],
+  incoming: NoteLinkRow[]
+}
+
+// NoteLinkRow (internal links)
+{
+  id: number,
+  source_note_id: string,
+  target_note_id: string | null,
+  target_title: string,
+  link_text: string | null,
+  line_number: number,
+  created: string
+}
+
+// ExternalLinkRow
+{
+  id: number,
+  note_id: string,
+  url: string,
+  title: string | null,
+  line_number: number,
+  link_type: string,
+  created: string
+}
+```
+
+#### Integration with Note Operations
+
+**Automatic Link Processing:**
+- `create_note`: Automatically extracts and stores links during note creation
+- `update_note`: Re-extracts links when content changes, maintains link integrity
+- `rename_note`: Updates broken links that now resolve to the renamed note and automatically updates wikilinks in other notes that reference the old title
+- `delete_note`: Cleans up all link references (sets target_note_id to NULL for incoming links)
+
+**Search Integration:**
+- `search_by_links` tool enables complex link relationship queries
+- Advanced search includes link-based filtering capabilities
+- Support for finding orphaned notes, broken links, and external link analysis
+
+**Migration Support:**
+- `migrate_links` tool available for populating link tables from existing notes
+- Automatic link extraction runs during normal note operations
+- Backward compatibility maintained with existing YAML frontmatter
+
+#### Key Implementation Details
+
+**Link Extraction Algorithm:**
+The `LinkExtractor` class uses specialized parsers:
+- `WikilinkParser` for `[[wikilink]]` pattern matching with display text support
+- Regex patterns for markdown links, image embeds, and plain URLs
+- Line-by-line processing to maintain accurate line number tracking
+
+**Wikilink Resolution:**
+- Primary matching against note `title` field in metadata
+- Fallback matching against filename (without extension)
+- Case-insensitive matching with target normalization
+- Automatic resolution of broken links when target notes are created/renamed
+
+**Database Performance:**
+- Proper indexing on source_note_id, target_note_id, and target_title
+- Efficient batch operations for link updates
+- Referential integrity maintained with foreign key constraints
+
+#### Current Status & Benefits
+
+**Fully Implemented Features:**
+✅ Automatic link extraction from content
+✅ Real-time wikilink resolution
+✅ Comprehensive MCP tool suite
+✅ Broken link detection and resolution
+✅ External link tracking
+✅ Link-based search capabilities
+✅ Integration with note operations
+
+**Key Benefits Achieved:**
+1. **Zero-Maintenance Linking**: Links are automatically extracted and maintained
+2. **Obsidian Compatibility**: Full support for `[[wikilink]]` syntax
+3. **Powerful Queries**: SQL-based link relationship analysis
+4. **Broken Link Management**: Automatic detection and resolution
+5. **Rich Navigation**: Comprehensive backlink and forward link discovery
+6. **Performance**: Fast link traversal with proper database indexing
+
+The link management system is production-ready and provides a robust foundation for knowledge graph navigation and relationship discovery.
 
 ---
 

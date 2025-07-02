@@ -33,6 +33,7 @@ import type {
   BatchUpdateResult
 } from '../types/index.js';
 import { WikilinkParser } from './wikilink-parser.js';
+import { LinkExtractor } from './link-extractor.js';
 
 interface ParsedNote {
   metadata: NoteMetadata;
@@ -1059,11 +1060,33 @@ export class NoteManager {
           notePath,
           parsed.metadata
         );
+
+        // Extract and store links in the database
+        await this.extractAndStoreLinks(noteId, parsed.content);
       }
     } catch (error) {
       // Don't fail note operations if search index update fails
       console.error(
         'Failed to update search index:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+  }
+
+  /**
+   * Extract and store links for a note
+   */
+  private async extractAndStoreLinks(noteId: string, content: string): Promise<void> {
+    try {
+      if (this.#hybridSearchManager) {
+        const db = await this.#hybridSearchManager.getDatabaseConnection();
+        const extractionResult = LinkExtractor.extractLinks(content);
+        await LinkExtractor.storeLinks(noteId, extractionResult, db);
+      }
+    } catch (error) {
+      // Don't fail note operations if link extraction fails
+      console.error(
+        'Failed to extract and store links:',
         error instanceof Error ? error.message : 'Unknown error'
       );
     }
@@ -1080,6 +1103,10 @@ export class NoteManager {
         const content = await fs.readFile(notePath, 'utf-8');
         const parsed = parseNoteContent(content);
         const noteId = this.generateNoteId(parsed.metadata.type || 'default', filename);
+
+        // Clear links for this note
+        const db = await this.#hybridSearchManager.getDatabaseConnection();
+        await LinkExtractor.clearLinksForNote(noteId, db);
 
         await this.#hybridSearchManager.removeNote(noteId);
       }
@@ -1310,5 +1337,61 @@ export class NoteManager {
           timestampMessage
       );
     }
+  }
+
+  /**
+   * Rename a note by updating its title field
+   */
+  async renameNote(
+    identifier: string,
+    newTitle: string,
+    contentHash: string
+  ): Promise<{ success: boolean; notesUpdated?: number; linksUpdated?: number }> {
+    // Get the current note
+    const currentNote = await this.getNote(identifier);
+    if (!currentNote) {
+      throw new Error(`Note '${identifier}' not found`);
+    }
+
+    // Update the title in metadata while preserving all other metadata
+    const updatedMetadata = {
+      ...currentNote.metadata,
+      title: newTitle
+    };
+
+    // Use the existing updateNoteWithMetadata method with protection bypass for rename
+    await this.updateNoteWithMetadata(
+      identifier,
+      currentNote.content, // Keep content unchanged
+      updatedMetadata,
+      contentHash,
+      true // Bypass protection for legitimate rename operations
+    );
+
+    let brokenLinksUpdated = 0;
+    let wikilinksResult = { notesUpdated: 0, linksUpdated: 0 };
+
+    // Only proceed with link updates if search manager is available
+    if (this.#hybridSearchManager) {
+      const db = await this.#hybridSearchManager.getDatabaseConnection();
+      const noteId = this.generateNoteId(currentNote.type, currentNote.filename);
+
+      // Update broken links that might now be resolved due to the new title
+      brokenLinksUpdated = await LinkExtractor.updateBrokenLinks(noteId, newTitle, db);
+
+      // Always update wikilinks in other notes
+      wikilinksResult = await LinkExtractor.updateWikilinksForRenamedNote(
+        noteId,
+        currentNote.title,
+        newTitle,
+        db
+      );
+    }
+
+    return {
+      success: true,
+      notesUpdated: wikilinksResult.notesUpdated,
+      linksUpdated: wikilinksResult.linksUpdated + brokenLinksUpdated
+    };
   }
 }
