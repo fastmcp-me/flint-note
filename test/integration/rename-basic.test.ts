@@ -213,8 +213,7 @@ describe('Rename Operations Integration', () => {
     const renameResult = await client.callTool('rename_note', {
       identifier: targetId,
       new_title: 'Renamed Target Project',
-      content_hash: targetHash,
-      update_wikilinks: true
+      content_hash: targetHash
     });
 
     const renameData = JSON.parse(renameResult.content[0].text);
