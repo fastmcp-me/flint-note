@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.6.0
+
+### Added
+- Vault id as an optional parameter to most tools to allow cross-vault operation without switching vaults (#9)
+
 ## 0.5.0
 
 ### Added
