@@ -2,10 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## Upcoming
+## 0.8.0
 
 ### Added
 - Add separate API (`@flint-note/api`) in addition to the MCP server
+- Expand resources to include notes
 
 ## 0.7.1
 
