@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.9.0
+
+### Changed
+
+- Refactored/simplified the programatic API (#14)
+
 ## 0.8.0
 
 ### Added
