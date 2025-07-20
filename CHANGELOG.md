@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.9.1
+
+### Changed
+
+- note ids no longer require `.md` extension (#15)
+
 ## 0.9.0
 
 ### Changed
