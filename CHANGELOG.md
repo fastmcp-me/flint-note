@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.9.3
+
+### fixed
+
+- fix broken build of 0.9.2
+
 ## 0.9.2
 
 ### Changed
