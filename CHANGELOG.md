@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.9.5
+
+### changed
+
+- refactor api with option bags etc. (#18)
+
 ## 0.9.4
 
 ### changed
