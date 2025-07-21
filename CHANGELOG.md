@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.9.4
+
+### changed
+
+- handle vault migrations (#17)
+
 ## 0.9.3
 
 ### fixed
