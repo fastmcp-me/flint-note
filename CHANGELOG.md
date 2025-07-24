@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## Next
+## 0.9.
 
 ## added
 
 - move_note to move notes between note types while preserving filename and metadata (#19)
+- _description files in .flint-note dir (#20)
 
 ## 0.9.5
 
