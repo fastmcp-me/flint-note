@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## 0.9.
+
+## 0.10.0
+
+## removed
+
+- undo move of _description files to .flint-note dir (#22)
+
+## 0.9.6
 
 ## added
 
