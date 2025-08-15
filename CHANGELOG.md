@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 
+## 0.10.1
+
+- filter out _description.md files (#23)
+- clean up getNoteTypeInfo response (#24)
+
 ## 0.10.0
 
 ## removed
